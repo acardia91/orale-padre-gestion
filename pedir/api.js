@@ -314,6 +314,23 @@
       const ps = lee(K.pedidos, []); ps.filter(p => p.cuenta_id === cuentaId).forEach(p => { p.mesa = m.nombre; p.cliente_nombre = m.nombre; });
       guarda(K.pedidos, ps); avisa();
     },
+    async anularLinea(pedidoId, indice, cantidad, motivo) {
+      const ps = lee(K.pedidos, []); const p = ps.find(x => x.id === pedidoId); const l = p.lineas[indice];
+      const q = Math.min(cantidad || 1, l.cantidad); p.anuladas = [...(p.anuladas || []), { ...l, cantidad: q, motivo }];
+      if (q === l.cantidad) p.lineas.splice(indice, 1); else l.cantidad -= q;
+      p.total = p.lineas.reduce((s2, x) => s2 + x.unitario * x.cantidad, 0); if (!p.lineas.length) p.estado = 'cancelado';
+      guarda(K.pedidos, ps); avisa(); return { total: p.total };
+    },
+    async apuntarPinFallido() {}, async fijarPin() {}, async registrarPrecuenta() {},
+    async resumenCaja(local) {
+      const ts = lee(K.tickets, []).filter(t => t.local === local); const s = m => ts.filter(t => t.metodo === m).reduce((a, t) => a + t.total, 0);
+      return { desde: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(), fondo_inicial: 0, efectivo: s('efectivo'), tarjeta: s('tarjeta'), online: s('stripe'),
+        invitaciones: ts.filter(t => t.metodo === 'invitacion').length, descuentos: ts.reduce((a, t) => a + (t.descuento || 0), 0), tickets: ts.length,
+        anulaciones: 0, importe_anulado: 0, cuentas_abiertas: lee(K.cuentas, []).filter(c => c.local === local && c.estado === 'abierta').length };
+    },
+    async cerrarCaja(local, contado, retirado, notas) { const r = await this.resumenCaja(local); return { ...r, efectivo_contado: contado, retirado, notas, hasta: new Date().toISOString(), descuadre: contado - r.fondo_inicial - r.efectivo, fondo_siguiente: contado - retirado }; },
+    async auditoria() { return []; }, async cierres() { return []; },
+    async clienteActual() { return null; }, async pedirCodigo() { throw new Error('DEMO: en modo demo no hay cuentas'); },
     async anularCuenta(cuentaId, motivo) {
       const cs = lee(K.cuentas, []); const c = cs.find(x => x.id === cuentaId);
       Object.assign(c, { estado: 'anulada', cerrada: new Date().toISOString(), motivo_anulacion: motivo }); guarda(K.cuentas, cs);
@@ -384,10 +401,18 @@
     async carta(local) { return ok(await cliente().from('cartas').select('datos').eq('local', local).single()).datos; },
     async local(id) { return ok(await cliente().from('locales').select('*').eq('id', id).single()); },
     async agotados(local) { return new Set(ok(await cliente().from('agotados').select('producto_id').eq('local', local)).map(r => r.producto_id)); },
-    async crearPedido({ local, nombre, tel, recogida, pago, notas, lineas, email }) {
+    async crearPedido({ local, nombre, tel, recogida, pago, notas, lineas, email, marketing }) {
       return ok(await cliente().rpc('crear_pedido', { p_local: local, p_nombre: nombre, p_tel: tel,
-        p_recogida: new Date(recogida).toISOString(), p_pago: pago, p_notas: notas || '', p_lineas: lineas, p_email: email || null }));
+        p_recogida: new Date(recogida).toISOString(), p_pago: pago, p_notas: notas || '', p_lineas: lineas, p_email: email || null,
+        p_marketing: !!marketing }));
     },
+    // ── Cuenta de cliente (opcional): se entra con un código que llega al email ──
+    async clienteActual() { const { data } = await cliente().auth.getSession(); return data.session ? { email: data.session.user.email } : null; },
+    async pedirCodigo(email) { ok(await cliente().auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.href.split('#')[0] } })); },
+    async verificarCodigo(email, codigo) { ok(await cliente().auth.verifyOtp({ email, token: codigo, type: 'email' })); },
+    async miCuenta() { return ok(await cliente().rpc('mi_cuenta')); },
+    async guardarMiCuenta({ nombre, tel, marketing }) { ok(await cliente().rpc('guardar_mi_cuenta', { p_nombre: nombre || null, p_tel: tel || null, p_marketing: marketing ?? null })); },
+    async salirCliente() { await cliente().auth.signOut(); },
     // Pago online: la función del servidor crea el pago en Stripe y devuelve la página de pago.
     async iniciarPago(token, volver) {
       const r = await fetch(`${CONFIG.supabaseUrl}/functions/v1/stripe-checkout`, {
@@ -481,7 +506,18 @@
     async enviarComanda(cuenta, lineas, notas) { return ok(await cliente().rpc('enviar_comanda', { p_cuenta: cuenta, p_lineas: lineas, p_notas: notas || '' })); },
     async pedidosDeCuenta(cuenta) { return ok(await cliente().from('pedidos').select('*').eq('cuenta_id', cuenta).order('numero')); },
     async moverCuenta(cuenta, mesa) { ok(await cliente().rpc('mover_cuenta', { p_cuenta: cuenta, p_mesa_id: mesa })); },
-    async anularCuenta(cuenta, motivo) { ok(await cliente().rpc('anular_cuenta', { p_cuenta: cuenta, p_motivo: motivo })); },
+    async anularCuenta(cuenta, motivo, pin) { ok(await cliente().rpc('anular_cuenta', { p_cuenta: cuenta, p_motivo: motivo, p_pin: pin || null })); },
+    // ── Control: productos quitados, clave de encargado, pre-cuentas, cierre de caja ──
+    async anularLinea(pedido, indice, cantidad, motivo, pin) {
+      return ok(await cliente().rpc('anular_linea', { p_pedido: pedido, p_indice: indice, p_cantidad: cantidad, p_motivo: motivo, p_pin: pin || null }));
+    },
+    async apuntarPinFallido(local, accion) { try { await cliente().rpc('apuntar_pin_fallido', { p_local: local, p_accion: accion }); } catch (e) {} },
+    async fijarPin(pin) { ok(await cliente().rpc('fijar_mi_pin', { p_pin: pin })); },
+    async registrarPrecuenta(cuenta, total) { try { await cliente().rpc('registrar_precuenta', { p_cuenta: cuenta, p_total: total }); } catch (e) {} },
+    async resumenCaja(local) { return ok(await cliente().rpc('resumen_caja', { p_local: local })); },
+    async cerrarCaja(local, contado, retirado, notas) { return ok(await cliente().rpc('cerrar_caja', { p_local: local, p_contado: contado, p_retirado: retirado, p_notas: notas || '' })); },
+    async auditoria(local, desde, hasta) { return ok(await cliente().rpc('listar_auditoria', { p_local: local, p_desde: desde, p_hasta: hasta })); },
+    async cierres(local, desde, hasta) { return ok(await cliente().rpc('listar_cierres', { p_local: local, p_desde: desde, p_hasta: hasta })).map(r => r.c); },
     async cobrar({ cuenta, pedido, metodo, entregado, promocion, nota }) {
       return ok(await cliente().rpc('cobrar', { p_cuenta: cuenta || null, p_pedido: pedido || null, p_metodo: metodo,
         p_entregado: entregado ?? null, p_promocion: promocion || null, p_nota: nota || null }));
