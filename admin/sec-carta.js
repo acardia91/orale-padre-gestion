@@ -46,21 +46,26 @@
     const lista = carta.productos.slice().sort((a, b) => (orden.indexOf(a.id) + 1 || 1e6) - (orden.indexOf(b.id) + 1 || 1e6))
       .filter(p => !q || p.nombre.toLowerCase().includes(q))
       .filter(p => !fc || (fc === '__sin' ? !catDe(p.id) : (catDe(p.id) || {}).clave === fc));
-    $('#c-lista').innerHTML = `<thead><tr><th></th><th>Producto</th><th>Categoría</th><th class="num">Precio</th><th>Extras</th><th>Estado</th></tr></thead><tbody>` +
+    $('#c-lista').innerHTML = `<thead><tr><th></th><th>Producto</th><th>Categoría</th><th class="num">Precio</th><th>Extras</th><th>Etiquetas</th><th>Activo</th></tr></thead><tbody>` +
       (lista.map(p => {
         const c = catDe(p.id);
-        const est = [p.oculto ? '<span class="tag gris">Oculto</span>' : '', p.agotado ? '<span class="tag rojo">Agotado</span>' : '', p.alcohol ? '<span class="tag">Alcohol</span>' : ''].join('');
+        const est = [p.agotado ? '<span class="tag rojo">Agotado</span>' : '', p.alcohol ? '<span class="tag">Alcohol</span>' : '', p.grupos.some(g => (grupo(g) || {}).min) ? '<span class="tag verde">Combo</span>' : ''].join('');
         return `<tr data-p="${esc(p.id)}" class="${p.oculto ? 'apagado' : ''}">
           <td class="mini">${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : '<span class="sinfoto"></span>'}</td>
           <td><b>${esc(p.nombre)}</b>${p.desc ? `<small>${esc(p.desc.slice(0, 80))}${p.desc.length > 80 ? '…' : ''}</small>` : ''}</td>
           <td>${c ? esc(c.nombre) : '<span class="tag rojo">Sin categoría</span>'}</td>
           <td class="num"><b>${euros(p.precio)}</b></td>
           <td>${p.grupos.length ? p.grupos.map(g => esc((grupo(g) || {}).nombre || '?')).join('<br>') : '—'}</td>
-          <td>${est || 'Visible'}</td></tr>`;
-      }).join('') || '<tr><td colspan="6" class="nota">Ningún producto coincide.</td></tr>') + '</tbody>';
+          <td>${est || '—'}</td>
+          <td><label class="switch" title="${p.oculto ? 'Oculto: no sale en la web ni en el TPV' : 'Visible en la web y en el TPV'}"><input type="checkbox" data-activo="${esc(p.id)}" ${p.oculto ? '' : 'checked'} aria-label="Activo"><span></span></label></td></tr>`;
+      }).join('') || '<tr><td colspan="7" class="nota">Ningún producto coincide.</td></tr>') + '</tbody>';
   }
   $('#c-buscar').oninput = pintaProductos; $('#c-filtro-cat').onchange = pintaProductos;
-  $('#c-lista').addEventListener('click', e => { const tr = e.target.closest('[data-p]'); if (tr) abreProducto(tr.dataset.p); });
+  $('#c-lista').addEventListener('click', e => { if (e.target.closest('.switch')) return; const tr = e.target.closest('[data-p]'); if (tr) abreProducto(tr.dataset.p); });
+  $('#c-lista').addEventListener('change', e => {
+    const id = e.target.dataset.activo; if (!id) return;
+    prod(id).oculto = !e.target.checked || undefined; pintaProductos(); marca();
+  });
   $('#c-nuevo').onclick = () => abreProducto(null);
 
   /* ── Ficha de producto ── */

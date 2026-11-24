@@ -28,6 +28,7 @@
     }
     if (!enc.includes(LOCAL)) LOCAL = enc[0];
     $('#vista-entrar').hidden = true; $('#vista-app').hidden = false;
+    $('#a-usuario').textContent = s.email || '';
     try { const loc = await api.local(LOCAL); $('#a-local').textContent = loc.nombre.replace(/^Órale Padre\s*/, ''); } catch (e) {}
     window.addEventListener('hashchange', ir);
     ir();

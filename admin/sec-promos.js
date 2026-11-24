@@ -20,14 +20,20 @@
       [promos, carta, tickets] = await Promise.all([api.promociones(LOCAL), api.carta(LOCAL), api.ticketsEntre(LOCAL, desde.toISOString(), hasta.toISOString())]);
     } catch (ex) { $('#pm-error').textContent = mensajeError(ex); $('#pm-error').hidden = false; return; }
     const uso = id => { const ts = tickets.filter(t => t.promocion && t.promocion.id === id); return { n: ts.length, d: ts.reduce((s, t) => s + (t.descuento || 0), 0) }; };
-    $('#pm-lista').innerHTML = `<thead><tr><th>Código</th><th>Nombre</th><th>Qué hace</th><th>Nota</th><th class="num">Usos (30 días)</th><th class="num">Descontado</th><th>Estado</th></tr></thead><tbody>` +
+    $('#pm-lista').innerHTML = `<thead><tr><th>Código</th><th>Nombre</th><th>Qué hace</th><th>Nota</th><th class="num">Usos (30 días)</th><th class="num">Descontado</th><th>Activa</th></tr></thead><tbody>` +
       (promos.map(p => { const u = uso(p.id); return `<tr data-pm="${esc(p.id)}" class="${p.activa ? '' : 'apagado'}" style="cursor:pointer">
         <td><b>${esc(p.codigo)}</b></td><td>${esc(p.nombre)}</td><td>${esc(describe(p))}</td><td>${p.requiere_nota ? 'Sí' : '—'}</td>
         <td class="num">${u.n}</td><td class="num">${euros(u.d)}</td>
-        <td>${p.activa ? '<span class="tag">Activa</span>' : '<span class="tag gris">Pausada</span>'}</td></tr>`; }).join('')
+        <td><label class="switch" title="${p.activa ? 'Activa' : 'Pausada'}"><input type="checkbox" data-pmact="${esc(p.id)}" ${p.activa ? 'checked' : ''} aria-label="Activa"><span></span></label></td></tr>`; }).join('')
       || '<tr><td colspan="7" class="nota">No hay promociones.</td></tr>') + '</tbody>';
   }
-  $('#pm-lista').addEventListener('click', e => { const tr = e.target.closest('[data-pm]'); if (tr) abrir(tr.dataset.pm); });
+  $('#pm-lista').addEventListener('click', e => { if (e.target.closest('.switch')) return; const tr = e.target.closest('[data-pm]'); if (tr) abrir(tr.dataset.pm); });
+  $('#pm-lista').addEventListener('change', async e => {
+    const id = e.target.dataset.pmact; if (!id) return;
+    const p = promos.find(x => x.id === id);
+    try { await api.guardarPromocion(LOCAL, { ...p, activa: e.target.checked }); } catch (ex) { e.target.checked = !e.target.checked; alert(mensajeError(ex)); }
+    cargar();
+  });
   $('#pm-nueva').onclick = () => abrir(null);
 
   const dm = $('#dlg-promo');
