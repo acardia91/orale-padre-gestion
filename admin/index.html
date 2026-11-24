@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241430">
+<link rel="stylesheet" href="admin.css?v=202611241442">
 </head>
 <body>
 
@@ -30,8 +30,10 @@
     <div class="lat-marca"><img src="/img/logo-tinta.png" alt="Órale Padre" width="36" height="36"><span>Órale Padre</span></div>
     <nav id="a-nav" aria-label="Secciones">
       <p class="lat-grupo">Negocio</p>
+      <a href="#panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg><span>Panel</span></a>
       <a href="#resumen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Ventas y facturas</span></a>
       <a href="#pedidos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/></svg><span>Pedidos</span><em class="cuenta-nuevos" id="a-nuevos" hidden></em></a>
+      <a href="#delivery"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a2 2 0 100-4 2 2 0 000 4M17 19a2 2 0 100-4 2 2 0 000 4"/></svg><span>Delivery</span></a>
       <a href="#carta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg><span>Carta y productos</span></a>
       <a href="#control"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Control y caja</span></a>
       <a href="#clientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8"/></svg><span>Clientes</span></a>
@@ -97,6 +99,60 @@
     <div class="locales-grid" id="el-locales"></div>
   </section>
 
+  <!-- ══ PANEL ══ -->
+  <section class="sec" data-sec="panel" hidden>
+    <header class="cab">
+      <div><h1>Panel</h1><p id="pn-fecha"></p></div>
+      <div class="cab-acc periodo" role="group" aria-label="Periodo">
+        <button class="b b-mini" type="button" data-prng="hoy">Hoy</button>
+        <button class="b b-mini" type="button" data-prng="ayer">Ayer</button>
+        <button class="b b-mini" type="button" data-prng="7">7 días</button>
+        <button class="b b-mini" type="button" data-prng="mes">Este mes</button>
+      </div>
+    </header>
+    <div class="pks" id="pn-kpis"></div>
+    <p class="aviso aviso-suave" id="pn-sincoste" hidden></p>
+    <div class="pn-fila">
+      <div class="panel"><div class="panel-cab"><h2 id="pn-graf-tit">Ventas</h2><span class="ley-mini"><i></i>Sala y web <i class="d"></i>Delivery</span></div><div class="graf" id="pn-graf"></div></div>
+      <div class="panel"><h2>Cómo se cobra</h2><div class="cobro" id="pn-cobro"></div></div>
+    </div>
+    <div class="panel"><h2>Por local</h2><div class="pls" id="pn-locales"></div></div>
+    <div class="pn-fila">
+      <div class="panel"><h2>Lo más vendido</h2><div class="tabla-wrap"><table class="tabla" id="pn-top"></table></div></div>
+      <div class="panel"><div class="panel-cab"><h2>Delivery · resumen del agente</h2><a class="b b-mini" href="#delivery">Ver delivery</a></div><div id="pn-agente"></div></div>
+    </div>
+  </section>
+
+  <!-- ══ DELIVERY ══ -->
+  <section class="sec" data-sec="delivery" hidden>
+    <header class="cab">
+      <div><h1>Delivery</h1><p>Uber Eats y Glovo de cada local, día a día. Los datos los vuelca un agente cada mañana con el resumen de cómo fue el día anterior.</p></div>
+      <div class="cab-acc">
+        <div class="periodo" role="group" aria-label="Periodo">
+          <button class="b b-mini" type="button" data-drng="ayer">Ayer</button>
+          <button class="b b-mini" type="button" data-drng="7">7 días</button>
+          <button class="b b-mini" type="button" data-drng="mes">Este mes</button>
+          <button class="b b-mini" type="button" data-drng="30">30 días</button>
+        </div>
+        <button class="b b-ok" type="button" id="dl-volcar">Volcar datos</button>
+      </div>
+    </header>
+    <div class="periodo locs" role="group" aria-label="Local" style="margin-top:12px;justify-content:flex-start">
+      <button class="b b-mini" type="button" data-dloc="">Todos</button>
+      <button class="b b-mini" type="button" data-dloc="san-luis">San Luis</button>
+      <button class="b b-mini" type="button" data-dloc="remedios">Los Remedios</button>
+      <button class="b b-mini" type="button" data-dloc="sevilla-este">Sevilla Este</button>
+      <button class="b b-mini" type="button" data-dloc="tomares">Tomares</button>
+    </div>
+    <p class="aviso aviso-ok" id="dl-ok" hidden></p>
+    <div class="pks" id="dl-kpis"></div>
+    <div class="panel"><h2>Por local y plataforma</h2><div class="tabla-wrap"><table class="tabla" id="dl-locales"></table></div></div>
+    <div class="pn-fila">
+      <div class="panel"><h2>Resumen del agente</h2><div id="dl-resumenes"></div></div>
+      <div class="panel"><h2>Día a día</h2><div class="tabla-wrap"><table class="tabla" id="dl-dias"></table></div></div>
+    </div>
+  </section>
+
   <!-- ══ PEDIDOS ══ -->
   <section class="sec" data-sec="pedidos" hidden>
     <header class="cab">
@@ -137,6 +193,7 @@
       <div class="filtros">
         <input type="search" id="c-buscar" placeholder="Buscar producto…" autocomplete="off">
         <select id="c-filtro-cat" aria-label="Categoría"></select>
+        <button class="b b-mini" type="button" id="c-escandallo" title="Pone a cada producto el coste de su escandallo">Traer costes del escandallo</button>
         <button class="b b-ok b-mini" type="button" id="c-nuevo">+ Nuevo producto</button>
       </div>
       <div class="tabla-wrap"><table class="tabla prods" id="c-lista"></table></div>
@@ -374,6 +431,7 @@
           <label>Precio (€) *<input id="fp-precio" inputmode="decimal" required></label>
           <label>Categoría<select id="fp-cat"></select></label>
         </div>
+        <label>Coste por unidad (€) <small style="font-weight:400;color:var(--humo)">privado: sólo lo ven los encargados</small><input id="fp-coste" inputmode="decimal" placeholder="Según escandallo"><small id="fp-coste-fuente" style="font-weight:400;color:var(--humo)"></small></label>
         <label>Descripción<textarea id="fp-desc" rows="3" maxlength="400"></textarea></label>
       </div>
     </div>
@@ -505,19 +563,43 @@
   </form>
 </dialog>
 
+<dialog class="dlg" id="dlg-volcar">
+  <form method="dialog">
+    <h2>Volcar datos de delivery</h2>
+    <p class="nota" style="margin-top:0">El agente pega aquí su JSON del día. Si lo haces a mano, deja el JSON vacío y rellena lo de abajo.</p>
+    <label>JSON del agente<textarea id="dv-json" rows="7" placeholder='{"filas":[{"local":"san-luis","fecha":"2026-11-24","plataforma":"uber","pedidos":31,"ventas_eur":512.4,"neto_eur":364.2}],"resumenes":[{"fecha":"2026-11-24","local":"general","texto":"…"}]}'></textarea></label>
+    <div class="dos">
+      <label>Local<select id="dv-local"><option value="san-luis">San Luis</option><option value="remedios">Los Remedios</option><option value="sevilla-este">Sevilla Este</option><option value="tomares">Tomares</option></select></label>
+      <label>Plataforma<select id="dv-plat"><option value="uber">Uber Eats</option><option value="glovo">Glovo</option></select></label>
+      <label>Día<input id="dv-fecha" type="date"></label>
+      <label>Pedidos<input id="dv-pedidos" inputmode="numeric"></label>
+      <label>Ventas (€)<input id="dv-ventas" inputmode="decimal"></label>
+      <label>Neto cobrado (€)<input id="dv-neto" inputmode="decimal"></label>
+      <label>Valoración<input id="dv-val" inputmode="decimal" placeholder="4,6 (Uber) o 96 (Glovo %)"></label>
+    </div>
+    <label>Comentario del día<textarea id="dv-texto" rows="2"></textarea></label>
+    <p class="aviso" id="dv-error" role="alert" hidden></p>
+    <div class="dlg-pie"><span class="hueco"></span><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="dv-ok">Guardar</button></div>
+  </form>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241430"></script>
-<script src="/pedir/plano.js?v=202611241430"></script>
-<script src="/pedir/ticket.js?v=202611241430"></script>
-<script src="sec-plano.js?v=202611241430"></script>
-<script src="sec-resumen.js?v=202611241430"></script>
-<script src="sec-carta.js?v=202611241430"></script>
-<script src="sec-local.js?v=202611241430"></script>
-<script src="sec-pedidos.js?v=202611241430"></script>
-<script src="sec-reservas.js?v=202611241430"></script>
-<script src="sec-clientes.js?v=202611241430"></script>
-<script src="sec-control.js?v=202611241430"></script>
-<script src="sec-promos.js?v=202611241430"></script>
-<script src="admin.js?v=202611241430"></script>
+<script src="/pedir/api.js?v=202611241442"></script>
+<script src="/pedir/plano.js?v=202611241442"></script>
+<script src="/pedir/ticket.js?v=202611241442"></script>
+<script src="sec-plano.js?v=202611241442"></script>
+<script src="sec-resumen.js?v=202611241442"></script>
+<script src="sec-carta.js?v=202611241442"></script>
+<script src="sec-local.js?v=202611241442"></script>
+<script src="sec-pedidos.js?v=202611241442"></script>
+<script src="sec-reservas.js?v=202611241442"></script>
+<script src="sec-clientes.js?v=202611241442"></script>
+<script src="sec-control.js?v=202611241442"></script>
+<script src="sec-panel.js?v=202611241442"></script>
+<script src="sec-delivery.js?v=202611241442"></script>
+<script src="sec-promos.js?v=202611241442"></script>
+<script src="admin.js?v=202611241442"></script>
 </body>
 </html>
+
+

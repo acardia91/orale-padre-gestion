@@ -49,10 +49,10 @@
     ir();
   }
 
-  const SECCIONES = ['resumen', 'pedidos', 'control', 'carta', 'clientes', 'promos', 'plano', 'reservas', 'local', 'usuarios'];
+  const SECCIONES = ['panel', 'resumen', 'pedidos', 'delivery', 'control', 'carta', 'clientes', 'promos', 'plano', 'reservas', 'local', 'usuarios'];
   const TITULOS = { reservas: 'Reservas', carta: 'Carta y productos', plano: 'Plano del local', promos: 'Promociones', local: 'Local y horario', usuarios: 'Usuarios' };
   async function ir() {
-    const sec = SECCIONES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'resumen';
+    const sec = SECCIONES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'panel';
     const mod = window.ADMIN[sec];
     const elegir = LOCAL === '*' && !(mod && mod.todos);
     document.querySelectorAll('.sec').forEach(el => { el.hidden = el.dataset.sec !== (elegir ? 'elige' : sec); });

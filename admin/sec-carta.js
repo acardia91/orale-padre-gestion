@@ -10,7 +10,12 @@
   const ALERGENOS = ['Gluten', 'Crustáceos', 'Huevos', 'Pescado', 'Cacahuetes', 'Soja', 'Leche', 'Frutos de cáscara', 'Apio', 'Mostaza', 'Sésamo', 'Sulfitos', 'Altramuces', 'Moluscos'];
   const DIAS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 
-  let LOCAL, carta, original = '';
+  let LOCAL, carta, original = '', costes = {};
+  // Coste de cada producto según escandallo: privado (tabla aparte), la carta es pública.
+  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/^(burro|burrito)\s+/, '').replace(/\s+x\s*\d+$/, '').replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  const ALIAS = { 'don hampi': 'don hampi butter', 'nude lady cochinita': 'nude cochinita', 'nude black chancho': 'nude chancho',
+                  'tacos don pastor': 'tacos pollo pastor', 'tacos baby cochinita': 'tacos cochinita' };
   const sucio = () => carta && JSON.stringify(carta) !== original;
   function marca() {
     const s = sucio(); $('#c-sucio').hidden = !s; $('#c-publicar').disabled = !s; $('#c-descartar').disabled = !s;
@@ -20,7 +25,7 @@
   const catDe = id => carta.categorias.find(c => c.productos.includes(id));
 
   async function cargar() {
-    carta = await api.carta(LOCAL);
+    [carta, costes] = await Promise.all([api.carta(LOCAL), api.costes(LOCAL).catch(() => ({}))]);
     carta.grupos = carta.grupos || []; carta.categorias = carta.categorias || []; carta.productos = carta.productos || [];
     original = JSON.stringify(carta);
     $('#c-error').hidden = true; pintaTodo(); marca();
@@ -46,7 +51,7 @@
     const lista = carta.productos.slice().sort((a, b) => (orden.indexOf(a.id) + 1 || 1e6) - (orden.indexOf(b.id) + 1 || 1e6))
       .filter(p => !q || p.nombre.toLowerCase().includes(q))
       .filter(p => !fc || (fc === '__sin' ? !catDe(p.id) : (catDe(p.id) || {}).clave === fc));
-    $('#c-lista').innerHTML = `<thead><tr><th></th><th>Producto</th><th>Categoría</th><th class="num">Precio</th><th>Extras</th><th>Etiquetas</th><th>Activo</th></tr></thead><tbody>` +
+    $('#c-lista').innerHTML = `<thead><tr><th></th><th>Producto</th><th>Categoría</th><th class="num">Precio</th><th class="num">Coste</th><th>Extras</th><th>Etiquetas</th><th>Activo</th></tr></thead><tbody>` +
       (lista.map(p => {
         const c = catDe(p.id);
         const est = [p.agotado ? '<span class="tag rojo">Agotado</span>' : '', p.alcohol ? '<span class="tag">Alcohol</span>' : '', p.grupos.some(g => (grupo(g) || {}).min) ? '<span class="tag verde">Combo</span>' : ''].join('');
@@ -55,10 +60,11 @@
           <td><b>${esc(p.nombre)}</b>${p.desc ? `<small>${esc(p.desc.slice(0, 80))}${p.desc.length > 80 ? '…' : ''}</small>` : ''}</td>
           <td>${c ? esc(c.nombre) : '<span class="tag rojo">Sin categoría</span>'}</td>
           <td class="num"><b>${euros(p.precio)}</b></td>
+          <td class="num">${costes[p.id] ? `${euros(costes[p.id].coste)}<small class="${costes[p.id].coste * 110 / Math.max(1, p.precio) > 33 ? 'fc-mal' : 'fc-bien'}">${Math.round(costes[p.id].coste * 1100 / Math.max(1, p.precio)) / 10} %</small>` : '<span class="tag gris">—</span>'}</td>
           <td>${p.grupos.length ? p.grupos.map(g => esc((grupo(g) || {}).nombre || '?')).join('<br>') : '—'}</td>
           <td>${est || '—'}</td>
           <td><label class="switch" title="${p.oculto ? 'Oculto: no sale en la web ni en el TPV' : 'Visible en la web y en el TPV'}"><input type="checkbox" data-activo="${esc(p.id)}" ${p.oculto ? '' : 'checked'} aria-label="Activo"><span></span></label></td></tr>`;
-      }).join('') || '<tr><td colspan="7" class="nota">Ningún producto coincide.</td></tr>') + '</tbody>';
+      }).join('') || '<tr><td colspan="8" class="nota">Ningún producto coincide.</td></tr>') + '</tbody>';
   }
   $('#c-buscar').oninput = pintaProductos; $('#c-filtro-cat').onchange = pintaProductos;
   $('#c-lista').addEventListener('click', e => { if (e.target.closest('.switch')) return; const tr = e.target.closest('[data-p]'); if (tr) abreProducto(tr.dataset.p); });
@@ -75,6 +81,8 @@
     editando = id; fotoTmp = p.foto;
     $('#fp-titulo').textContent = id ? 'Editar producto' : 'Nuevo producto';
     $('#fp-nombre').value = p.nombre; $('#fp-precio').value = id ? aEur(p.precio) : ''; $('#fp-desc').value = p.desc || '';
+    $('#fp-coste').value = id && costes[id] ? aEur(costes[id].coste) : '';
+    $('#fp-coste-fuente').textContent = id && costes[id] ? (costes[id].fuente || '') : 'Si lo dejas vacío, no cuenta en el gasto en producto.';
     $('#fp-cat').innerHTML = carta.categorias.map(c => `<option value="${c.clave}">${esc(c.nombre)}</option>`).join('');
     const c = id ? catDe(id) : carta.categorias.find(x => x.clave === $('#c-filtro-cat').value) || carta.categorias[0];
     if (c) $('#fp-cat').value = c.clave;
@@ -124,7 +132,28 @@
       if (actual) actual.productos = actual.productos.filter(x => x !== id);
       carta.categorias.find(c => c.clave === destino).productos.push(id);
     }
+    // El coste se guarda aparte y al momento (no es parte de la carta pública).
+    const cTxt = $('#fp-coste').value.trim(); const coste = cTxt ? aCent(cTxt) : null;
+    const antes = costes[id] ? costes[id].coste : null;
+    if (cTxt && (coste == null || coste < 0)) return err('El coste no es válido. Escríbelo así: 2,45');
+    if (coste !== antes) {
+      api.guardarCostes(LOCAL, [{ producto: id, coste, fuente: 'manual' }])
+        .then(() => { if (coste == null) delete costes[id]; else costes[id] = { producto: id, coste, fuente: 'manual' }; pintaProductos(); })
+        .catch(ex => alert('No se ha podido guardar el coste: ' + mensajeError(ex)));
+    }
     dp.close(); pintaTodo(); marca();
+  };
+  $('#c-escandallo').onclick = async () => {
+    let lista; try { lista = await api.costesEscandallo(); } catch (ex) { alert(mensajeError(ex)); return; }
+    const porNombre = new Map(lista.filter(x => x.coste > 0).map(x => [norm(x.nombre), x]));
+    const nuevos = []; const sin = [];
+    carta.productos.forEach(p => { const n = norm(p.nombre); const e = porNombre.get(ALIAS[n] || n);
+      if (e) { if (!costes[p.id] || costes[p.id].coste !== e.coste) nuevos.push({ producto: p.id, coste: e.coste, fuente: 'escandallo: ' + e.nombre }); }
+      else if (!costes[p.id]) sin.push(p.nombre); });
+    if (!nuevos.length) { alert(`No hay costes nuevos que traer.${sin.length ? `\n\nSin escandallo (ponlos a mano en su ficha): ${sin.slice(0, 25).join(', ')}${sin.length > 25 ? '…' : ''}` : ''}`); return; }
+    if (!confirm(`Se van a poner o actualizar ${nuevos.length} costes desde el escandallo.${sin.length ? `\n\n${sin.length} productos no tienen escandallo (bebidas, postres…): ponles el coste a mano en su ficha.` : ''}\n\n¿Seguir?`)) return;
+    try { await api.guardarCostes(LOCAL, nuevos); nuevos.forEach(n => { costes[n.producto] = n; }); pintaProductos(); }
+    catch (ex) { alert(mensajeError(ex)); }
   };
   $('#fp-borrar').onclick = () => {
     const p = prod(editando); if (!confirm(`¿Eliminar "${p.nombre}" de la carta?`)) return;
