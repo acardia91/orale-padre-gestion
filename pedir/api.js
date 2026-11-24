@@ -145,7 +145,7 @@
               promos: 'op-demo-promos' };
   const LOCAL_DEMO = {
     id: 'tomares', nombre: 'Órale Padre Tomares', telefono: null, direccion: 'Tomares (Sevilla)',
-    acepta_pedidos: true, minutos_prep: 20, serie: 'TOM',
+    acepta_pedidos: true, minutos_prep: 20, serie: 'TOM', pago_local: true, pago_online: true, acepta_reservas: true,
     razon_social: 'La Baba Hasta El Suelo S.L.', cif: 'B56488323', direccion_fiscal: 'Calle Japón 10, 41020 Sevilla',
     // En demo abrimos todo el día para poder probar a cualquier hora.
     horario: Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(d => [String(d), [['00:00', '23:59']]])),
@@ -202,7 +202,7 @@
     async cuentasEntre(local, desde, hasta) { return lee(K.cuentas, []).filter(c => c.local === local && c.abierta >= desde && c.abierta < hasta); },
     async local(id) { return { ...LOCAL_DEMO, id, nombre: id === 'san-luis' ? 'Órale Padre San Luis' : LOCAL_DEMO.nombre, serie: id === 'san-luis' ? 'SLU' : 'TOM', ...(lee(K.locales, {})[id] || {}) }; },
     async agotados(local) { return new Set(lee(K.agotados, {})[local] || []); },
-    async crearPedido({ local, nombre, tel, recogida, pago, notas, lineas }) {
+    async crearPedido({ local, nombre, tel, recogida, pago, notas, lineas, email }) {
       const loc = await this.local(local);
       if (!loc.acepta_pedidos) throw new Error('CERRADO: ahora mismo no estamos aceptando pedidos online');
       const carta = await this.carta(local);
@@ -210,13 +210,33 @@
       const todos = lee(K.pedidos, []);
       const dia = partesMadrid(new Date()).fecha;
       const numero = todos.filter(p => p.local === local && p.dia === dia).reduce((m, p) => Math.max(m, p.numero), 0) + 1;
-      const ped = { id: uuid(), token: uuid(), local, numero, dia, canal: 'web', estado: 'nuevo',
+      const ped = { id: uuid(), token: uuid(), local, numero, dia, canal: 'web', estado: pago === 'stripe' ? 'pendiente_pago' : 'nuevo',
         cliente_nombre: nombre, cliente_tel: tel, recogida: new Date(recogida).toISOString(), pago_metodo: pago,
         pagado: false, total: snap.reduce((s, l) => s + l.unitario * l.cantidad, 0), lineas: snap,
         notas: notas || null, creado: new Date().toISOString() };
       todos.push(ped); guarda(K.pedidos, todos); avisa();
       return { token: ped.token, numero, total: ped.total };
     },
+    // En demo el "pago online" se da por hecho al momento.
+    async iniciarPago(token) {
+      const ps = lee(K.pedidos, []); const p = ps.find(x => x.token === token);
+      if (p) { p.pagado = true; p.pago_metodo = 'stripe'; p.estado = 'nuevo'; guarda(K.pedidos, ps); avisa(); }
+      return location.pathname + '?pedido=' + token + '&pago=ok&demo';
+    },
+    async localesConPedidos() { return [{ id: 'tomares', nombre: 'Órale Padre Tomares', acepta_pedidos: true, pago_online: true, pago_local: true, acepta_reservas: true }]; },
+    async crearReserva(r) { const rs = lee('op-demo-reservas', []); const x = { ...r, id: uuid(), token: uuid(), telefono: r.tel, estado: 'confirmada', origen: r.origen || 'web', creado: new Date().toISOString(), fecha: new Date(r.fecha).toISOString(), personas: +r.personas }; rs.push(x); guarda('op-demo-reservas', rs); avisa(); return { token: x.token, id: x.id }; },
+    async verReserva(token) { const r = lee('op-demo-reservas', []).find(x => x.token === token); return r ? { ...r, local: 'Órale Padre Tomares' } : null; },
+    async cancelarReserva(token) { const rs = lee('op-demo-reservas', []); const r = rs.find(x => x.token === token); if (r) r.estado = 'cancelada'; guarda('op-demo-reservas', rs); avisa(); },
+    async reservasEntre(local, desde, hasta) { return lee('op-demo-reservas', []).filter(r => r.local === local && r.fecha >= desde && r.fecha < hasta); },
+    async actualizarReserva(id, cambios) { const rs = lee('op-demo-reservas', []); Object.assign(rs.find(x => x.id === id) || {}, cambios); guarda('op-demo-reservas', rs); avisa(); },
+    async listarClientes() {
+      const ps = lee(K.pedidos, []).filter(p => p.canal === 'web'); const m = new Map();
+      ps.forEach(p => { const c = m.get(p.cliente_tel) || { telefono: p.cliente_tel, nombre: p.cliente_nombre, email: null, notas: null, pedidos: 0, gastado: 0, ultimo: p.creado, locales: [p.local], reservas: 0, no_shows: 0 }; c.pedidos++; c.gastado += p.total; m.set(p.cliente_tel, c); });
+      lee('op-demo-reservas', []).forEach(r => { const c = m.get(r.telefono) || { telefono: r.telefono, nombre: r.nombre, email: r.email, notas: null, pedidos: 0, gastado: 0, ultimo: r.fecha, locales: [r.local], reservas: 0, no_shows: 0 }; c.reservas++; m.set(r.telefono, c); });
+      return [...m.values()];
+    },
+    async historialCliente(tel) { return { pedidos: lee(K.pedidos, []).filter(p => p.cliente_tel === tel), reservas: lee('op-demo-reservas', []).filter(r => r.telefono === tel) }; },
+    async actualizarCliente() {},
     async estadoPedido(token) {
       const p = lee(K.pedidos, []).find(x => x.token === token); if (!p) return null;
       return { ...p, nombre: p.cliente_nombre, local: LOCAL_DEMO.nombre, telefono: LOCAL_DEMO.telefono, direccion: LOCAL_DEMO.direccion };
@@ -364,10 +384,33 @@
     async carta(local) { return ok(await cliente().from('cartas').select('datos').eq('local', local).single()).datos; },
     async local(id) { return ok(await cliente().from('locales').select('*').eq('id', id).single()); },
     async agotados(local) { return new Set(ok(await cliente().from('agotados').select('producto_id').eq('local', local)).map(r => r.producto_id)); },
-    async crearPedido({ local, nombre, tel, recogida, pago, notas, lineas }) {
+    async crearPedido({ local, nombre, tel, recogida, pago, notas, lineas, email }) {
       return ok(await cliente().rpc('crear_pedido', { p_local: local, p_nombre: nombre, p_tel: tel,
-        p_recogida: new Date(recogida).toISOString(), p_pago: pago, p_notas: notas || '', p_lineas: lineas }));
+        p_recogida: new Date(recogida).toISOString(), p_pago: pago, p_notas: notas || '', p_lineas: lineas, p_email: email || null }));
     },
+    // Pago online: la función del servidor crea el pago en Stripe y devuelve la página de pago.
+    async iniciarPago(token, volver) {
+      const r = await fetch(`${CONFIG.supabaseUrl}/functions/v1/stripe-checkout`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', apikey: CONFIG.supabaseKey },
+        body: JSON.stringify({ token, volver }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.url) throw new Error('PAGO: ' + (d.error || 'no se ha podido iniciar el pago'));
+      return d.url;
+    },
+    async localesConPedidos() { return ok(await cliente().from('locales').select('id,nombre,acepta_pedidos,pago_online,pago_local,acepta_reservas').order('nombre')); },
+    // ── reservas (público) ──
+    async crearReserva(r) {
+      return ok(await cliente().rpc('crear_reserva', { p_local: r.local, p_fecha: new Date(r.fecha).toISOString(), p_personas: +r.personas,
+        p_nombre: r.nombre, p_tel: r.tel, p_email: r.email || null, p_notas: r.notas || '', p_origen: r.origen || 'web' }));
+    },
+    async verReserva(token) { return ok(await cliente().rpc('ver_reserva', { p_token: token })); },
+    async cancelarReserva(token) { ok(await cliente().rpc('cancelar_reserva', { p_token: token })); },
+    // ── reservas y clientes (personal) ──
+    async reservasEntre(local, desde, hasta) { return ok(await cliente().from('reservas').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('fecha')); },
+    async actualizarReserva(id, cambios) { ok(await cliente().from('reservas').update(cambios).eq('id', id)); },
+    async listarClientes(buscar) { return ok(await cliente().rpc('listar_clientes', { p_buscar: buscar || null })); },
+    async historialCliente(tel) { return ok(await cliente().rpc('historial_cliente', { p_tel: tel })); },
+    async actualizarCliente(tel, cambios) { ok(await cliente().from('clientes').update({ ...cambios, actualizado: new Date().toISOString() }).eq('telefono', tel)); },
     async estadoPedido(token) { return ok(await cliente().rpc('estado_pedido', { p_token: token })); },
     seguirPedido(token, cb) {
       // El cliente no puede leer la tabla (RLS), así que pregunta cada 15 s.
