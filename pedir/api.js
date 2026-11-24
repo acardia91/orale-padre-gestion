@@ -497,7 +497,16 @@
     },
     async guardarLocal(id, datos) { ok(await cliente().rpc('guardar_local', { p_local: id, p_datos: datos })); },
     async staffDelLocal(local) { return ok(await cliente().rpc('listar_staff', { p_local: local })); },
-    async anadirStaff(local, email, rol) { ok(await cliente().rpc('anadir_staff', { p_local: local, p_email: email, p_rol: rol })); },
+    // Alta completa: crea el usuario de acceso (si no existe) y le da el rol en el local.
+    async anadirStaff(local, email, rol, password) {
+      const { data } = await cliente().auth.getSession(); if (!data.session) throw new Error('PERMISO: entra de nuevo en el admin');
+      const r = await fetch(`${CONFIG.supabaseUrl}/functions/v1/alta-usuario`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: CONFIG.supabaseKey, Authorization: 'Bearer ' + data.session.access_token },
+        body: JSON.stringify({ local, email, rol, password: password || '' }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error('USUARIO: ' + (j.error || 'no se ha podido dar de alta'));
+      return j;
+    },
     async cambiarRol(local, email, rol) { ok(await cliente().rpc('cambiar_rol', { p_local: local, p_email: email, p_rol: rol })); },
     async quitarStaff(local, email) { ok(await cliente().rpc('quitar_staff', { p_local: local, p_email: email })); },
     async ticketsEntre(local, desde, hasta) { return ok(await cliente().from('tickets').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('numero')); },
