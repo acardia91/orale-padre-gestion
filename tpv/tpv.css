@@ -252,3 +252,20 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .dlg-x{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;border-radius:50%;background:var(--borde);color:var(--tinta);font-size:20px;line-height:1;cursor:pointer;z-index:2}
 .dlg-x:hover{filter:brightness(.92)}
 .dlg h2{padding-right:48px}
+
+/* ── Bloqueo con PIN ── */
+.bloqueo{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;background:var(--fondo,#F5EEE6)}
+.bl-caja{width:min(360px,100%);text-align:center;background:var(--blanco);padding:28px 24px;border-radius:18px;border:1px solid var(--borde);box-shadow:var(--sombra-2)}
+.bl-caja h1{font-size:26px;margin:12px 0 2px}
+.bl-caja > p{margin:0;color:var(--humo,#7A6A6D);font-weight:600}
+.bl-puntos{display:flex;justify-content:center;gap:12px;height:22px;margin:18px 0 8px}
+.bl-puntos i{width:16px;height:16px;border-radius:50%;background:var(--tinta,#241A1C)}
+.bl-puntos span{color:var(--humo,#7A6A6D);font-size:14px}
+.bl-teclado{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.bl-teclado button{height:64px;border-radius:14px;border:1px solid var(--borde);background:var(--fondo,#F5EEE6);font-size:26px;font-weight:700;color:var(--tinta);cursor:pointer}
+.bl-teclado button:active{transform:scale(.96)}
+.bl-teclado .ok{background:var(--burdeos,#7C2430);color:#fff;border-color:var(--burdeos,#7C2430);font-size:18px}
+.bl-salir{margin-top:16px;border:0;background:none;color:var(--humo,#7A6A6D);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px}
+button.t-quien{cursor:pointer;background:none;font-family:inherit}
+button.t-quien:hover{border-color:var(--burdeos,#7C2430)}
+.bl-caja img{height:auto;width:110px}

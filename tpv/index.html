@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611241612">
+<link rel="stylesheet" href="tpv.css?v=202611241624">
 </head>
 <body>
 
@@ -26,11 +26,29 @@
   </form>
 </section>
 
+<!-- ── Bloqueo: cada persona entra con su PIN ── -->
+<div class="bloqueo" id="bloqueo" hidden>
+  <div class="bl-caja">
+    <img src="/img/logo-tinta.png" alt="Órale Padre" width="110" height="37">
+    <h1>¿Quién eres?</h1>
+    <p id="bl-local"></p>
+    <div class="bl-puntos" id="bl-puntos" aria-live="polite"></div>
+    <p class="err" id="bl-error" role="alert" hidden></p>
+    <div class="bl-teclado" id="bl-teclado">
+      <button type="button" data-d="1">1</button><button type="button" data-d="2">2</button><button type="button" data-d="3">3</button>
+      <button type="button" data-d="4">4</button><button type="button" data-d="5">5</button><button type="button" data-d="6">6</button>
+      <button type="button" data-d="7">7</button><button type="button" data-d="8">8</button><button type="button" data-d="9">9</button>
+      <button type="button" data-d="borrar" aria-label="Borrar">⌫</button><button type="button" data-d="0">0</button><button type="button" data-d="ok" class="ok">Entrar</button>
+    </div>
+    <button type="button" class="bl-salir" id="bl-salir">Cerrar la sesión de este TPV</button>
+  </div>
+</div>
+
 <div id="vista-app" hidden>
   <header class="barra">
     <button class="b-atras" id="b-atras" type="button" hidden aria-label="Volver a la sala">‹ Sala</button>
     <div class="b-local"><span class="org-ico">ÓP</span><div><strong id="t-local">Tomares</strong><span id="t-reloj"></span></div></div>
-    <span class="t-quien" id="t-quien" title=""></span>
+    <button type="button" class="t-quien" id="t-quien" title=""></button>
     <span class="demo" id="t-demo" hidden>DEMO</span>
     <div class="b-ctrl">
       <button class="b" id="b-barra" type="button">+ Barra</button>
@@ -225,10 +243,10 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241612"></script>
+<script src="/pedir/api.js?v=202611241624"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611241612"></script>
-<script src="/pedir/plano.js?v=202611241612"></script>
-<script src="tpv.js?v=202611241612"></script>
+<script src="/pedir/ticket.js?v=202611241624"></script>
+<script src="/pedir/plano.js?v=202611241624"></script>
+<script src="tpv.js?v=202611241624"></script>
 </body>
 </html>

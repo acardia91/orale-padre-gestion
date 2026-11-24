@@ -13,7 +13,8 @@
   const pendientes = ls('op-tpv-pendientes') || {};
   const guardaPend = () => ls('op-tpv-pendientes', pendientes);
   let SESION = null; const enviando = {};
-  const esEncargado = () => !!(SESION && SESION.roles && SESION.roles[LOCAL] === 'encargado');
+  // Con equipo con PIN manda la persona que ha entrado; sin él, el rol de la cuenta del TPV.
+  const esEncargado = () => conEquipo ? !!(persona && persona.rol === 'encargado') : !!(SESION && SESION.roles && SESION.roles[LOCAL] === 'encargado');
 
   /* Aviso flotante: verde si ha ido bien, rojo si no. */
   let tAviso = null;
@@ -50,6 +51,7 @@
     // Quién está usando el TPV (todo lo que haga queda a su nombre).
     $('#t-quien').textContent = (s.email || '').split('@')[0].replace(/^orale\.padre\.food\+/, '') + (s.roles[LOCAL] === 'encargado' ? ' · encargado' : s.roles[LOCAL] === 'cocina' ? ' · cocina' : ' · sala');
     $('#t-quien').title = s.email || '';
+    await compruebaTurno();
     [carta, mesas] = await Promise.all([api.carta(LOCAL), api.mesas(LOCAL)]);
     idx = indexar(carta);
     zona = mesas[0] ? mesas[0].zona : null;
@@ -59,6 +61,66 @@
     setInterval(recarga, 30000);
     setInterval(reloj, 15000); reloj();
   }
+  /* ══ Equipo con PIN: cada persona entra con el suyo y todo queda a su nombre ══ */
+  let persona = null, pin = '', conEquipo = false, tInactivo = null;
+  const MIN_INACTIVO = 5;
+  async function compruebaTurno() {
+    let t = null; try { t = await api.turnoActual(LOCAL); } catch (e) { return; }   // si falla, el TPV sigue como antes
+    if (t && t.sin_equipo) { conEquipo = false; return; }
+    conEquipo = true;
+    if (t) ponPersona(t); else bloquear(false);
+  }
+  function ponPersona(p) {
+    persona = p; $('#bloqueo').hidden = true;
+    $('#t-quien').textContent = p.nombre + (p.rol === 'encargado' ? ' · encargado' : '');
+    $('#t-quien').title = 'Toca para cambiar de persona';
+    vigilaInactividad();
+  }
+  async function bloquear(avisarServidor = true) {
+    if (avisarServidor) { try { await api.salirTurno(LOCAL); } catch (e) {} }
+    persona = null; pin = ''; pintaPin(); $('#bl-error').hidden = true;
+    $('#bl-local').textContent = 'Órale Padre · ' + ((local && local.nombre) ? local.nombre.replace(/^Órale Padre\s*/, '') : $('#t-local').textContent);
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    $('#bloqueo').hidden = false;
+  }
+  function pintaPin() { $('#bl-puntos').innerHTML = pin ? '<i></i>'.repeat(pin.length) : '<span>Teclea tu PIN</span>'; }
+  async function probarPin() {
+    if (pin.length < 4) { $('#bl-error').textContent = 'El PIN tiene al menos 4 cifras.'; $('#bl-error').hidden = false; return; }
+    const intento = pin; pin = ''; pintaPin();
+    try {
+      const p = await api.entrarPin(LOCAL, intento);
+      if (!p) { $('#bl-error').textContent = 'PIN incorrecto.'; $('#bl-error').hidden = false; return; }
+      ponPersona(p); aviso('Hola, ' + p.nombre);
+    } catch (ex) { $('#bl-error').textContent = mensajeError(ex); $('#bl-error').hidden = false; }
+  }
+  $('#bl-teclado').addEventListener('click', e => {
+    const b = e.target.closest('[data-d]'); if (!b) return; const d = b.dataset.d; $('#bl-error').hidden = true;
+    if (d === 'borrar') pin = pin.slice(0, -1); else if (d === 'ok') return probarPin(); else if (pin.length < 8) pin += d;
+    pintaPin();
+  });
+  document.addEventListener('keydown', e => {
+    if ($('#bloqueo').hidden) return;
+    if (/^[0-9]$/.test(e.key) && pin.length < 8) { pin += e.key; pintaPin(); }
+    else if (e.key === 'Backspace') { pin = pin.slice(0, -1); pintaPin(); }
+    else if (e.key === 'Enter') probarPin();
+  });
+  $('#bl-salir').onclick = async () => { if (confirm('¿Cerrar la sesión de este TPV? Para volver a abrirlo hará falta el email y la contraseña del local.')) { await api.salir(); location.reload(); } };
+  $('#t-quien').onclick = () => {
+    if (!conEquipo) return;
+    if (Object.values(pendientes).some(l => l.length) && !confirm('Hay productos sin enviar a cocina. ¿Cambiar de persona igualmente?')) return;
+    bloquear();
+  };
+  // Tras unos minutos sin tocar nada, se bloquea (salvo que haya algo a medio enviar).
+  function vigilaInactividad() {
+    const reinicia = () => { clearTimeout(tInactivo); tInactivo = setTimeout(() => {
+      if (!conEquipo || !persona || !$('#bloqueo').hidden) return;
+      if (Object.values(pendientes).some(l => l.length) || document.querySelector('dialog[open]')) return reinicia();
+      bloquear();
+    }, MIN_INACTIVO * 60000); };
+    if (!vigilaInactividad.puesto) { ['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, reinicia, { passive: true })); vigilaInactividad.puesto = true; }
+    reinicia();
+  }
+
   function reloj() { $('#t-reloj').textContent = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', hour: '2-digit', minute: '2-digit' }); }
 
   async function recarga() {
@@ -224,16 +286,19 @@
     verSala();
   };
 
+  // Carta por canal: en una cuenta "para llevar" no sale lo que es sólo de sala, y en mesa no sale lo que es sólo para recoger.
+  const fuera = () => cuenta && cuenta.para_llevar ? 'local' : 'recoger';
+  const vale = p => p && !p.oculto && p.solo !== fuera();
   function visibles() {
     const hoy = partesMadrid(new Date()).dow;
-    return carta.categorias.filter(c => !c.oculta && c.productos.some(id => idx.prod.get(id) && !idx.prod.get(id).oculto) && (!c.dias || c.dias.includes(hoy)));
+    return carta.categorias.filter(c => !c.oculta && c.solo !== fuera() && c.productos.some(id => vale(idx.prod.get(id))) && (!c.dias || c.dias.includes(hoy)));
   }
   function pintaProductos() {
     const cats = visibles();
     if (!cats.some(c => c.clave === catActiva)) catActiva = cats[0]?.clave;
     $('#cats').innerHTML = cats.map(c => `<button type="button" data-cat="${c.clave}" class="${c.clave === catActiva ? 'activa' : ''}">${esc(c.nombre)}</button>`).join('');
     const cat = cats.find(c => c.clave === catActiva);
-    $('#prods').innerHTML = (cat ? cat.productos : []).map(id => idx.prod.get(id)).filter(p => p && !p.oculto).map(p => {
+    $('#prods').innerHTML = (cat ? cat.productos : []).map(id => idx.prod.get(id)).filter(vale).map(p => {
        const ag = p.agotado || agotados.has(p.id);
       return `<button class="prod ${p.grupos.length ? 'extras' : ''} ${p.foto ? 'con-foto' : ''}" type="button" data-prod="${p.id}" ${ag ? 'disabled' : ''}>
         ${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : `<i class="ini">${esc(p.nombre.replace(/^(Burro|Nude|Taco|Quesadilla|Combo)\s+/i, '').slice(0, 2))}</i>`}
@@ -546,7 +611,7 @@
     $('#cz-abiertas').hidden = !resumen.cuentas_abiertas;
     $('#cz-abiertas').textContent = `Ojo: hay ${resumen.cuentas_abiertas} ${resumen.cuentas_abiertas === 1 ? 'cuenta abierta' : 'cuentas abiertas'} sin cobrar.`;
     $('#cz-contado').value = ''; $('#cz-retirado').value = ''; $('#cz-retirado').dataset.tocado = ''; $('#cz-notas').value = ''; $('#cz-error').hidden = true;
-    $('#cz-pin').hidden = !esEncargado();
+    $('#cz-pin').hidden = !esEncargado() || conEquipo;   // con equipo, los PIN se ponen en el admin
     pintaCierre();
     const suma = f => tickets.filter(f).reduce((s, t) => s + t.total, 0);
     const iva = {}; tickets.forEach(t => t.desglose_iva.forEach(d => { iva[d.tipo] = iva[d.tipo] || { base: 0, cuota: 0 }; iva[d.tipo].base += d.base; iva[d.tipo].cuota += d.cuota; }));
