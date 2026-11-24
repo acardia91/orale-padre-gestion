@@ -265,3 +265,7 @@ textarea{resize:vertical}
 .barra-h{height:8px;background:var(--fondo);border-radius:99px;overflow:hidden}
 .barra-h span{display:block;height:100%;background:var(--burdeos);border-radius:99px}
 .cab-acc input[type=date]{width:auto;padding:6px 8px;font-size:13px}
+.lateral nav a em.cuenta-nuevos{background:var(--oro);color:#fff}
+.det-lineas{list-style:none;margin:0;padding:0}
+.det-lineas li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--borde)}
+.det-lineas small{display:block;color:var(--humo)}

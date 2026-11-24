@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241206">
+<link rel="stylesheet" href="admin.css?v=202611241215">
 </head>
 <body>
 
@@ -31,6 +31,7 @@
     <nav id="a-nav" aria-label="Secciones">
       <p class="lat-grupo">Negocio</p>
       <a href="#resumen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Ventas y facturas</span></a>
+      <a href="#pedidos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/></svg><span>Pedidos</span><em class="cuenta-nuevos" id="a-nuevos" hidden></em></a>
       <a href="#carta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg><span>Carta y productos</span></a>
       <a href="#clientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8"/></svg><span>Clientes</span></a>
       <a href="#promos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7 7h.01"/></svg><span>Promociones</span></a>
@@ -93,6 +94,25 @@
   <section class="sec" data-sec="elige" hidden>
     <header class="cab"><div><h1 id="el-titulo">Elige un local</h1><p>Esta sección es de un local concreto. Elige cuál:</p></div></header>
     <div class="locales-grid" id="el-locales"></div>
+  </section>
+
+  <!-- ══ PEDIDOS ══ -->
+  <section class="sec" data-sec="pedidos" hidden>
+    <header class="cab">
+      <div><h1>Pedidos</h1><p>Todos los pedidos: los de la web para recoger y las comandas de sala. Se actualiza solo.</p></div>
+      <div class="cab-acc periodo" role="group" aria-label="Periodo">
+        <button class="b b-mini" type="button" data-prango="hoy">Hoy</button>
+        <button class="b b-mini" type="button" data-prango="ayer">Ayer</button>
+        <button class="b b-mini" type="button" data-prango="7">7 días</button>
+        <button class="b b-mini" type="button" data-prango="mes">Este mes</button>
+      </div>
+    </header>
+    <div class="filtros" style="margin-top:16px">
+      <select id="pd-canal" aria-label="Canal"><option value="">Web y sala</option><option value="web">Sólo web (para recoger)</option><option value="sala">Sólo sala</option></select>
+      <select id="pd-estado" aria-label="Estado"><option value="">Todos los estados</option><option value="activos">En marcha</option><option value="pendiente_pago">Esperando pago online</option><option value="entregado">Entregados</option><option value="cancelado">Cancelados</option></select>
+    </div>
+    <div class="kpis" id="pd-kpis"></div>
+    <div class="panel"><div class="tabla-wrap"><table class="tabla" id="pd-lista"></table></div></div>
   </section>
 
   <!-- ══ CARTA ══ -->
@@ -391,6 +411,15 @@
   </form>
 </dialog>
 
+<!-- Detalle de pedido -->
+<dialog class="dlg" id="dlg-pedido">
+  <form method="dialog">
+    <h2 id="dpd-titulo">Pedido</h2>
+    <div id="dpd-cuerpo"></div>
+    <div class="dlg-pie"><span class="hueco"></span><button class="b" value="cancel">Cerrar</button></div>
+  </form>
+</dialog>
+
 <!-- Reserva -->
 <dialog class="dlg" id="dlg-reserva">
   <form method="dialog" id="f-reserva">
@@ -457,16 +486,17 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241206"></script>
-<script src="/pedir/plano.js?v=202611241206"></script>
-<script src="/pedir/ticket.js?v=202611241206"></script>
-<script src="sec-plano.js?v=202611241206"></script>
-<script src="sec-resumen.js?v=202611241206"></script>
-<script src="sec-carta.js?v=202611241206"></script>
-<script src="sec-local.js?v=202611241206"></script>
-<script src="sec-reservas.js?v=202611241206"></script>
-<script src="sec-clientes.js?v=202611241206"></script>
-<script src="sec-promos.js?v=202611241206"></script>
-<script src="admin.js?v=202611241206"></script>
+<script src="/pedir/api.js?v=202611241215"></script>
+<script src="/pedir/plano.js?v=202611241215"></script>
+<script src="/pedir/ticket.js?v=202611241215"></script>
+<script src="sec-plano.js?v=202611241215"></script>
+<script src="sec-resumen.js?v=202611241215"></script>
+<script src="sec-carta.js?v=202611241215"></script>
+<script src="sec-local.js?v=202611241215"></script>
+<script src="sec-pedidos.js?v=202611241215"></script>
+<script src="sec-reservas.js?v=202611241215"></script>
+<script src="sec-clientes.js?v=202611241215"></script>
+<script src="sec-promos.js?v=202611241215"></script>
+<script src="admin.js?v=202611241215"></script>
 </body>
 </html>
