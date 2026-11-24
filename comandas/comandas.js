@@ -28,6 +28,7 @@
     if (!s.locales.length) { $('#e-error').textContent = 'Tu usuario no tiene ningún local asignado.'; $('#e-error').hidden = false; $('#vista-entrar').hidden = false; return; }
     if (!s.locales.includes(LOCAL)) LOCAL = s.locales[0];
     pref('local', LOCAL);
+    OP.selectorLocal($('#p-local'), s.locales, LOCAL, id => { pref('local', id); location.search = '?local=' + encodeURIComponent(id); });
     $('#vista-entrar').hidden = true; $('#vista-panel').hidden = false;
     carta = await api.carta(LOCAL);
     await recarga();
@@ -52,7 +53,7 @@
 
   /* ── Barra de control ── */
   function pintaBarra() {
-    $('#p-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
+    if ($('#p-local')) $('#p-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
     $('#p-prep').textContent = local.minutos_prep;
     const on = $('#p-online'); on.textContent = 'Pedidos online: ' + (local.acepta_pedidos ? 'ON' : 'PAUSADOS');
     on.className = 'b ' + (local.acepta_pedidos ? 'on' : 'off');
