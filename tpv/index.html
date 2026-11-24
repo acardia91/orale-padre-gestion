@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611241313">
+<link rel="stylesheet" href="tpv.css?v=202611241420">
 </head>
 <body>
 
@@ -124,12 +124,18 @@
 <dialog class="dlg" id="dlg-cobrar">
   <form method="dialog" id="f-cobrar">
     <h2>Cobrar <span id="cb-nombre"></span></h2>
+    <div class="cb-modos" role="group" aria-label="Qué se cobra">
+      <button type="button" data-modo="todo" class="activo">Todo</button>
+      <button type="button" data-modo="productos">Dividir por productos</button>
+    </div>
+    <div class="cb-items" id="cb-items" hidden></div>
     <div class="cb-promo">
       <label class="campo">Promoción<select id="cb-promo"><option value="">Sin promoción</option></select></label>
       <label class="campo" id="cb-nota-l" hidden>Nota de la promoción<input id="cb-nota" maxlength="80" autocomplete="off" placeholder="Nombre del empleado o del socio"></label>
     </div>
     <div class="cb-desc" id="cb-desc" hidden><span>Subtotal <b id="cb-bruto"></b></span><span>Descuento <b id="cb-dto"></b></span></div>
     <p class="cb-total" id="cb-total"></p>
+    <p class="cb-partes"><label>Entre <input id="cb-partes" type="number" min="2" max="30" inputmode="numeric" placeholder="—"> personas</label> <b id="cb-cada"></b></p>
     <p class="cb-invita" id="cb-invita" hidden>Invitación: no hay nada que cobrar. Se emite el ticket a 0,00 €.</p>
     <div class="cb-metodo" id="cb-metodos" role="radiogroup" aria-label="Forma de pago">
       <label><input type="radio" name="metodo" value="efectivo" checked><span>💶 Efectivo</span></label>
@@ -219,9 +225,9 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241313"></script>
-<script src="/pedir/ticket.js?v=202611241313"></script>
-<script src="/pedir/plano.js?v=202611241313"></script>
-<script src="tpv.js?v=202611241313"></script>
+<script src="/pedir/api.js?v=202611241420"></script>
+<script src="/pedir/ticket.js?v=202611241420"></script>
+<script src="/pedir/plano.js?v=202611241420"></script>
+<script src="tpv.js?v=202611241420"></script>
 </body>
 </html>

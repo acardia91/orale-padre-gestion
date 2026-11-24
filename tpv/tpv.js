@@ -254,6 +254,10 @@
     guardaPend(); pintaCuenta();
   }
 
+  // Lo que queda por cobrar de cada línea enviada (si se dividió la cuenta, parte ya está pagada).
+  const porCobrar = l => l.cantidad - (l.pagadas || 0);
+  const lineasPendientes = () => pedidosCuenta.filter(p => p.estado !== 'cancelado').sort((a, b) => a.numero - b.numero)
+    .flatMap(p => p.lineas.map((l, i) => ({ ...l, cantidad: porCobrar(l), _pedido: p.id, _indice: i }))).filter(l => l.cantidad > 0);
   const nombreOps = l => l.opciones.map(oid => { for (const g of idx.grupos.values()) { const o = g.opciones.find(x => x.id === oid); if (o) return o.nombre; } return ''; });
   function pintaCuenta() {
     $('#c-nombre').textContent = cuenta.nombre;
@@ -261,9 +265,9 @@
     const ESTADO = { nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
     const enviados = pedidosCuenta.slice().sort((a, b) => a.numero - b.numero).map(p => `
       <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span><span class="estado ${p.estado}">${ESTADO[p.estado]}</span></div>
-      ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''}" ${p.estado !== 'cancelado' ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
+      ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''} ${porCobrar(l) < 1 ? 'cobrada' : ''}" ${p.estado !== 'cancelado' && porCobrar(l) > 0 ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
-        <div>${esc(l.nombre)}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}</div>
+        <div>${esc(l.nombre)}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
         <span class="imp">${euros(l.unitario * l.cantidad)}</span></div>`).join('')}
       ${(p.anuladas || []).map(l => `<div class="ln quitada"><span class="cant-fija">${l.cantidad}×</span><div>${esc(l.nombre)}<small>Quitado: ${esc(l.motivo || '')}</small></div><span class="imp">−${euros(l.unitario * l.cantidad)}</span></div>`).join('')}`).join('');
     const pend = pendientes[cuenta.id] || [];
@@ -275,7 +279,9 @@
         <span class="imp">${p ? euros(precioLinea(idx, l) * l.cantidad) : ''}</span></div>`;
     }).join('') : '';
     $('#c-lineas').innerHTML = (enviados + pendHTML) || '<p class="vacio">Toca los productos de la izquierda para añadirlos.</p>';
-    const tEnv = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
+    const tEnv = lineasPendientes().reduce((s, l) => s + l.unitario * l.cantidad, 0);
+    const tCob = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.lineas.reduce((a, l) => a + l.unitario * (l.pagadas || 0), 0), 0);
+    if (tCob) $('#c-info').textContent += ` · cobrado ${euros(tCob)}`;
     const tPend = pend.reduce((s, l) => s + (idx.prod.has(l.producto) ? precioLinea(idx, l) * l.cantidad : 0), 0);
     $('#c-total').textContent = euros(tEnv + tPend);
     if (enviando[cuenta.id]) { $('#c-enviar').textContent = 'Enviando…'; $('#c-enviar').disabled = true; }
@@ -299,9 +305,10 @@
   async function enviar() {
     const c = cuenta; const pend = pendientes[c.id] || []; if (!pend.length) return true;
     if (enviando[c.id]) return false;                 // ya va de camino: nada de comandas dobles
-    enviando[c.id] = true; pintaCuenta();
+    enviando[c.id] = true;
     const n = pend.reduce((s, l) => s + l.cantidad, 0);
     try {
+      pintaCuenta();
       const r = await api.enviarComanda(c.id, pend.map(({ producto, cantidad, opciones, nota }) => ({ producto, cantidad, opciones, nota })), $('#c-nota').value.trim());
       delete pendientes[c.id]; guardaPend(); $('#c-nota').value = '';
       aviso(`✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
@@ -351,7 +358,7 @@
   $('#menu-cuenta').addEventListener('click', async e => {
     const m = e.target.dataset.m; if (!m) return; $('#menu-cuenta').hidden = true;
     if (m === 'precuenta') {
-      const lineas = pedidosCuenta.filter(p => p.estado !== 'cancelado').flatMap(p => p.lineas);
+      const lineas = lineasPendientes();
       if ((pendientes[cuenta.id] || []).length) alert('Ojo: hay productos sin enviar a cocina; no salen en la pre-cuenta.');
       const tot = calculaTicket(lineas).total;
       OP.imprimir(OP.ticketPrecuenta(cuenta.nombre, lineas, tot));
@@ -371,15 +378,33 @@
   });
 
   /* ── Cobrar ── */
-  const dc = $('#dlg-cobrar'); let aCobrar = 0, lineasCobro = [], promos = [];
+  const dc = $('#dlg-cobrar'); let aCobrar = 0, lineasCobro = [], promos = [], todasPend = [], modo = 'todo', elegidos = {};
+  const clave = l => l._pedido + ':' + l._indice;
+  function pintaModo() {
+    dc.querySelectorAll('[data-modo]').forEach(b => b.classList.toggle('activo', b.dataset.modo === modo));
+    $('#cb-items').hidden = modo !== 'productos';
+    $('#cb-items').innerHTML = todasPend.map(l => { const k = clave(l), n = elegidos[k] || 0;
+      return `<div class="cb-item ${n ? 'sel' : ''}"><span>${esc(l.nombre)}<small>${euros(l.unitario)} · quedan ${l.cantidad}</small></span>
+        <div class="ctl"><button type="button" data-k="${k}" data-d="-1" aria-label="Uno menos">−</button><output>${n}</output><button type="button" data-k="${k}" data-d="1" aria-label="Uno más">+</button></div></div>`; }).join('');
+    lineasCobro = modo === 'todo' ? todasPend : todasPend.filter(l => elegidos[clave(l)]).map(l => ({ ...l, cantidad: elegidos[clave(l)] }));
+  }
+  dc.addEventListener('click', e => {
+    const m = e.target.closest('[data-modo]'); if (m) { modo = m.dataset.modo; pintaModo(); recalcula(); return; }
+    const b = e.target.closest('#cb-items [data-k]'); if (!b) return;
+    const l = todasPend.find(x => clave(x) === b.dataset.k);
+    elegidos[b.dataset.k] = Math.max(0, Math.min(l.cantidad, (elegidos[b.dataset.k] || 0) + +b.dataset.d));
+    pintaModo(); recalcula();
+  });
+  $('#cb-partes').addEventListener('input', () => recalcula());
   const promoSel = () => promos.find(p => p.id === $('#cb-promo').value) || null;
   $('#c-cobrar').onclick = async () => {
     if ((pendientes[cuenta.id] || []).length) {
       if (!confirm('Hay productos sin enviar a cocina. ¿Enviarlos ahora y cobrar?')) return;
       if (!(await enviar())) return;
     }
-    lineasCobro = pedidosCuenta.filter(p => p.estado !== 'cancelado').flatMap(p => p.lineas);
-    if (!calculaTicket(lineasCobro).total) return;
+    todasPend = lineasPendientes(); modo = 'todo'; elegidos = {};
+    lineasCobro = todasPend;
+    if (!todasPend.length) return;
     try { promos = (await api.promociones(LOCAL)).filter(p => p.activa); } catch (e) { promos = []; }
     $('#cb-promo').innerHTML = '<option value="">Sin promoción</option>' + promos.map(p => {
       const d = OP.descuentoPromo(p, lineasCobro);
@@ -388,10 +413,15 @@
     $('#cb-nombre').textContent = cuenta.nombre; $('#cb-nota').value = '';
     $('#cb-entregado').value = ''; $('#cb-error').hidden = true;
     dc.querySelector('[value=efectivo]').checked = true;
+    $('#cb-partes').value = ''; pintaModo();
     recalcula(); dc.showModal();
   };
   function recalcula() {
     const promo = promoSel(); const r = calculaTicket(lineasCobro, promo); aCobrar = r.total;
+    const np = parseInt($('#cb-partes').value, 10);
+    $('#cb-cada').textContent = np > 1 && aCobrar ? `${euros(Math.ceil(aCobrar / np))} cada uno (${np} personas)` : '';
+    $('#cb-ok').disabled = !lineasCobro.length;
+    $('#cb-ok').textContent = modo === 'productos' ? (lineasCobro.length ? `Cobrar ${euros(aCobrar)} de ${euros(calculaTicket(todasPend).total)}` : 'Elige qué se cobra') : 'Confirmar cobro';
     $('#cb-nota-l').hidden = !(promo && promo.requiere_nota);
     $('#cb-desc').hidden = !r.descuento; $('#cb-bruto').textContent = euros(r.bruto); $('#cb-dto').textContent = '−' + euros(r.descuento);
     $('#cb-total').textContent = euros(aCobrar); $('#cb-tarjeta-imp').textContent = euros(aCobrar);
@@ -426,11 +456,19 @@
     }
     const btn = $('#cb-ok'); btn.disabled = true;
     try {
-      const t = await api.cobrar({ cuenta: cuenta.id, metodo: met, entregado, promocion: promo ? promo.id : null, nota: $('#cb-nota').value.trim() });
+      const items = modo === 'productos' ? lineasCobro.map(l => ({ pedido: l._pedido, indice: l._indice, cantidad: l.cantidad })) : undefined;
+      const parcial = modo === 'productos' && lineasCobro.reduce((a, l) => a + l.cantidad, 0) < todasPend.reduce((a, l) => a + l.cantidad, 0);
+      const t = await api.cobrar({ cuenta: cuenta.id, metodo: met, entregado, promocion: promo ? promo.id : null, nota: $('#cb-nota').value.trim(), items });
       dc.close();
       if ($('#cb-imprimir').checked) OP.imprimir(OP.ticketFactura(t));
-      delete pendientes[cuenta.id]; guardaPend();
-      await recarga(); verSala();
+      if (t.cambio) aviso('Cambio: ' + euros(t.cambio));
+      if (parcial) {
+        pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta();
+        aviso(`✓ Cobrado ${euros(t.total)} (${t.serie}-${t.numero}). Quedan ${euros(lineasPendientes().reduce((a, l) => a + l.unitario * l.cantidad, 0))} en la mesa.`);
+      } else {
+        delete pendientes[cuenta.id]; guardaPend();
+        await recarga(); verSala();
+      }
     } catch (ex) { fallo(mensajeError(ex)); }
     finally { btn.disabled = false; }
   };

@@ -231,3 +231,21 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .cz-desc b.ok{color:#2E6B2A}.cz-desc b.mal{color:#B3261E}
 .cz-btns{display:flex;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
 @media (max-width:640px){.cz-campos{grid-template-columns:1fr}}
+
+/* ── Dividir la cuenta ── */
+.cb-modos{display:flex;gap:6px;margin:0 0 10px}
+.cb-modos button{flex:1;font:inherit;font-weight:700;padding:10px;border:1.5px solid var(--linea,#DDD0C2);border-radius:10px;background:#fff;cursor:pointer}
+.cb-modos button.activo{background:var(--burdeos,#7C2430);border-color:var(--burdeos,#7C2430);color:#fff}
+.cb-items{max-height:260px;overflow:auto;border:1px solid var(--linea,#DDD0C2);border-radius:10px;margin:0 0 10px}
+.cb-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--linea,#DDD0C2)}
+.cb-item:last-child{border-bottom:0}
+.cb-item.sel{background:rgba(124,36,48,.07)}
+.cb-item small{display:block;font-size:12px;color:var(--humo,#6E5C60)}
+.cb-item .ctl{display:flex;align-items:center;gap:6px}
+.cb-item .ctl button{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--linea,#DDD0C2);background:#fff;font-size:18px;font-weight:800;cursor:pointer}
+.cb-item output{min-width:20px;text-align:center;font-weight:800}
+.cb-partes{margin:4px 0 8px;font-size:14px;color:var(--humo,#6E5C60)}
+.cb-partes input{width:56px;padding:4px 6px;font:inherit;border:1px solid var(--linea,#DDD0C2);border-radius:6px}
+.cb-partes b{color:var(--tinta,#241A1C)}
+.ln.cobrada{opacity:.55}
+.ln small.pagado{color:#2E6B2A;font-weight:700}
