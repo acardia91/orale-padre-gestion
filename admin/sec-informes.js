@@ -81,7 +81,7 @@
           const k = norm(l.nombre); const cat = catDe.get(l.producto) || 'Otros';
           const p = prods.get(k) || { nombre: l.nombre, cat, u: 0, imp: 0, coste: 0, conCoste: false };
           p.u += l.cantidad; p.imp += imp;
-          const c = costeDe.get(k);
+          const c = costes && costes[l.producto] && costes[l.producto].coste != null ? costes[l.producto].coste : costeDe.get(k);
           if (c != null) { p.coste += c * l.cantidad; p.conCoste = true; gasto += c * l.cantidad; baseConCoste += imp / 1.1; }
           baseTotal += imp / 1.1;
           prods.set(k, p);
