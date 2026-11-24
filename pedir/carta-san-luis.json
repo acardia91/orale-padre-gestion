@@ -1,0 +1,1068 @@
+{
+ "local": "san-luis",
+ "base": "Last App san-luis",
+ "categorias": [
+  {
+   "clave": "burritos",
+   "nombre": "Burritos",
+   "dias": null,
+   "productos": [
+    "4dcba75f-0b3e-4f30-b83d-1cd45d5227e7",
+    "2bcadb7e-bca0-4d4f-abae-735eb3c84230",
+    "6184543d-4428-4fc1-ba77-da6b8fa00e8c",
+    "0cbdf1b6-ba5f-4134-9a32-c4ed26637b1e",
+    "11f61aa5-bced-4383-9354-9eb06c43f770",
+    "7249c9d9-7f28-449b-8cd9-cd3d233276ff",
+    "8b518d54-f7ef-477a-9fb2-af2640970491",
+    "700f6f29-8fe7-469d-8872-1a8b6de957fd"
+   ]
+  },
+  {
+   "clave": "combos",
+   "nombre": "Combos",
+   "dias": null,
+   "productos": [
+    "c9b96e92-aa74-4bec-87c2-fdaa433bccf9",
+    "7e9e5ee2-5284-44b6-93a3-de3c571aa746",
+    "5eb385cb-037b-4c42-87eb-c3295537af94"
+   ]
+  },
+  {
+   "clave": "nudes",
+   "nombre": "Bowls",
+   "dias": null,
+   "productos": [
+    "30126c55-121b-4936-82eb-190d50ab3b2c",
+    "2f1d05ac-9ae2-4df0-90f5-8455b3d84580",
+    "23570779-5ba0-454a-92ce-d9ddb22963fb",
+    "0334ae9f-18bd-44c8-9d22-5245b62402e3"
+   ]
+  },
+  {
+   "clave": "tacos",
+   "nombre": "Tacos",
+   "dias": null,
+   "productos": [
+    "047ba4ea-19d4-4645-bf7d-23fe28e0824a",
+    "b860e677-d895-4b6c-8544-f1377eee51c9",
+    "bfd46290-1f23-42d3-b33b-e84093c27957"
+   ]
+  },
+  {
+   "clave": "quesadillas",
+   "nombre": "Quesadillas",
+   "dias": null,
+   "productos": [
+    "3ad4afb7-9bf4-421e-857c-6abb3d02a361",
+    "d0c77d5f-6d31-4e7b-b7d4-96617374e38d"
+   ]
+  },
+  {
+   "clave": "botanas",
+   "nombre": "Botanas",
+   "dias": null,
+   "productos": [
+    "c56b75b3-d1ed-46d6-8be0-551106e3f585"
+   ]
+  },
+  {
+   "clave": "mediodia",
+   "nombre": "Menú mediodía",
+   "dias": [
+    4,
+    5
+   ],
+   "productos": [
+    "a884c55b-56ed-40fd-be80-77802e032ded",
+    "cbdf6b57-a857-4ded-887a-5b58874c19ae",
+    "ff34e745-5f40-4913-9f87-13c10ad9a55c",
+    "89f09764-852e-4ff7-a00d-85064e788fbe"
+   ]
+  },
+  {
+   "clave": "promo-lx",
+   "nombre": "Promo lunes y miércoles",
+   "dias": [
+    1,
+    3
+   ],
+   "productos": [
+    "9ecfa308-fc65-49b1-b968-2e7268e5a0d4"
+   ]
+  },
+  {
+   "clave": "promo-martes",
+   "nombre": "Martes 3x2 en tacos",
+   "dias": [
+    2
+   ],
+   "productos": [
+    "b14a1e28-f5a8-4731-9740-e87ba66ab43e",
+    "c78cbff3-bccb-4979-905d-1e589212fe45",
+    "5b1ad503-4daa-4b18-adab-9dc0984c07be"
+   ]
+  },
+  {
+   "clave": "postres",
+   "nombre": "Postres",
+   "dias": null,
+   "productos": [
+    "1b28bd49-b41b-45f5-b946-3e4d482de16b",
+    "5a8664b7-02d6-488b-ae73-86fce9991221",
+    "a6d452e0-ec3e-4015-a08b-deac88802839",
+    "b4895da8-9f4d-4741-8e4c-b08571c03931",
+    "4120ce39-50ce-4182-849e-2586af9c1916",
+    "3ee5c68b-0d69-4a8c-b6cb-3bdd0c40c3ee"
+   ]
+  },
+  {
+   "clave": "bebidas",
+   "nombre": "Bebidas",
+   "dias": null,
+   "productos": [
+    "09cf4949-1aa2-49af-b86a-84867dcd9ab1",
+    "63aba883-e142-4584-ab38-23df90aae6c5",
+    "de2807e6-25a9-4461-b3b7-9fb00b9c9a2f",
+    "7712b4bb-9eda-4bfc-9562-34ff3f9de166",
+    "d8bd1db2-ab0f-4ee0-87e7-31d4c1246782",
+    "d2d759ec-f22c-4709-a231-42b477032470",
+    "a5e56f47-46f0-427b-b26b-e164fe5bff31",
+    "c5279f5d-0b50-4467-95ee-b60c22899a10",
+    "f17227fc-0385-40e3-b1bb-550affc15f94",
+    "aad92edd-9a18-4e3f-afb2-cb7392442cd5"
+   ]
+  }
+ ],
+ "productos": [
+  {
+   "id": "c9b96e92-aa74-4bec-87c2-fdaa433bccf9",
+   "nombre": "Combo Uno",
+   "desc": "",
+   "alergenos": [],
+   "foto": null,
+   "precio": 1495,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "7e9e5ee2-5284-44b6-93a3-de3c571aa746",
+   "nombre": "Combo Duo",
+   "desc": "",
+   "alergenos": [],
+   "foto": null,
+   "precio": 2990,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "5eb385cb-037b-4c42-87eb-c3295537af94",
+   "nombre": "Combo Taquero",
+   "desc": "",
+   "alergenos": [],
+   "foto": null,
+   "precio": 2990,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "4dcba75f-0b3e-4f30-b83d-1cd45d5227e7",
+   "nombre": "Papi Korean BBQ",
+   "desc": "Pollo empanado crujiente, arroz, cheddar, bacon, cebolla encurtida, lechuga, totopos rotos y doble mayo Korean BBQ. La fusión Seúl-Sevilla que necesitabas. Crujiente, dulce, leve picante y adictivo.",
+   "alergenos": [
+    "Cacahuetes",
+    "Frutos de cáscara",
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/papi-korean-bbq.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "2bcadb7e-bca0-4d4f-abae-735eb3c84230",
+   "nombre": "Burro Don Brasa",
+   "desc": "Pollo marinado y braseado al punto, envuelto en guacamole casero, pico de gallo fresco, frijoles, nata agria y lechuga crujiente. Sabor explosivo en cada bocado. ¡Pura locura!",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/burro-don-brasa.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "6184543d-4428-4fc1-ba77-da6b8fa00e8c",
+   "nombre": "Burro Pollo Pastor",
+   "desc": "Burrito de Delicioso pollo al pastor marinado con chiles morita y achiote, cocinado a baja temperatura y deshilachado. Arroz con cilantro y lima, salsa verde, guacamole casero, pico de gallo, frijoles, totopos rotos, nata agria y una mezcla de 4 quesos fu",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/burro-pollo-pastor.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "0cbdf1b6-ba5f-4134-9a32-c4ed26637b1e",
+   "nombre": "Burro Doña Dolores",
+   "desc": "Nuestro Burrito clásico en Órale padre incluye carne sazonada, arroz, frijoles refritos, guacamole estilo Órale, queso cheddar, pico de gallo clásico, lechuga, y todo bañado en nuestra salsa verde.",
+   "alergenos": [
+    "Gluten",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/burro-dona-dolores.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": [
+    "60382d0a-8ef0-4c73-ac82-f2a1060b01a7"
+   ]
+  },
+  {
+   "id": "11f61aa5-bced-4383-9354-9eb06c43f770",
+   "nombre": "Burro Lady Cochinita",
+   "desc": "Burrito de Cochinita pibil cocinada a baja temperatura con salsa de chipotle, arroz, frijoles, lechuga fresca, cebolla encurtida, pico de gallo con piña salteada y remate de con nata agria.",
+   "alergenos": [
+    "Gluten",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/burro-lady-cochinita.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": [
+    "57ce31c8-e871-4287-94fe-2c5896352593"
+   ]
+  },
+  {
+   "id": "7249c9d9-7f28-449b-8cd9-cd3d233276ff",
+   "nombre": "Burro Don Juárez",
+   "desc": "Nuestro Burro padrísimo de Pulled Pork! Carne de cerdo deshilachada con salsa BBQ, pico de gallo, guacamole casero, lechuga, totopos, arroz y nuestra salsa de crema agria.",
+   "alergenos": [
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/burro-don-juarez.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": [
+    "28f980ad-6efe-4092-977d-b81b6b81a748"
+   ]
+  },
+  {
+   "id": "8b518d54-f7ef-477a-9fb2-af2640970491",
+   "nombre": "Burro Black Chancho",
+   "desc": "Burrito de Guiso de carrilleras ibéricas al estilo anticucho con pico de gallo, arroz, cebolla encurtida, patatas paja, mayonesa de lima y salsa verde.",
+   "alergenos": [
+    "Gluten",
+    "Huevos"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/burro-black-chancho.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": [
+    "d5dd9a3b-82e6-482f-af56-b83f8830c68e"
+   ]
+  },
+  {
+   "id": "700f6f29-8fe7-469d-8872-1a8b6de957fd",
+   "nombre": "Burro Don Hampi",
+   "desc": "Burrito al más estilo hindú: Pollo especiado, deshilachado y cocinado a baja temperatura en suave mantequilla, arroz, guacamole casero, pico de gallo, lechuga y totopos crujientes; todo envuelto en una deliciosa salsa mayo con sriracha y coco.",
+   "alergenos": [
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/burro-don-hampi.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": [
+    "e6ab0de0-8c05-464f-94e6-345c51b7b377"
+   ]
+  },
+  {
+   "id": "047ba4ea-19d4-4645-bf7d-23fe28e0824a",
+   "nombre": "Tacos Chancho",
+   "desc": "3 Tacos de guiso de carrilleras al estilo órale, cebolla morada, cilantro, 4 quesos y chorreón de salsa mayo-lima",
+   "alergenos": [],
+   "foto": null,
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "b860e677-d895-4b6c-8544-f1377eee51c9",
+   "nombre": "Tacos Baby Cochinita",
+   "desc": "3 Tacos de cochinita pibil cocinada a baja temperatura, guacamole casero y 4 quesos.",
+   "alergenos": [],
+   "foto": null,
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "bfd46290-1f23-42d3-b33b-e84093c27957",
+   "nombre": "Tacos Don Pastor",
+   "desc": "3 Tacos de pollo pastor, cebolla morada, cilantro, 4 quesos y remate de nuestra mayo chipotle.",
+   "alergenos": [],
+   "foto": null,
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "3ad4afb7-9bf4-421e-857c-6abb3d02a361",
+   "nombre": "Quesadilla Pulled Pork",
+   "desc": "Quesadilla brutal de pulled pork BBQ, bañada en nuestra fusión de 4 quesos ultra fundentes. Dorada al punto en grill para un toque crujiente y acompañada de nuestra adictiva salsa chipotle.",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/quesadilla-pulled-pork.jpg",
+   "precio": 895,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "d0c77d5f-6d31-4e7b-b7d4-96617374e38d",
+   "nombre": "Quesadilla Butter Chicken",
+   "desc": "Quesadilla espectacular de Pollo Mantequilla, envuelta en nuestra mezcla de 4 quesos ultra cremosos. Dorada al punto en grill para un toque crujiente y acompañada de una irresistible mayo de coco. Un sutil toque de especias hindúes que te transportará a l",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/quesadilla-butter-chicken.jpg",
+   "precio": 895,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "30126c55-121b-4936-82eb-190d50ab3b2c",
+   "nombre": "Nude Juárez",
+   "desc": "Bowl de Pulled Pork! Carne de cerdo deshilachada con salsa BBQ, pico de gallo, guacamole casero, lechuga, totopos, arroz y por encima bañado con nuestra crema agria.",
+   "alergenos": [
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/nude-juarez.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "2f1d05ac-9ae2-4df0-90f5-8455b3d84580",
+   "nombre": "Nude Lady Cochinita",
+   "desc": "Bowl cochinita pibil cocinada a baja temperatura con salsa de chipotle, arroz, lechuga fresca, frijoles, pico de gallo con piña salteada y remate de con nata agria.",
+   "alergenos": [
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/nude-lady-cochinita.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "23570779-5ba0-454a-92ce-d9ddb22963fb",
+   "nombre": "Nude Black Chancho",
+   "desc": "Bowl de guiso de carrilleras ibéricas al estilo anticucho con pico de gallo, arroz, cebolla encurtida, patatas paja, mayonesa de lima y salsa verde.",
+   "alergenos": [
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/nude-black-chancho.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "0334ae9f-18bd-44c8-9d22-5245b62402e3",
+   "nombre": "Nude Dolores",
+   "desc": "Bowl de carne sazonada, arroz, frijoles refritos, guacamole estilo Órale, queso cheddar, pico de gallo clásico, lechuga, y todo bañado en nuestra salsa verde.",
+   "alergenos": [
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/nude-dolores.jpg",
+   "precio": 995,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "c56b75b3-d1ed-46d6-8be0-551106e3f585",
+   "nombre": "Nachos Bacanos Clásicos",
+   "desc": "Totopos clásicos de toda la vida con nuestro toque! Guacamole casero, salsa de queso cheddar, pico de gallo y chorreo de nata agria.",
+   "alergenos": [],
+   "foto": null,
+   "precio": 950,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "1b28bd49-b41b-45f5-b946-3e4d482de16b",
+   "nombre": "Filipino blanco con dulce de leche",
+   "desc": "Muerte por delicioso filipino de chocolate blanco con baño de dulce de leche.",
+   "alergenos": [],
+   "foto": null,
+   "precio": 450,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "5a8664b7-02d6-488b-ae73-86fce9991221",
+   "nombre": "Galleta Lotus",
+   "desc": "Irresistible sabor de las Galletas Lotus en cada cucharada",
+   "alergenos": [
+    "Cacahuetes",
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/galleta-lotus.jpg",
+   "precio": 450,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "a6d452e0-ec3e-4015-a08b-deac88802839",
+   "nombre": "Kinder Bueno",
+   "desc": "Final feliz de deliciosa crema Kinder!",
+   "alergenos": [
+    "Cacahuetes",
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/kinder-bueno.jpg",
+   "precio": 450,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "b4895da8-9f4d-4741-8e4c-b08571c03931",
+   "nombre": "Oreo Blanco",
+   "desc": "Para llorar y volar fuerte con oreo de chocolate blanco.",
+   "alergenos": [
+    "Cacahuetes",
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/oreo-blanco.jpg",
+   "precio": 450,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "4120ce39-50ce-4182-849e-2586af9c1916",
+   "nombre": "Filipino Blanco",
+   "desc": "Muerte por delicioso filipino de chocolate blanco",
+   "alergenos": [
+    "Cacahuetes",
+    "Gluten",
+    "Huevos",
+    "Leche"
+   ],
+   "foto": "https://www.oralepadre.com/img/carta/filipino-blanco.jpg",
+   "precio": 450,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "3ee5c68b-0d69-4a8c-b6cb-3bdd0c40c3ee",
+   "nombre": "Bomba de Ferrero",
+   "desc": "Antojo de crema de Ferrero Rocher",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/bomba-de-ferrero.jpg",
+   "precio": 450,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "09cf4949-1aa2-49af-b86a-84867dcd9ab1",
+   "nombre": "Coca-Cola Normal",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/coca-cola-normal.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "63aba883-e142-4584-ab38-23df90aae6c5",
+   "nombre": "Coca-Cola Zero",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/coca-cola-zero.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "de2807e6-25a9-4461-b3b7-9fb00b9c9a2f",
+   "nombre": "Botellin Cruzcampo",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/botellin-cruzcampo.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": true,
+   "grupos": []
+  },
+  {
+   "id": "7712b4bb-9eda-4bfc-9562-34ff3f9de166",
+   "nombre": "Tercio Cruzcampo",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/tercio-cruzcampo.jpg",
+   "precio": 250,
+   "agotado": false,
+   "alcohol": true,
+   "grupos": []
+  },
+  {
+   "id": "d8bd1db2-ab0f-4ee0-87e7-31d4c1246782",
+   "nombre": "Fanta Naranja",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/fanta-naranja.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "d2d759ec-f22c-4709-a231-42b477032470",
+   "nombre": "Fanta Limón",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/fanta-limon.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "a5e56f47-46f0-427b-b26b-e164fe5bff31",
+   "nombre": "Nestea",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/nestea.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "c5279f5d-0b50-4467-95ee-b60c22899a10",
+   "nombre": "Aquarius Limón",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/aquarius-limon.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "f17227fc-0385-40e3-b1bb-550affc15f94",
+   "nombre": "Aquarius Naranja",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/aquarius-naranja.jpg",
+   "precio": 200,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "aad92edd-9a18-4e3f-afb2-cb7392442cd5",
+   "nombre": "Agua Botella Pequeña",
+   "desc": "",
+   "alergenos": [],
+   "foto": "https://www.oralepadre.com/img/carta/agua-botella-pequena.jpg",
+   "precio": 120,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "a884c55b-56ed-40fd-be80-77802e032ded",
+   "nombre": "Menú Mediodía",
+   "desc": "Burrito+chips+Bebida",
+   "alergenos": [],
+   "foto": null,
+   "precio": 1000,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": [
+    "c39b52ec-2cf9-4fdd-8430-9fd5bcde40f0"
+   ]
+  },
+  {
+   "id": "cbdf6b57-a857-4ded-887a-5b58874c19ae",
+   "nombre": "Postre Menú Mediodía",
+   "desc": "",
+   "alergenos": [],
+   "foto": null,
+   "precio": 300,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "ff34e745-5f40-4913-9f87-13c10ad9a55c",
+   "nombre": "Guacamole Extra",
+   "desc": "",
+   "alergenos": [],
+   "foto": null,
+   "precio": 50,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "89f09764-852e-4ff7-a00d-85064e788fbe",
+   "nombre": "Salsa de Cheddar",
+   "desc": "",
+   "alergenos": [],
+   "foto": null,
+   "precio": 100,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "9ecfa308-fc65-49b1-b968-2e7268e5a0d4",
+   "nombre": "Promo Lunes y Miércoles",
+   "desc": "Selecciona tus dos burritos",
+   "alergenos": [],
+   "foto": null,
+   "precio": 1390,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": [
+    "299cbf75-ce39-4976-8399-4a497252b0cd",
+    "973777f1-ec02-4415-9e1e-0a29d0b54f9d"
+   ]
+  },
+  {
+   "id": "b14a1e28-f5a8-4731-9740-e87ba66ab43e",
+   "nombre": "3x2 Tacos Baby Cochinita",
+   "desc": "3 Tacos de cochinita pibil cocinada a baja temperatura, guacamole casero y 4 quesos.",
+   "alergenos": [],
+   "foto": null,
+   "precio": 700,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "c78cbff3-bccb-4979-905d-1e589212fe45",
+   "nombre": "3X2 Tacos Pastor",
+   "desc": "3 Tacos de pollo pastor, cebolla morada, cilantro, 4 quesos y remate de nuestra mayo chipotle.",
+   "alergenos": [],
+   "foto": null,
+   "precio": 700,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  },
+  {
+   "id": "5b1ad503-4daa-4b18-adab-9dc0984c07be",
+   "nombre": "3x2 Tacos Chancho",
+   "desc": "3 Tacos de guiso de carrilleras al estilo órale, cebolla morada, cilantro, 4 quesos y chorreón de salsa mayo-lima",
+   "alergenos": [],
+   "foto": null,
+   "precio": 700,
+   "agotado": false,
+   "alcohol": false,
+   "grupos": []
+  }
+ ],
+ "grupos": [
+  {
+   "id": "60382d0a-8ef0-4c73-ac82-f2a1060b01a7",
+   "nombre": "¿Quieres agregar salsas extras a tu burro doña dolores?",
+   "min": 0,
+   "max": 5,
+   "opciones": [
+    {
+     "id": "0891ab0e-3c16-49f2-bdf0-27e9da8a2baf",
+     "nombre": "Extra: Mayo chipotle",
+     "precio": 95
+    },
+    {
+     "id": "1d118f40-2e49-49ac-9a80-ecb9bf8c4c22",
+     "nombre": "Extra: Mayo lima",
+     "precio": 95
+    },
+    {
+     "id": "b2ad46a4-ccd0-4f41-8256-302cff5bb92f",
+     "nombre": "Extra: Salsa de queso",
+     "precio": 95
+    },
+    {
+     "id": "aa655891-128c-497b-ab7b-4668b0f7b4c8",
+     "nombre": "Extra: Salsa verde",
+     "precio": 95
+    },
+    {
+     "id": "f49a1922-6164-4a27-8442-b4bff6c5cbdb",
+     "nombre": "Extra: Mayo sriracha coco",
+     "precio": 95
+    },
+    {
+     "id": "be1e121c-9b61-4b06-8ab0-bc106631aad9",
+     "nombre": "Extra: Salsa valentina",
+     "precio": 95
+    },
+    {
+     "id": "358dbaa0-fa00-4d5b-8124-d42785a2e498",
+     "nombre": "Extra picante",
+     "precio": 0
+    },
+    {
+     "id": "5ee7b913-98ce-453a-81f4-9c70076dca76",
+     "nombre": "Sin extras",
+     "precio": 0
+    }
+   ]
+  },
+  {
+   "id": "57ce31c8-e871-4287-94fe-2c5896352593",
+   "nombre": "¿Quieres agregar salsas extras a tu burro lady cochinita?",
+   "min": 0,
+   "max": 5,
+   "opciones": [
+    {
+     "id": "2f059d14-d620-40e3-9e19-ed6f0accc0d5",
+     "nombre": "Extra: Mayo chipotle",
+     "precio": 95
+    },
+    {
+     "id": "009d2b98-8aaf-4f18-bee4-c9fadf3164a6",
+     "nombre": "Extra: Mayo lima",
+     "precio": 95
+    },
+    {
+     "id": "cb58850e-9314-4cc6-a72c-75148a323b85",
+     "nombre": "Extra: Salsa de queso",
+     "precio": 95
+    },
+    {
+     "id": "3105dbd3-c070-498f-9167-74999330bc23",
+     "nombre": "Extra: Salsa verde",
+     "precio": 95
+    },
+    {
+     "id": "2169cd0b-53bb-4fee-a655-5952cb4b0653",
+     "nombre": "Extra: Mayo sriracha coco",
+     "precio": 95
+    },
+    {
+     "id": "072485fb-9173-42e1-ba6d-2341157803f6",
+     "nombre": "Extra: Salsa valentina",
+     "precio": 95
+    },
+    {
+     "id": "186914d3-3241-4c92-b6f4-a3efda2ff451",
+     "nombre": "Extra picante",
+     "precio": 0
+    },
+    {
+     "id": "11069bfa-b545-489c-ae40-53c887def732",
+     "nombre": "Sin extras",
+     "precio": 0
+    }
+   ]
+  },
+  {
+   "id": "28f980ad-6efe-4092-977d-b81b6b81a748",
+   "nombre": "¿Quieres añadir salsas extras a tu Don Juárez?",
+   "min": 0,
+   "max": 8,
+   "opciones": [
+    {
+     "id": "be61b626-692a-4c3d-890f-4f635cf235a6",
+     "nombre": "Extra: Mayo lima",
+     "precio": 95
+    },
+    {
+     "id": "9c5293e4-1298-4f47-b86d-b06537545a57",
+     "nombre": "Extra: Salsa verde",
+     "precio": 95
+    },
+    {
+     "id": "f6b825d8-810f-461a-8aec-e3eff5befc56",
+     "nombre": "Extra: Salsa de queso",
+     "precio": 95
+    },
+    {
+     "id": "5aab2863-c4e3-4225-8ee2-c3c60bb3e1fe",
+     "nombre": "Extra picante",
+     "precio": 0
+    },
+    {
+     "id": "28bc45ca-cb12-4387-834e-7c2cbe2c2186",
+     "nombre": "Extra: Mayo sriracha coco",
+     "precio": 95
+    },
+    {
+     "id": "bc3965bb-70b4-4703-b9db-7fdbce7e809e",
+     "nombre": "Extra: Mayo chipotle",
+     "precio": 95
+    },
+    {
+     "id": "d5cbdaad-e656-4495-9964-ad74bb597dd9",
+     "nombre": "Extra: Salsa valentina",
+     "precio": 95
+    },
+    {
+     "id": "bc601762-46c8-4a2a-a45e-9400b0b0ffac",
+     "nombre": "Sin extras",
+     "precio": 0
+    }
+   ]
+  },
+  {
+   "id": "d5dd9a3b-82e6-482f-af56-b83f8830c68e",
+   "nombre": "¿Quieres agregar una salsa extra?",
+   "min": 0,
+   "max": 2,
+   "opciones": [
+    {
+     "id": "77688c89-1229-40fd-abdf-639eaee6ad90",
+     "nombre": "Extra: Salsa verde",
+     "precio": 95
+    },
+    {
+     "id": "8b3f6933-c7e1-4721-8de8-6332ace11dff",
+     "nombre": "Extra: Salsa de queso",
+     "precio": 95
+    },
+    {
+     "id": "3c1bdf57-8d5e-4569-a478-7d2a7f7e4cd2",
+     "nombre": "Extra: Mayo sriracha coco",
+     "precio": 95
+    },
+    {
+     "id": "75aa0c6c-dbbf-4683-bda6-4c76a22ceff5",
+     "nombre": "Extra: Salsa valentina",
+     "precio": 95
+    },
+    {
+     "id": "95c66b05-facb-4f2c-b3c4-1ad159b32a54",
+     "nombre": "Extra picante",
+     "precio": 0
+    },
+    {
+     "id": "d0ce951d-bcdd-4ce1-9c1f-ccf9d73459ad",
+     "nombre": "Sin extras",
+     "precio": 0
+    },
+    {
+     "id": "4d44472e-b430-4b08-b54b-2d7b1556afa6",
+     "nombre": "Extra: Mayo lima",
+     "precio": 95
+    },
+    {
+     "id": "4d6ef1ea-8d85-4b26-ab10-6a008bb505f2",
+     "nombre": "Extra: Mayo chipotle",
+     "precio": 95
+    }
+   ]
+  },
+  {
+   "id": "e6ab0de0-8c05-464f-94e6-345c51b7b377",
+   "nombre": "¿Quieres agregar una salsa extra?",
+   "min": 0,
+   "max": 2,
+   "opciones": [
+    {
+     "id": "427b46b7-bbf8-4133-899b-296b7ada20be",
+     "nombre": "Sin extras",
+     "precio": 0
+    },
+    {
+     "id": "9bea4b19-c66f-4ac1-b842-98e5a7cdb458",
+     "nombre": "Extra picante",
+     "precio": 0
+    },
+    {
+     "id": "d331e3eb-8baa-4417-ae24-9859c5626282",
+     "nombre": "Extra: Salsa valentina",
+     "precio": 95
+    },
+    {
+     "id": "838a840c-9e53-40f5-9683-d1f65f26a385",
+     "nombre": "Extra: Mayo sriracha coco",
+     "precio": 95
+    },
+    {
+     "id": "e4fd02bf-d1ab-42be-b5b3-4f420a644239",
+     "nombre": "Extra: Salsa verde",
+     "precio": 95
+    },
+    {
+     "id": "5493746a-4f1c-44a2-af43-e7438d47b33c",
+     "nombre": "Extra: Salsa de queso",
+     "precio": 95
+    },
+    {
+     "id": "59614409-b074-4d44-b7df-688dc03ea6df",
+     "nombre": "Extra: Mayo lima",
+     "precio": 95
+    },
+    {
+     "id": "17ec449e-52cf-463e-9dc2-d2ae8f1930d9",
+     "nombre": "Extra: Mayo chipotle",
+     "precio": 95
+    }
+   ]
+  },
+  {
+   "id": "c39b52ec-2cf9-4fdd-8430-9fd5bcde40f0",
+   "nombre": "Elige tu burro",
+   "min": 1,
+   "max": 1,
+   "opciones": [
+    {
+     "id": "0926a2f4-8f84-4ff8-b93c-dbb9f83df77c",
+     "nombre": "Pollo Padre",
+     "precio": 0
+    },
+    {
+     "id": "5888cc02-57a9-43f9-ada8-ccc4c36c529d",
+     "nombre": "Black Chancho",
+     "precio": 0
+    },
+    {
+     "id": "e758b8cd-943c-49bf-bd1c-73e23b817272",
+     "nombre": "Lady Cochinita",
+     "precio": 0
+    }
+   ]
+  },
+  {
+   "id": "299cbf75-ce39-4976-8399-4a497252b0cd",
+   "nombre": "Selecciona tu Burro 1",
+   "min": 1,
+   "max": 1,
+   "opciones": [
+    {
+     "id": "c0fdf000-d731-4fc5-836d-3116d341329c",
+     "nombre": "Lady Cochinita",
+     "precio": 0
+    },
+    {
+     "id": "45982efb-1da3-4f9a-9da2-43af6f7494c8",
+     "nombre": "Doña Dolores",
+     "precio": 0
+    },
+    {
+     "id": "f714e7fa-2afd-491d-a9f7-fc6c89bd818b",
+     "nombre": "Don Juárez",
+     "precio": 0
+    },
+    {
+     "id": "b8f3f845-e653-4fed-9b6e-27e913039ac0",
+     "nombre": "Don Hampi",
+     "precio": 0
+    },
+    {
+     "id": "e464fafb-68c3-49a9-8eb0-b0ea1a6e754a",
+     "nombre": "Pollo Padre",
+     "precio": 0
+    },
+    {
+     "id": "93a354ce-b47a-4422-90ea-acbd95c7dbe9",
+     "nombre": "Green Wey",
+     "precio": 0
+    },
+    {
+     "id": "934adfc4-31f3-4cf6-9498-48482fa82ecd",
+     "nombre": "Black Chancho",
+     "precio": 0
+    },
+    {
+     "id": "873c3b31-443b-4ac5-92d5-ab849b09c4de",
+     "nombre": "Pollo Pastor",
+     "precio": 0
+    }
+   ]
+  },
+  {
+   "id": "973777f1-ec02-4415-9e1e-0a29d0b54f9d",
+   "nombre": "Selecciona tu burro 2",
+   "min": 1,
+   "max": 1,
+   "opciones": [
+    {
+     "id": "0c080ad5-78f4-41bf-b3a8-461920791f72",
+     "nombre": "Lady Cochinita",
+     "precio": 0
+    },
+    {
+     "id": "7a4473d6-251d-4aab-8cc3-e2db25b0a76f",
+     "nombre": "Black Chancho",
+     "precio": 0
+    },
+    {
+     "id": "46da001c-e9e3-4a68-942b-6f4331ffed45",
+     "nombre": "Pollo Padre",
+     "precio": 0
+    },
+    {
+     "id": "fe19342b-8d52-48f7-b81c-a5021602f965",
+     "nombre": "Pollo Pastor",
+     "precio": 0
+    },
+    {
+     "id": "400923b7-e677-4333-b88c-79d1d541b4f0",
+     "nombre": "Don Juárez",
+     "precio": 0
+    },
+    {
+     "id": "b1b6dd73-1080-46dd-bda4-aabab2ea7fc6",
+     "nombre": "Don Hampi",
+     "precio": 0
+    },
+    {
+     "id": "0759eeab-2540-4184-a26b-a42354afebb7",
+     "nombre": "Green Wey",
+     "precio": 0
+    },
+    {
+     "id": "42f488d8-9ed7-4188-bc73-0f2aa04f725a",
+     "nombre": "Doña Dolores",
+     "precio": 0
+    }
+   ]
+  }
+ ]
+}

@@ -197,8 +197,10 @@
     },
     async ticketsEntre(local, desde, hasta) { return lee(K.tickets, []).filter(t => t.local === local && t.fecha >= desde && t.fecha < hasta); },
     async pedidosEntre(local, desde, hasta) { return lee(K.pedidos, []).filter(p => p.local === local && p.creado >= desde && p.creado < hasta); },
+    async ventasImportadasEntre() { return []; },
+    async productosImportados() { return []; },
     async cuentasEntre(local, desde, hasta) { return lee(K.cuentas, []).filter(c => c.local === local && c.abierta >= desde && c.abierta < hasta); },
-    async local(id) { return { ...LOCAL_DEMO, ...(lee(K.locales, {})[id] || {}) }; },
+    async local(id) { return { ...LOCAL_DEMO, id, nombre: id === 'san-luis' ? 'Órale Padre San Luis' : LOCAL_DEMO.nombre, serie: id === 'san-luis' ? 'SLU' : 'TOM', ...(lee(K.locales, {})[id] || {}) }; },
     async agotados(local) { return new Set(lee(K.agotados, {})[local] || []); },
     async crearPedido({ local, nombre, tel, recogida, pago, notas, lineas }) {
       const loc = await this.local(local);
@@ -221,7 +223,7 @@
     },
     seguirPedido(token, cb) { const f = async () => cb(await this.estadoPedido(token)); oyentes.add(f); return () => oyentes.delete(f); },
     // ── cocina ──
-    async sesion() { return { email: 'demo@oralepadre.com', locales: ['tomares'], roles: { tomares: 'encargado' } }; },
+    async sesion() { return { email: 'demo@oralepadre.com', locales: ['tomares', 'san-luis'], roles: { tomares: 'encargado', 'san-luis': 'encargado' } }; },
     async entrar() { return this.sesion(); },
     async enlaceEmail() { throw new Error('DEMO: en modo demo no hace falta entrar'); },
     async cambiarPassword() { throw new Error('DEMO: en modo demo no hay contraseñas'); },
@@ -423,6 +425,11 @@
     async ticketsEntre(local, desde, hasta) { return ok(await cliente().from('tickets').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('numero')); },
     async pedidosEntre(local, desde, hasta) { return ok(await cliente().from('pedidos').select('*').eq('local', local).gte('creado', desde).lt('creado', hasta).order('creado')); },
     async cuentasEntre(local, desde, hasta) { return ok(await cliente().from('cuentas').select('*').eq('local', local).gte('abierta', desde).lt('abierta', hasta).order('abierta')); },
+    async ventasImportadasEntre(local, desde, hasta) { return ok(await cliente().from('ventas_importadas').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('fecha')); },
+    // Productos de periodos importados que se solapan con [desde, hasta).
+    async productosImportados(local, desde, hasta) {
+      return ok(await cliente().from('productos_importados').select('*').eq('local', local).lt('desde', hasta.slice(0, 10)).gt('hasta', desde.slice(0, 10)));
+    },
     async cuentasAbiertas(local) { return ok(await cliente().from('cuentas').select('*').eq('local', local).eq('estado', 'abierta')); },
     async abrirCuenta({ local, mesa_id, nombre, para_llevar, comensales }) {
       return ok(await cliente().rpc('abrir_cuenta', { p_local: local, p_mesa_id: mesa_id || null, p_nombre: nombre || null,
@@ -473,6 +480,17 @@
     };
   });
 
-  window.OP = { api: DEMO ? demo : real, DEMO, CONFIG, franjas, enHorario, hhmm, partesMadrid,
+  /** Si el usuario trabaja en varios locales, cambia el nombre del local de la barra por un selector. */
+  async function selectorLocal(contenedor, locales, actual, alCambiar) {
+    if (!contenedor || !locales || locales.length < 2) return;
+    const api = DEMO ? demo : real;
+    const nombres = await Promise.all(locales.map(async id => { try { return [id, (await api.local(id)).nombre.replace(/^Órale Padre\s*/, '')]; } catch (e) { return [id, id]; } }));
+    const sel = document.createElement('select'); sel.className = 'sel-local'; sel.setAttribute('aria-label', 'Local');
+    sel.innerHTML = nombres.map(([id, n]) => `<option value="${id}">${n}</option>`).join(''); sel.value = actual;
+    sel.onchange = () => alCambiar(sel.value);
+    contenedor.replaceWith(sel);
+  }
+
+  window.OP = { api: DEMO ? demo : real, selectorLocal, DEMO, CONFIG, franjas, enHorario, hhmm, partesMadrid,
                 indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, mensajeError, euros };
 })();
