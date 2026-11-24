@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241313">
+<link rel="stylesheet" href="admin.css?v=202611241430">
 </head>
 <body>
 
@@ -332,12 +332,10 @@
     </div>
     <div class="panel">
       <h2>Añadir a alguien</h2>
-      <ol class="pasos-lista">
-        <li>Crea su usuario en Supabase → <b>Authentication → Users → Add user → Create new user</b> (email, contraseña y "Auto confirm user").</li>
-        <li>Escribe aquí su email y su rol:</li>
-      </ol>
+      <p class="nota" style="margin-top:0">Escribe su email, elige su rol y ponle una <b>contraseña inicial</b> (mínimo 8 caracteres). Díselo en persona; al entrar puede cambiarla en Usuarios → Cambiar mi contraseña. Si esa persona ya tiene usuario (por ejemplo, de otro local), deja la contraseña vacía.</p>
       <form class="fila-form" id="u-form" onsubmit="return false">
         <input id="u-email" type="email" placeholder="email@ejemplo.com" autocomplete="off">
+        <input id="u-pass" type="password" placeholder="Contraseña inicial" autocomplete="new-password" minlength="8">
         <select id="u-rol"><option value="sala">Sala (TPV)</option><option value="cocina">Cocina (comandas)</option><option value="encargado">Encargado (todo)</option></select>
         <button class="b b-ok" type="button" id="u-anadir">Añadir</button>
       </form>
@@ -508,18 +506,18 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241313"></script>
-<script src="/pedir/plano.js?v=202611241313"></script>
-<script src="/pedir/ticket.js?v=202611241313"></script>
-<script src="sec-plano.js?v=202611241313"></script>
-<script src="sec-resumen.js?v=202611241313"></script>
-<script src="sec-carta.js?v=202611241313"></script>
-<script src="sec-local.js?v=202611241313"></script>
-<script src="sec-pedidos.js?v=202611241313"></script>
-<script src="sec-reservas.js?v=202611241313"></script>
-<script src="sec-clientes.js?v=202611241313"></script>
-<script src="sec-control.js?v=202611241313"></script>
-<script src="sec-promos.js?v=202611241313"></script>
-<script src="admin.js?v=202611241313"></script>
+<script src="/pedir/api.js?v=202611241430"></script>
+<script src="/pedir/plano.js?v=202611241430"></script>
+<script src="/pedir/ticket.js?v=202611241430"></script>
+<script src="sec-plano.js?v=202611241430"></script>
+<script src="sec-resumen.js?v=202611241430"></script>
+<script src="sec-carta.js?v=202611241430"></script>
+<script src="sec-local.js?v=202611241430"></script>
+<script src="sec-pedidos.js?v=202611241430"></script>
+<script src="sec-reservas.js?v=202611241430"></script>
+<script src="sec-clientes.js?v=202611241430"></script>
+<script src="sec-control.js?v=202611241430"></script>
+<script src="sec-promos.js?v=202611241430"></script>
+<script src="admin.js?v=202611241430"></script>
 </body>
 </html>

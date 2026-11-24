@@ -91,8 +91,17 @@
   $('#u-anadir').onclick = async () => {
     const err = $('#u-error'); err.hidden = true; const email = $('#u-email').value.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Escribe un email válido.'; err.hidden = false; return; }
-    try { await api.anadirStaff(LOCAL, email, $('#u-rol').value); $('#u-email').value = ''; }
-    catch (ex) { err.textContent = mensajeError(ex); err.hidden = false; }
+    const pw = $('#u-pass').value;
+    if (pw && pw.length < 8) { err.textContent = 'La contraseña inicial tiene que tener al menos 8 caracteres.'; err.hidden = false; return; }
+    const btn = $('#u-anadir'); btn.disabled = true;
+    try {
+      const r = await api.anadirStaff(LOCAL, email, $('#u-rol').value, pw);
+      $('#u-email').value = ''; $('#u-pass').value = '';
+      err.textContent = r && r.creado ? `Listo: ${email} ya puede entrar con la contraseña que has puesto (que la cambie en Usuarios → Cambiar mi contraseña).`
+                                      : `Listo: ${email} ya tiene acceso a este local (entra con su contraseña de siempre).`;
+      err.style.background = '#E4EEDD'; err.style.color = '#4F7A3A'; err.hidden = false;
+    } catch (ex) { err.textContent = mensajeError(ex); err.style.background = ''; err.style.color = ''; err.hidden = false; }
+    finally { btn.disabled = false; }
     cargarUsuarios();
   };
   $('#pw-ok').onclick = async () => {
