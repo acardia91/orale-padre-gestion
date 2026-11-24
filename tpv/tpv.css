@@ -269,3 +269,44 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 button.t-quien{cursor:pointer;background:none;font-family:inherit}
 button.t-quien:hover{border-color:var(--burdeos,#7C2430)}
 .bl-caja img{height:auto;width:110px}
+
+/* ── Móvil y tablet ── */
+.c-hoja{display:none}
+@media (max-width:1024px){
+  .barra{gap:8px;padding:8px 12px}
+  .b-ctrl .b{padding:10px 14px}
+  .prods{grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+}
+@media (max-width:760px){
+  .barra{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .barra::-webkit-scrollbar{display:none}
+  .barra > *{flex:none}
+  .b-local{margin-right:0}
+  .b-local span:not(.org-ico){display:none}
+  .b-ctrl{flex-wrap:nowrap;margin-left:auto}
+  .b-ctrl .b{padding:9px 12px;font-size:14px}
+  .t-quien{max-width:130px}
+  .sala{padding:12px 12px 90px}
+  .recoger .mesas{display:flex;overflow-x:auto;gap:10px;padding-bottom:6px;scroll-snap-type:x mandatory}
+  .recoger .mesas > *{flex:0 0 200px;scroll-snap-align:start}
+  .mesas{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+  .mesa{min-height:84px}
+  /* Cuenta: la carta ocupa la pantalla y la cuenta sube desde abajo */
+  .cuenta{display:block;position:relative}
+  .cuenta .carta{height:100%;display:flex;flex-direction:column;padding-bottom:150px}
+  .cats{flex:none}
+  .prods{grid-template-columns:repeat(2,minmax(0,1fr));padding:4px 12px 12px}
+  .prod img,.prod .ini{aspect-ratio:16/9}
+  .tique{position:fixed;left:0;right:0;bottom:0;z-index:20;max-height:calc(100% - 70px);border-left:0;border-top:1px solid var(--borde);border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(36,26,28,.18)}
+  .c-hoja{display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:none;padding:12px 16px 4px;font-weight:700;font-size:15px;color:var(--tinta)}
+  .c-hoja::before{content:"";position:absolute;top:6px;left:50%;width:40px;height:4px;margin-left:-20px;border-radius:9px;background:var(--borde-2)}
+  .c-hoja i{font-style:normal;color:var(--humo);transition:transform .2s}
+  .cuenta:not(.hoja-abierta) .tq-cab,.cuenta:not(.hoja-abierta) .tq-lineas,.cuenta:not(.hoja-abierta) .tq-nota{display:none}
+  .cuenta.hoja-abierta .c-hoja i{transform:rotate(180deg)}
+  .cuenta.hoja-abierta .tique{height:calc(100% - 70px)}
+  .tq-pie{padding:8px 12px 12px;gap:8px}
+  .tq-total strong{font-size:24px}
+  .tq-btns .b{padding:14px;font-size:16px}
+}
+.prod img,.prod .ini{flex:none}
+.prods{grid-auto-rows:max-content}

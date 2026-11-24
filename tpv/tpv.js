@@ -158,7 +158,8 @@
     $('#zonas').innerHTML = zonas.length > 1 ? zonas.map(z => `<button type="button" data-zona="${esc(z)}" class="${z === zona ? 'activa' : ''}">${esc(z)}</button>`).join('') : '';
     const deZona = mesas.filter(m => m.zona === zona);
     const cont = $('#mesas');
-    if (deZona.some(m => m.x != null)) {
+    // En el móvil el plano queda diminuto: se enseñan las mesas como botones grandes.
+    if (deZona.some(m => m.x != null) && innerWidth >= 700) {
       // Plano tal y como está colocado el local (se edita en /admin).
       cont.className = 'plano-tpv';
       OP.plano.pintar(cont, deZona, { estado: m => {
@@ -178,6 +179,11 @@
     $('#sueltas').innerHTML = sueltas.map(c => tileCuenta(c, c.nombre)).join('') || '<p class="vacio">Ninguna abierta. Usa “+ Barra” o “+ Para llevar”.</p>';
     sumasSala();
   }
+  // Al girar la tablet o cambiar de tamaño, se repinta la sala (plano ↔ botones).
+  let tRes = null, anchoPlano = innerWidth >= 700;
+  addEventListener('resize', () => { clearTimeout(tRes); tRes = setTimeout(() => { if ((innerWidth >= 700) !== anchoPlano) { anchoPlano = innerWidth >= 700; if (!$('#vista-sala').hidden) pintaSala(); } }, 200); });
+  // Móvil: la cuenta es una hoja que se despliega desde abajo.
+  $('#c-hoja').onclick = () => $('#vista-cuenta').classList.toggle('hoja-abierta');
   function tileCuenta(c, nombre) {
     const pend = (pendientes[c.id] || []).length;
     return `<button class="mesa ocupada" type="button" data-cuenta="${c.id}">
@@ -270,6 +276,7 @@
     pintaProductos(); pintaCuenta();
   }
   function verSala() {
+    $('#vista-cuenta').classList.remove('hoja-abierta');
     cuenta = null; $('#menu-cuenta').hidden = true;
     $('#vista-sala').hidden = false; $('#vista-cuenta').hidden = true; $('#b-atras').hidden = true;
     $('#b-barra').hidden = $('#b-llevar').hidden = false;
@@ -289,6 +296,7 @@
   // Carta por canal: en una cuenta "para llevar" no sale lo que es sólo de sala, y en mesa no sale lo que es sólo para recoger.
   const fuera = () => cuenta && cuenta.para_llevar ? 'local' : 'recoger';
   const vale = p => p && !p.oculto && p.solo !== fuera();
+  const enSala = () => !(cuenta && cuenta.para_llevar);   // precio de sala o para llevar
   function visibles() {
     const hoy = partesMadrid(new Date()).dow;
     return carta.categorias.filter(c => !c.oculta && c.solo !== fuera() && c.productos.some(id => vale(idx.prod.get(id))) && (!c.dias || c.dias.includes(hoy)));
@@ -302,7 +310,7 @@
        const ag = p.agotado || agotados.has(p.id);
       return `<button class="prod ${p.grupos.length ? 'extras' : ''} ${p.foto ? 'con-foto' : ''}" type="button" data-prod="${p.id}" ${ag ? 'disabled' : ''}>
         ${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : `<i class="ini">${esc(p.nombre.replace(/^(Burro|Nude|Taco|Quesadilla|Combo)\s+/i, '').slice(0, 2))}</i>`}
-        <b>${esc(p.nombre)}</b><span>${ag ? 'Agotado' : euros(p.precio)}</span></button>`;
+        <b>${esc(p.nombre)}</b><span>${ag ? 'Agotado' : euros(enSala() && Number.isInteger(p.precio_local) ? p.precio_local : p.precio)}</span></button>`;
     }).join('');
   }
   $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { catActiva = b.dataset.cat; pintaProductos(); } });
@@ -341,14 +349,14 @@
       return `<div class="ln pendiente">
         <div class="ctl"><button type="button" data-menos="${i}" aria-label="Uno menos">−</button><output>${l.cantidad}</output><button type="button" data-mas="${i}" aria-label="Uno más">+</button></div>
         <div>${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}</div>
-        <span class="imp">${p ? euros(precioLinea(idx, l) * l.cantidad) : ''}</span></div>`;
+        <span class="imp">${p ? euros(precioLinea(idx, l, enSala()) * l.cantidad) : ''}</span></div>`;
     }).join('') : '';
-    $('#c-lineas').innerHTML = (enviados + pendHTML) || '<p class="vacio">Toca los productos de la izquierda para añadirlos.</p>';
+    $('#c-lineas').innerHTML = (enviados + pendHTML) || '<p class="vacio">Toca los productos de la carta para añadirlos.</p>';
     const tEnv = lineasPendientes().reduce((s, l) => s + l.unitario * l.cantidad, 0);
     const tCob = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.lineas.reduce((a, l) => a + l.unitario * (l.pagadas || 0), 0), 0);
     if (tCob) $('#c-info').textContent += ` · cobrado ${euros(tCob)}`;
-    const tPend = pend.reduce((s, l) => s + (idx.prod.has(l.producto) ? precioLinea(idx, l) * l.cantidad : 0), 0);
-    $('#c-total').textContent = euros(tEnv + tPend);
+    const tPend = pend.reduce((s, l) => s + (idx.prod.has(l.producto) ? precioLinea(idx, l, enSala()) * l.cantidad : 0), 0);
+    $('#c-total').textContent = euros(tEnv + tPend); { const nL = ((pedidosCuenta || []).flatMap(x => (x.lineas || [])).length) + (((pendientes[cuenta && cuenta.id] || [])).length); $('#c-hoja-txt').textContent = `Cuenta · ${nL} ${nL === 1 ? 'línea' : 'líneas'} · ${$('#c-total').textContent}`; }
     if (enviando[cuenta.id]) { $('#c-enviar').textContent = 'Enviando…'; $('#c-enviar').disabled = true; }
     else {
       $('#c-enviar').textContent = pend.length ? `Enviar a cocina (${pend.reduce((s, l) => s + l.cantidad, 0)})` : 'Enviar a cocina';
@@ -404,7 +412,7 @@
       gEl.querySelectorAll('input:not(:checked)').forEach(i => { i.disabled = n >= g.max; });
     });
     $('#dp-cant').textContent = enCurso.cantidad;
-    $('#dp-precio').textContent = euros(precioLinea(idx, enCurso) * enCurso.cantidad);
+    $('#dp-precio').textContent = euros(precioLinea(idx, enCurso, enSala()) * enCurso.cantidad);
   }
   dp.addEventListener('change', e => { if (e.target.closest('#dp-grupos')) { e.target.closest('.grupo').classList.remove('falta'); refrescaExtras(); } });
   $('#dp-menos').onclick = () => { enCurso.cantidad = Math.max(1, enCurso.cantidad - 1); refrescaExtras(); };
