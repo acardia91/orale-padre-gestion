@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241600">
+<link rel="stylesheet" href="admin.css?v=202611241612">
 </head>
 <body>
 
@@ -132,7 +132,7 @@
   <!-- ══ RESEÑAS ══ -->
   <section class="sec" data-sec="resenas" hidden>
     <header class="cab">
-      <div><h1>Reseñas</h1><p>Lo que opinan los clientes: las opiniones de la web (tras cada pedido, en el ticket y con el QR de mesa) y la nota de Uber y Glovo. Las malas, a resolver aquí.</p></div>
+      <div><h1>Reseñas</h1><p>Google de cada local y las valoraciones que dejan los clientes de su propio pedido o ticket (como en Last App).</p></div>
       <div class="cab-acc periodo" role="group" aria-label="Periodo">
         <button class="b b-mini" type="button" data-rsrango="7">7 días</button>
         <button class="b b-mini" type="button" data-rsrango="30">30 días</button>
@@ -140,23 +140,45 @@
         <button class="b b-mini" type="button" data-rsrango="todo">Todo</button>
       </div>
     </header>
-    <div class="kpis" id="rs-kpis"></div>
-    <div class="dos-col">
-      <div class="panel"><h2>Estrellas</h2><div id="rs-reparto"></div></div>
-      <div class="panel"><h2>Por local</h2><div class="tabla-wrap"><table class="tabla" id="rs-locales"></table></div></div>
+    <div class="pestanas" role="tablist">
+      <button type="button" role="tab" data-rspest="google">Google por local</button>
+      <button type="button" role="tab" data-rspest="pedidos">Valoraciones de pedidos</button>
     </div>
-    <div class="panel">
-      <div class="panel-cab"><h2>Opiniones</h2>
-        <div class="botones" role="group" aria-label="Filtro">
-          <button class="b b-mini" type="button" data-rsfiltro="todas">Todas</button>
-          <button class="b b-mini" type="button" data-rsfiltro="pendientes">Malas sin resolver</button>
-          <button class="b b-mini" type="button" data-rsfiltro="malas">Malas (1-3 ★)</button>
-          <button class="b b-mini" type="button" data-rsfiltro="comentario">Con comentario</button></div></div>
-      <div id="rs-lista"></div>
+
+    <div data-rsvista="google">
+      <p class="nota" id="gg-actualizado" style="margin-top:14px"></p>
+      <div class="kpis" id="gg-kpis"></div>
+      <div class="gg-locales" id="gg-locales"></div>
+      <div class="panel">
+        <div class="panel-cab"><h2>Reseñas de Google</h2>
+          <div class="botones" role="group" aria-label="Filtro">
+            <button class="b b-mini" type="button" data-ggfiltro="todas">Todas</button>
+            <button class="b b-mini" type="button" data-ggfiltro="sinresp">Sin responder</button>
+            <button class="b b-mini" type="button" data-ggfiltro="malas">Malas (1-3 ★)</button></div></div>
+        <p class="nota">Responder a las reseñas se hace en Google con la cuenta que gestiona el perfil del local (botón "Responder en Google").</p>
+        <div id="gg-lista"></div>
+      </div>
     </div>
-    <div class="panel"><h2>Pedir opiniones</h2>
-      <p class="nota">Después de cada pedido web entregado le llega al cliente un email para valorar. Además, el ticket lleva el enlace, y puedes imprimir un cartel con QR para las mesas. Al terminar, a todos los clientes se les invita a dejar también la reseña en Google (a todos, no sólo a los contentos: así lo exige Google).</p>
-      <div class="rs-enlaces" id="rs-enlaces"></div></div>
+
+    <div data-rsvista="pedidos" hidden>
+      <div class="kpis" id="rs-kpis" style="margin-top:16px"></div>
+      <div class="dos-col">
+        <div class="panel"><h2>Estrellas</h2><div id="rs-reparto"></div></div>
+        <div class="panel"><h2>Por local</h2><div class="tabla-wrap"><table class="tabla" id="rs-locales"></table></div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-cab"><h2>Valoraciones</h2>
+          <div class="botones" role="group" aria-label="Filtro">
+            <button class="b b-mini" type="button" data-rsfiltro="todas">Todas</button>
+            <button class="b b-mini" type="button" data-rsfiltro="pendientes">Malas sin resolver</button>
+            <button class="b b-mini" type="button" data-rsfiltro="malas">Malas (1-3 ★)</button>
+            <button class="b b-mini" type="button" data-rsfiltro="comentario">Con comentario</button></div></div>
+        <div id="rs-lista"></div>
+      </div>
+      <div class="panel"><h2>Cómo valoran los clientes</h2>
+        <p class="nota">Cada ticket del TPV lleva un QR para valorar esa visita. Los pedidos web se valoran desde el seguimiento del pedido y desde el email que llega al entregarlo. También puedes imprimir un cartel con QR para las mesas. Al terminar, a todos se les invita a dejar también la reseña en Google (a todos: así lo exige Google).</p>
+        <div class="rs-enlaces" id="rs-enlaces"></div></div>
+    </div>
   </section>
 
   <!-- ══ ELEGIR LOCAL (secciones que son de un local concreto) ══ -->
@@ -663,23 +685,24 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241600"></script>
-<script src="/pedir/plano.js?v=202611241600"></script>
-<script src="/pedir/ticket.js?v=202611241600"></script>
-<script src="sec-plano.js?v=202611241600"></script>
-<script src="sec-resumen.js?v=202611241600"></script>
-<script src="sec-carta.js?v=202611241600"></script>
-<script src="sec-local.js?v=202611241600"></script>
-<script src="sec-pedidos.js?v=202611241600"></script>
-<script src="sec-reservas.js?v=202611241600"></script>
-<script src="sec-clientes.js?v=202611241600"></script>
-<script src="sec-control.js?v=202611241600"></script>
-<script src="sec-panel.js?v=202611241600"></script>
-<script src="sec-delivery.js?v=202611241600"></script>
-<script src="sec-promos.js?v=202611241600"></script>
-<script src="sec-informes.js?v=202611241600"></script>
-<script src="sec-resenas.js?v=202611241600"></script>
-<script src="admin.js?v=202611241600"></script>
+<script src="/pedir/api.js?v=202611241612"></script>
+<script src="/pedir/plano.js?v=202611241612"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="/pedir/ticket.js?v=202611241612"></script>
+<script src="sec-plano.js?v=202611241612"></script>
+<script src="sec-resumen.js?v=202611241612"></script>
+<script src="sec-carta.js?v=202611241612"></script>
+<script src="sec-local.js?v=202611241612"></script>
+<script src="sec-pedidos.js?v=202611241612"></script>
+<script src="sec-reservas.js?v=202611241612"></script>
+<script src="sec-clientes.js?v=202611241612"></script>
+<script src="sec-control.js?v=202611241612"></script>
+<script src="sec-panel.js?v=202611241612"></script>
+<script src="sec-delivery.js?v=202611241612"></script>
+<script src="sec-promos.js?v=202611241612"></script>
+<script src="sec-informes.js?v=202611241612"></script>
+<script src="sec-resenas.js?v=202611241612"></script>
+<script src="admin.js?v=202611241612"></script>
 </body>
 </html>
 

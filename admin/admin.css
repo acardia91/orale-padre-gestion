@@ -375,3 +375,15 @@ textarea{resize:vertical}
 .rs-enlace .campo{display:block;margin:8px 0;font-size:12.5px;font-weight:600;color:var(--humo)}
 .rs-enlace .campo input{display:block;width:100%;margin-top:4px;padding:9px 11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:14px;color:var(--tinta)}
 .rs-enlace .botones{display:flex;flex-wrap:wrap;gap:6px}
+.gg-locales{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:16px 0}
+.gg-card{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sombra)}
+.gg-card header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.gg-card header a{text-decoration:none}
+.gg-nota{display:flex;align-items:baseline;gap:8px;margin:8px 0 2px}
+.gg-nota b{font-size:34px;letter-spacing:-.02em}
+.gg-card p{margin:4px 0;font-size:13px;color:var(--humo)}
+.gg-plat{display:flex;flex-wrap:wrap;gap:4px 12px;border-top:1px solid var(--borde);padding-top:8px;margin-top:8px!important}
+.gg-plat b{color:var(--tinta)}
+.gg-plat b.rojo{color:var(--burdeos)}
+.rs-card header .rs-nombre{font-size:15px}
+.rs-ref{margin:2px 0 6px;font-size:13px;color:var(--humo)}
