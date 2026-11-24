@@ -135,7 +135,7 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .tq-btns .b{padding:17px;font-size:17px;font-weight:700}
 
 /* ── Diálogos ── */
-.dlg{border:0;border-radius:16px;background:var(--blanco);color:var(--tinta);padding:24px;width:min(500px,94vw);max-height:92vh;box-shadow:var(--sombra-2)}
+.dlg{position:relative;border:0;border-radius:16px;background:var(--blanco);color:var(--tinta);padding:24px;width:min(500px,94vw);max-height:92vh;box-shadow:var(--sombra-2)}
 .dlg-ancho{width:min(700px,94vw)}
 .dlg::backdrop{background:rgba(36,26,28,.45)}
 .dlg h2{font-size:22px;margin-bottom:14px}
@@ -249,3 +249,6 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .cb-partes b{color:var(--tinta,#241A1C)}
 .ln.cobrada{opacity:.55}
 .ln small.pagado{color:#2E6B2A;font-weight:700}
+.dlg-x{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;border-radius:50%;background:var(--borde);color:var(--tinta);font-size:20px;line-height:1;cursor:pointer;z-index:2}
+.dlg-x:hover{filter:brightness(.92)}
+.dlg h2{padding-right:48px}

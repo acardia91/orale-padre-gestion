@@ -610,4 +610,16 @@
       <div class="l"><span>Tarjeta</span><span>${euros(suma(t => t.metodo === 'tarjeta'))}</span></div><hr>
       <div class="l tot"><span>TOTAL</span><span>${euros(suma(() => true))}</span></div>`);
   };
+  /* ══ Todas las ventanas se pueden cerrar: ✕ arriba, tocando fuera o con Esc ══ */
+  document.querySelectorAll('dialog.dlg').forEach(d => {
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'dlg-x'; x.setAttribute('aria-label', 'Cerrar'); x.textContent = '✕';
+    x.onclick = () => d.close('cancel');
+    d.prepend(x);
+    d.addEventListener('click', e => {
+      if (e.target !== d) return;
+      const r = d.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close('cancel');
+    });
+  });
 })();
