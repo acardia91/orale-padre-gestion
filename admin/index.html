@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241624">
+<link rel="stylesheet" href="admin.css?v=202611241735">
 </head>
 <body>
 
@@ -234,6 +234,17 @@
     </div>
     <p class="aviso aviso-ok" id="dl-ok" hidden></p>
     <div class="pks" id="dl-kpis"></div>
+    <div class="panel dl-claves"><h2>Lo importante</h2><ul id="dl-claves"></ul></div>
+    <div class="dl-plats" id="dl-plats"></div>
+    <div class="pn-fila">
+      <div class="panel"><h2>Ventas por día</h2><div id="dl-graf"></div></div>
+      <div class="panel"><h2>Qué día se vende más</h2><div id="dl-semana"></div></div>
+    </div>
+    <div class="pn-fila">
+      <div class="panel"><h2>Marketing: anuncios y promociones</h2><div class="tabla-wrap"><table class="tabla" id="dl-mkt"></table></div><p class="nota">ROAS = ventas ÷ gasto en anuncios. Por debajo de 4 conviene revisar la campaña.</p></div>
+      <div class="panel"><h2>Productos más pedidos</h2><div class="tabla-wrap"><table class="tabla" id="dl-top"></table></div></div>
+    </div>
+    <div class="panel"><h2>Operación</h2><div class="tabla-wrap"><table class="tabla" id="dl-ops"></table></div></div>
     <div class="panel"><h2>Por local y plataforma</h2><div class="tabla-wrap"><table class="tabla" id="dl-locales"></table></div></div>
     <div class="pn-fila">
       <div class="panel"><h2>Resumen del agente</h2><div id="dl-resumenes"></div></div>
@@ -396,7 +407,37 @@
       </div>
     </header>
     <div class="kpis" id="rv-kpis"></div>
+    <div class="panel"><h2>Ocupación por horas</h2><p class="nota">Comensales sentados a cada hora (cada reserva ocupa la mesa el tiempo de "duración") frente al aforo.</p><div class="rv-ocup" id="rv-ocup"></div></div>
     <div class="panel"><div class="tabla-wrap"><table class="tabla" id="rv-lista"></table></div></div>
+    <details class="panel rv-ajustes"><summary><h2>Ajustes de reservas online</h2></summary>
+      <p class="nota">Turnos por día (si un día lo dejas vacío, se usa el horario del local). Escribe las franjas así: <b>13:30-16:00, 20:30-23:30</b>. Pon <b>cerrado</b> para no aceptar reservas ese día.</p>
+      <div class="rv-turnos" id="rv-turnos"></div>
+      <div class="rv-cfg">
+        <label>Cada (min)<select id="rc-intervalo"><option>15</option><option>30</option><option>60</option></select></label>
+        <label>Duración de la mesa (min)<input id="rc-duracion" type="number" min="30" max="240" step="15"></label>
+        <label>Aforo (comensales a la vez)<input id="rc-aforo" type="number" min="1" max="500"></label>
+        <label>Máx. reservas por hora<input id="rc-maxfranja" type="number" min="0" max="50" placeholder="Sin límite"></label>
+        <label>Máx. personas online<input id="rc-maxp" type="number" min="1" max="50"></label>
+        <label>Grupos más grandes<select id="rc-grupos"><option value="llamar">Que llamen</option><option value="solicitud">Solicitud (la confirmáis vosotros)</option></select></label>
+        <label>Antelación mínima (min)<input id="rc-antelacion" type="number" min="0" max="2880" step="15"></label>
+        <label>Reservar hasta (días vista)<input id="rc-vista" type="number" min="1" max="365"></label>
+        <label>Cancelar online hasta (min antes)<input id="rc-cancelar" type="number" min="0" max="2880" step="15"></label>
+        <label class="chk"><input type="checkbox" id="rc-recordatorio"> Email recordatorio 3 h antes</label>
+      </div>
+      <p class="aviso" id="rc-error" hidden></p>
+      <div class="botones"><button class="b b-ok" type="button" id="rc-guardar">Guardar ajustes</button></div>
+      <h3 style="margin-top:22px">Días especiales</h3>
+      <p class="nota">Festivos, cierres o días con otro horario/aforo.</p>
+      <div class="tabla-wrap"><table class="tabla" id="rv-especiales"></table></div>
+      <div class="rv-esp-nuevo">
+        <label>Día<input type="date" id="re-fecha"></label>
+        <label class="chk"><input type="checkbox" id="re-cerrado"> Cerrado</label>
+        <label>Franjas<input id="re-turnos" placeholder="13:30-16:00"></label>
+        <label>Aforo<input id="re-aforo" type="number" min="1" placeholder="Igual"></label>
+        <label>Nota<input id="re-nota" maxlength="200" placeholder="Navidad, evento…"></label>
+        <button class="b" type="button" id="re-guardar">Añadir</button>
+      </div>
+    </details>
   </section>
 
   <!-- ══ CLIENTES ══ -->
@@ -540,6 +581,7 @@
         <label>Nombre *<input id="fp-nombre" maxlength="60" required></label>
         <div class="dos">
           <label>Precio (€) *<input id="fp-precio" inputmode="decimal" required></label>
+          <label>Precio en el local (€)<input id="fp-precio-local" inputmode="decimal" placeholder="Igual"></label>
           <label>Categoría<select id="fp-cat"></select></label>
         </div>
         <label>Coste por unidad (€) <small style="font-weight:400;color:var(--humo)">privado: sólo lo ven los encargados</small><input id="fp-coste" inputmode="decimal" placeholder="Según escandallo"><small id="fp-coste-fuente" style="font-weight:400;color:var(--humo)"></small></label>
@@ -725,25 +767,25 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241624"></script>
-<script src="/pedir/plano.js?v=202611241624"></script>
+<script src="/pedir/api.js?v=202611241735"></script>
+<script src="/pedir/plano.js?v=202611241735"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611241624"></script>
-<script src="sec-plano.js?v=202611241624"></script>
-<script src="sec-resumen.js?v=202611241624"></script>
-<script src="sec-carta.js?v=202611241624"></script>
-<script src="sec-local.js?v=202611241624"></script>
-<script src="sec-pedidos.js?v=202611241624"></script>
-<script src="sec-reservas.js?v=202611241624"></script>
-<script src="sec-clientes.js?v=202611241624"></script>
-<script src="sec-control.js?v=202611241624"></script>
-<script src="sec-panel.js?v=202611241624"></script>
-<script src="sec-delivery.js?v=202611241624"></script>
-<script src="sec-promos.js?v=202611241624"></script>
-<script src="sec-informes.js?v=202611241624"></script>
-<script src="sec-resenas.js?v=202611241624"></script>
-<script src="sec-equipo.js?v=202611241624"></script>
-<script src="admin.js?v=202611241624"></script>
+<script src="/pedir/ticket.js?v=202611241735"></script>
+<script src="sec-plano.js?v=202611241735"></script>
+<script src="sec-resumen.js?v=202611241735"></script>
+<script src="sec-carta.js?v=202611241735"></script>
+<script src="sec-local.js?v=202611241735"></script>
+<script src="sec-pedidos.js?v=202611241735"></script>
+<script src="sec-reservas.js?v=202611241735"></script>
+<script src="sec-clientes.js?v=202611241735"></script>
+<script src="sec-control.js?v=202611241735"></script>
+<script src="sec-panel.js?v=202611241735"></script>
+<script src="sec-delivery.js?v=202611241735"></script>
+<script src="sec-promos.js?v=202611241735"></script>
+<script src="sec-informes.js?v=202611241735"></script>
+<script src="sec-resenas.js?v=202611241735"></script>
+<script src="sec-equipo.js?v=202611241735"></script>
+<script src="admin.js?v=202611241735"></script>
 </body>
 </html>
 

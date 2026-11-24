@@ -59,7 +59,7 @@
           <td class="mini">${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : '<span class="sinfoto"></span>'}</td>
           <td><b>${esc(p.nombre)}</b>${p.desc ? `<small>${esc(p.desc.slice(0, 80))}${p.desc.length > 80 ? '…' : ''}</small>` : ''}</td>
           <td>${c ? esc(c.nombre) : '<span class="tag rojo">Sin categoría</span>'}</td>
-          <td class="num"><b>${euros(p.precio)}</b></td>
+          <td class="num"><b>${euros(p.precio)}</b>${Number.isInteger(p.precio_local) ? `<small>Local ${euros(p.precio_local)}</small>` : ''}</td>
           <td class="num">${costes[p.id] ? `${euros(costes[p.id].coste)}<small class="${costes[p.id].coste * 110 / Math.max(1, p.precio) > 33 ? 'fc-mal' : 'fc-bien'}">${Math.round(costes[p.id].coste * 1100 / Math.max(1, p.precio)) / 10} %</small>` : '<span class="tag gris">—</span>'}</td>
           <td>${p.grupos.length ? p.grupos.map(g => esc((grupo(g) || {}).nombre || '?')).join('<br>') : '—'}</td>
           <td>${est || '—'}</td>
@@ -80,7 +80,7 @@
     const p = id ? prod(id) : { id: null, nombre: '', desc: '', alergenos: [], foto: null, precio: 0, agotado: false, alcohol: false, oculto: false, grupos: [] };
     editando = id; fotoTmp = p.foto;
     $('#fp-titulo').textContent = id ? 'Editar producto' : 'Nuevo producto';
-    $('#fp-nombre').value = p.nombre; $('#fp-precio').value = id ? aEur(p.precio) : ''; $('#fp-desc').value = p.desc || '';
+    $('#fp-nombre').value = p.nombre; $('#fp-precio').value = id ? aEur(p.precio) : ''; $('#fp-precio-local').value = id && Number.isInteger(p.precio_local) ? aEur(p.precio_local) : ''; $('#fp-desc').value = p.desc || '';
     $('#fp-coste').value = id && costes[id] ? aEur(costes[id].coste) : '';
     $('#fp-coste-fuente').textContent = id && costes[id] ? (costes[id].fuente || '') : 'Si lo dejas vacío, no cuenta en el gasto en producto.';
     $('#fp-cat').innerHTML = carta.categorias.map(c => `<option value="${c.clave}">${esc(c.nombre)}</option>`).join('');
@@ -119,8 +119,10 @@
     const nombre = $('#fp-nombre').value.trim(); const precio = aCent($('#fp-precio').value);
     if (!nombre) return err('Falta el nombre.');
     if (precio == null || precio < 0) return err('El precio no es válido. Escríbelo así: 9,95');
+    const pl = $('#fp-precio-local').value.trim() ? aCent($('#fp-precio-local').value) : undefined;
+    if (pl === null || pl < 0) return err('El precio en el local no es válido. Escríbelo así: 10,50 (o déjalo vacío)');
     if (!carta.categorias.length) return err('Primero crea una categoría.');
-    const datos = { nombre, precio, desc: $('#fp-desc').value.trim(), foto: fotoTmp || null,
+    const datos = { nombre, precio, precio_local: pl === precio ? undefined : pl, desc: $('#fp-desc').value.trim(), foto: fotoTmp || null,
       alergenos: [...dp.querySelectorAll('#fp-alerg input:checked')].map(i => i.value),
       grupos: [...dp.querySelectorAll('#fp-grupos input:checked')].map(i => i.value),
       alcohol: $('#fp-alcohol').checked, agotado: $('#fp-agotado').checked, oculto: $('#fp-oculto').checked, solo: $('#fp-solo').value || undefined };

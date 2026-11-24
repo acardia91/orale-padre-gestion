@@ -20,7 +20,7 @@
   const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
   const LOCS = { 'san-luis': 'San Luis', remedios: 'Los Remedios', 'sevilla-este': 'Sevilla Este', tomares: 'Tomares' };
   const PLAT = { uber: ['Uber Eats', '#06C167'], glovo: ['Glovo', '#FFC244'] };
-  let rango = '7', filtroLocal = '', filas = [], resumenes = [];
+  let rango = '7', filtroLocal = '', filas = [], resumenes = [], previas = [];
   const dia = f => new Date(f + 'T12:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
   const val = r => r.valoracion == null ? '—' : r.valoracion_tipo === 'porcentaje' ? Math.round(r.valoracion) + ' %' : String(r.valoracion).replace('.', ',') + ' ★';
 
@@ -36,12 +36,16 @@
     document.querySelectorAll('[data-drng]').forEach(b => b.classList.toggle('b-ok', b.dataset.drng === rango));
     document.querySelectorAll('[data-dloc]').forEach(b => b.classList.toggle('b-ok', b.dataset.dloc === filtroLocal));
     const [d, h] = calcRango(rango);
-    try { [filas, resumenes] = await Promise.all([api.deliveryEntre(d, h), api.resumenesDelivery(d, h)]); }
+    // Periodo anterior de la misma duración (para comparar).
+    const dias = Math.round((new Date(h) - new Date(d)) / 86400000) + 1;
+    const pd = new Date(d + 'T12:00'); pd.setDate(pd.getDate() - dias); const ph = new Date(d + 'T12:00'); ph.setDate(ph.getDate() - 1);
+    try { [filas, resumenes, previas] = await Promise.all([api.deliveryEntre(d, h), api.resumenesDelivery(d, h), api.deliveryEntre(iso(pd), iso(ph)).catch(() => [])]); }
     catch (ex) { $('#dl-kpis').innerHTML = `<p class="aviso">${esc(mensajeError(ex))}</p>`; return; }
     pinta(d, h);
   }
   function pinta(d, h) {
     const fs = filas.filter(r => !filtroLocal || r.local === filtroLocal);
+    try { analisis(fs, previas.filter(r => !filtroLocal || r.local === filtroLocal)); } catch (e) { console.warn(e); }
     const s = (arr, k) => arr.reduce((a, r) => a + (r[k] || 0), 0);
     const ventas = s(fs, 'ventas'), pedidos = s(fs, 'pedidos'), neto = s(fs, 'neto'), comision = s(fs, 'comision'), anuncios = s(fs, 'anuncios'), promos = s(fs, 'promociones');
     const conVal = fs.filter(r => r.valoracion != null && r.valoracion_tipo !== 'porcentaje');
@@ -81,6 +85,84 @@
       ${(r.alertas || []).map(a => `<span class="tag ${a.nivel === 'alta' ? 'rojo' : a.nivel === 'media' ? '' : 'gris'}">${esc(a.texto)}</span>`).join('')}</div>`).join('')
       : '<p class="nota">Aquí aparece cada día el resumen del agente: qué ha ido bien, qué ha ido mal y qué revisar, por local y en general.</p>';
   }
+  /* ══ Análisis ══ */
+  function analisis(fs, ant) {
+    const s = (arr, k) => arr.reduce((a, r) => a + (+r[k] || 0), 0);
+    const pc = (a, b) => b ? Math.round(a * 1000 / b) / 10 : null;
+    const dlt = (a, b) => { if (!b) return ''; const v = Math.round((a - b) * 1000 / b) / 10; return `<span class="dl ${v >= 0 ? 'sube' : 'baja'}">${v >= 0 ? '▲' : '▼'} ${Math.abs(v).toLocaleString('es-ES')}%</span>`; };
+    const num = v => v == null ? '—' : v.toLocaleString('es-ES') + '%';
+    const porPlat = p => fs.filter(r => r.plataforma === p), antPlat = p => ant.filter(r => r.plataforma === p);
+
+    // Uber vs Glovo
+    $('#dl-plats').innerHTML = Object.keys(PLAT).map(p => {
+      const a = porPlat(p), b = antPlat(p); const v = s(a, 'ventas'), n = s(a, 'pedidos'), neto = s(a, 'neto'), com = s(a, 'comision'), ads = s(a, 'anuncios'), pro = s(a, 'promociones');
+      const vals = a.filter(r => r.valoracion != null).map(r => +r.valoracion); const vm = vals.length ? vals.reduce((x, y) => x + y, 0) / vals.length : null;
+      const fila = (t, x, sub) => `<div><small>${t}</small><b>${x}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+      return `<article class="dl-plat" style="--c:${PLAT[p][1]}"><header><span class="plat" style="--c:${PLAT[p][1]}">${PLAT[p][0]}</span></header>
+        <div class="dl-pgrid">${fila('Ventas', euros(v), dlt(v, s(b, 'ventas')) + ' vs antes')}${fila('Pedidos', n, dlt(n, s(b, 'pedidos')))}
+        ${fila('Ticket medio', n ? euros(Math.round(v / n)) : '—')}${fila('Os queda (neto)', neto ? euros(neto) : '—', neto ? num(pc(neto, v)) + ' de las ventas' : 'el agente no lo trae')}
+        ${fila('Comisión', com ? euros(com) : '—', com ? num(pc(com, v)) : '')}${fila('Anuncios + promos', ads + pro ? euros(ads + pro) : '—', ads + pro ? num(pc(ads + pro, v)) + ' de las ventas' : '')}
+        ${fila('Cancelados / errores', `${s(a, 'cancelados')} / ${s(a, 'errores')}`, n ? num(pc(s(a, 'cancelados') + s(a, 'errores'), n)) : '')}
+        ${fila('Valoración', vm == null ? '—' : p === 'glovo' ? Math.round(vm) + '%' : vm.toFixed(2).replace('.', ',') + ' ★')}</div></article>`;
+    }).join('');
+
+    // Ventas por día (barras apiladas Uber + Glovo)
+    const dias = [...new Set(fs.map(r => r.fecha))].sort();
+    const porDia = dias.map(f => ({ f, u: s(fs.filter(r => r.fecha === f && r.plataforma === 'uber'), 'ventas'), g: s(fs.filter(r => r.fecha === f && r.plataforma === 'glovo'), 'ventas') }));
+    const max = Math.max(1, ...porDia.map(x => x.u + x.g));
+    $('#dl-graf').innerHTML = porDia.length ? `<div class="dl-barras">${porDia.map(x => `<div class="dl-b" title="${dia(x.f)} · Uber ${euros(x.u)} · Glovo ${euros(x.g)}">
+        <b>${Math.round((x.u + x.g) / 100)}€</b><span class="g" style="height:${x.g * 100 / max}%"></span><span class="u" style="height:${x.u * 100 / max}%"></span><small>${dia(x.f).split(' ').slice(0, 2).join(' ')}</small></div>`).join('')}</div>
+        <p class="ley-mini"><i style="background:${PLAT.uber[1]}"></i> Uber Eats <i style="background:${PLAT.glovo[1]}"></i> Glovo</p>` : '<p class="nota">Sin datos.</p>';
+
+    // Día de la semana (media)
+    const DS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']; const sem = DS.map(() => ({ v: 0, d: new Set() }));
+    fs.forEach(r => { const i = (new Date(r.fecha + 'T12:00').getDay() + 6) % 7; sem[i].v += r.ventas; sem[i].d.add(r.fecha); });
+    const med = sem.map(x => x.d.size ? x.v / x.d.size : 0); const mm = Math.max(1, ...med); const mejor = med.indexOf(Math.max(...med));
+    $('#dl-semana').innerHTML = `<div class="dl-sem">${DS.map((d, i) => `<div class="${i === mejor && med[i] ? 'top' : ''}"><span>${d}</span><div class="barra-h"><span style="width:${med[i] * 100 / mm}%"></span></div><b>${med[i] ? euros(Math.round(med[i])) : '—'}</b></div>`).join('')}</div><p class="nota">Venta media de ese día de la semana en el periodo.</p>`;
+
+    // Marketing
+    const gr = {}; fs.forEach(r => { const k = r.local + '|' + r.plataforma; const g = gr[k] = gr[k] || { local: r.local, p: r.plataforma, v: 0, ads: 0, pro: 0, n: 0 }; g.v += r.ventas; g.ads += r.anuncios || 0; g.pro += r.promociones || 0; g.n += r.pedidos; });
+    const gm = Object.values(gr).filter(g => g.ads || g.pro).sort((a, b) => (b.ads + b.pro) - (a.ads + a.pro));
+    $('#dl-mkt').innerHTML = gm.length ? `<thead><tr><th>Local</th><th>Plataforma</th><th class="num">Anuncios</th><th class="num">Promos</th><th class="num">% ventas</th><th class="num">ROAS</th><th class="num">€ por pedido</th></tr></thead><tbody>` +
+      gm.map(g => { const roas = g.ads ? g.v / g.ads : null; return `<tr><td><b>${LOCS[g.local] || esc(g.local)}</b></td><td><span class="plat" style="--c:${PLAT[g.p][1]}">${PLAT[g.p][0]}</span></td>
+        <td class="num">${g.ads ? euros(g.ads) : '—'}</td><td class="num">${g.pro ? euros(g.pro) : '—'}</td><td class="num">${num(pc(g.ads + g.pro, g.v))}</td>
+        <td class="num">${roas == null ? '—' : `<span class="tag ${roas >= 8 ? 'verde' : roas < 4 ? 'rojo' : ''}">${roas.toFixed(1).replace('.', ',')}</span>`}</td><td class="num">${g.n ? euros(Math.round((g.ads + g.pro) / g.n)) : '—'}</td></tr>`; }).join('') + '</tbody>'
+      : '<tbody><tr><td class="nota">El agente aún no ha traído gasto en anuncios ni promociones en este periodo.</td></tr></tbody>';
+
+    // Productos (del detalle que trae el agente)
+    const top = new Map();
+    fs.forEach(r => { const t = (r.detalle && (r.detalle.top || r.detalle.productos)) || []; (Array.isArray(t) ? t : []).forEach((x, i) => {
+      const nombre = typeof x === 'string' ? x : x.nombre || x.producto; if (!nombre) return; const k = nombre.toLowerCase().trim();
+      const o = top.get(k) || { nombre, veces: 0, uds: 0, plats: new Set() }; o.veces++; o.uds += +(x.uds || x.unidades || x.cantidad || 0); o.plats.add(r.plataforma); top.set(k, o); }); });
+    const tl = [...top.values()].sort((a, b) => (b.uds - a.uds) || (b.veces - a.veces)).slice(0, 12);
+    $('#dl-top').innerHTML = tl.length ? `<thead><tr><th>Producto</th><th class="num">Unidades</th><th class="num">Días en el top</th><th>Dónde</th></tr></thead><tbody>` +
+      tl.map(x => `<tr><td><b>${esc(x.nombre)}</b></td><td class="num">${x.uds || '—'}</td><td class="num">${x.veces}</td><td>${[...x.plats].map(p => `<span class="plat" style="--c:${PLAT[p][1]}">${PLAT[p][0]}</span>`).join(' ')}</td></tr>`).join('') + '</tbody>'
+      : '<tbody><tr><td class="nota">El agente aún no ha traído los productos más pedidos.</td></tr></tbody>';
+
+    // Operación por local
+    const ol = {}; fs.forEach(r => { const o = ol[r.local] = ol[r.local] || { prep: [], cerrado: 0, err: 0, can: 0, n: 0 }; if (r.tiempo_prep != null) o.prep.push(+r.tiempo_prep); o.cerrado += r.minutos_cerrado || 0; o.err += r.errores || 0; o.can += r.cancelados || 0; o.n += r.pedidos; });
+    $('#dl-ops').innerHTML = Object.keys(ol).length ? `<thead><tr><th>Local</th><th class="num">Pedidos</th><th class="num">Prep. media</th><th class="num">Tiempo cerrado</th><th class="num">Errores</th><th class="num">Cancelados</th></tr></thead><tbody>` +
+      Object.entries(ol).sort((a, b) => b[1].n - a[1].n).map(([l, o]) => `<tr><td><b>${LOCS[l] || esc(l)}</b></td><td class="num">${o.n}</td>
+        <td class="num">${o.prep.length ? Math.round(o.prep.reduce((a, b) => a + b, 0) / o.prep.length) + ' min' : '—'}</td>
+        <td class="num">${o.cerrado ? `<span class="tag rojo">${o.cerrado} min</span>` : '—'}</td><td class="num">${o.err ? `${o.err} (${num(pc(o.err, o.n))})` : '0'}</td><td class="num">${o.can || 0}</td></tr>`).join('') + '</tbody>'
+      : '<tbody><tr><td class="nota">Sin datos.</td></tr></tbody>';
+
+    // Lo importante (conclusiones automáticas)
+    const c = [];
+    const vT = s(fs, 'ventas'), vA = s(ant, 'ventas');
+    if (vT && vA) c.push(`Ventas de delivery ${vT >= vA ? 'suben' : 'bajan'} un <b>${Math.abs(Math.round((vT - vA) * 100 / vA))}%</b> frente al periodo anterior (${euros(vT)} vs ${euros(vA)}).`);
+    const u = porPlat('uber'), g = porPlat('glovo');
+    if (s(u, 'ventas') && s(g, 'ventas')) c.push(`Uber pesa el <b>${Math.round(s(u, 'ventas') * 100 / vT)}%</b> de las ventas y Glovo el <b>${Math.round(s(g, 'ventas') * 100 / vT)}%</b>.`);
+    if (s(u, 'neto') && s(g, 'neto')) c.push(`De cada 100 € os quedan <b>${Math.round(s(u, 'neto') * 100 / s(u, 'ventas'))} €</b> en Uber y <b>${Math.round(s(g, 'neto') * 100 / s(g, 'ventas'))} €</b> en Glovo.`);
+    if (med[mejor]) c.push(`El mejor día es el <b>${['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'][mejor]}</b> (${euros(Math.round(med[mejor]))} de media).`);
+    const locs = [...new Set(fs.map(r => r.local))].map(l => ({ l, v: s(fs.filter(r => r.local === l), 'ventas'), a: s(ant.filter(r => r.local === l), 'ventas') })).filter(x => x.a);
+    const peor = locs.sort((a, b) => (a.v - a.a) / a.a - (b.v - b.a) / b.a)[0];
+    if (peor && peor.v < peor.a * 0.9) c.push(`<b>${LOCS[peor.l]}</b> es el que más cae: ${Math.round((peor.v - peor.a) * 100 / peor.a)}% frente al periodo anterior.`);
+    const cer = fs.filter(r => r.minutos_cerrado > 30); if (cer.length) c.push(`<span class="tag rojo">Ojo</span> ${cer.length} ${cer.length === 1 ? 'día' : 'días'} con la tienda cerrada más de 30 min en horario.`);
+    const mal = gm.filter(x => x.ads && x.v / x.ads < 4); if (mal.length) c.push(`<span class="tag rojo">Anuncios</span> ROAS bajo en ${mal.map(x => `${LOCS[x.local]} (${PLAT[x.p][0]})`).join(', ')}: revisar campaña.`);
+    $('#dl-claves').innerHTML = c.length ? c.map(x => `<li>${x}</li>`).join('') : '<li class="nota">Con unos días más de datos aquí salen las conclusiones.</li>';
+  }
+
   document.querySelectorAll('[data-drng]').forEach(b => b.onclick = () => { rango = b.dataset.drng; cargar(); });
   document.querySelectorAll('[data-dloc]').forEach(b => b.onclick = () => { filtroLocal = b.dataset.dloc; pinta(); document.querySelectorAll('[data-dloc]').forEach(x => x.classList.toggle('b-ok', x.dataset.dloc === filtroLocal)); });
 
