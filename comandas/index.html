@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Comandas · Órale Padre</title>
+<meta name="theme-color" content="#1B1214">
+<link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="comandas.css">
+</head>
+<body>
+
+<!-- ── Entrar ── -->
+<section class="entrar" id="vista-entrar" hidden>
+  <form id="form-entrar">
+    <img src="/img/logo.png" alt="Órale Padre" width="160">
+    <h1>Comandas</h1>
+    <label>Email<input id="e-email" type="email" autocomplete="username" required></label>
+    <label>Contraseña<input id="e-pass" type="password" autocomplete="current-password" required></label>
+    <button class="b b-ok" type="submit">Entrar</button>
+    <p class="e-error" id="e-error" role="alert" hidden></p>
+  </form>
+</section>
+
+<!-- ── Panel ── -->
+<div id="vista-panel" hidden>
+  <header class="barra">
+    <div class="b-local"><strong id="p-local">Tomares</strong><span id="p-reloj"></span></div>
+    <span class="demo" id="p-demo" hidden>DEMO</span>
+    <div class="b-ctrl">
+      <button class="b" id="p-sonido" type="button">🔇 Activar sonido</button>
+      <div class="prep" role="group" aria-label="Tiempo de preparación">
+        <button type="button" id="p-prep-menos" aria-label="Menos minutos">−</button>
+        <span><b id="p-prep">20</b> min</span>
+        <button type="button" id="p-prep-mas" aria-label="Más minutos">+</button>
+      </div>
+      <button class="b" id="p-online" type="button">Pedidos online: ON</button>
+      <button class="b" id="p-agotados" type="button">Agotados</button>
+      <label class="chk"><input type="checkbox" id="p-autoprint"> Imprimir al aceptar</label>
+      <button class="b b-mini" id="p-salir" type="button">Salir</button>
+    </div>
+  </header>
+
+  <main class="columnas">
+    <section class="col" data-col="nuevo"><h2>Nuevos <span class="n" id="n-nuevo">0</span></h2><div class="lista" id="l-nuevo"></div></section>
+    <section class="col" data-col="preparando"><h2>Preparando <span class="n" id="n-preparando">0</span></h2><div class="lista" id="l-preparando"></div></section>
+    <section class="col" data-col="listo"><h2>Listos para recoger <span class="n" id="n-listo">0</span></h2><div class="lista" id="l-listo"></div></section>
+  </main>
+
+  <footer class="pie">
+    <details>
+      <summary>Web hoy: <b id="h-n">0</b> entregados · <b id="h-total">0,00 €</b> · <span id="h-desglose"></span></summary>
+      <div class="hechos" id="l-hechos"></div>
+    </details>
+  </footer>
+</div>
+
+<!-- ── Agotados ── -->
+<dialog class="dlg" id="dlg-agotados">
+  <form method="dialog">
+    <h2>Marcar agotados</h2>
+    <p>Lo que marques deja de poder pedirse en la web al momento.</p>
+    <input id="ag-buscar" type="search" placeholder="Buscar…" autocomplete="off">
+    <div class="ag-lista" id="ag-lista"></div>
+    <button class="b b-ok" value="ok">Hecho</button>
+  </form>
+</dialog>
+
+<!-- ── Cobrar / entregar ── -->
+<dialog class="dlg" id="dlg-cobrar">
+  <form method="dialog">
+    <h2 id="cb-titulo">Entregar pedido</h2>
+    <p class="cb-total" id="cb-total"></p>
+    <div class="cb-btns">
+      <button class="b b-ok" value="efectivo">Cobrado en efectivo</button>
+      <button class="b b-ok" value="tarjeta">Cobrado con tarjeta</button>
+      <button class="b" value="cancel">Volver</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ── Cancelar ── -->
+<dialog class="dlg" id="dlg-cancelar">
+  <form method="dialog">
+    <h2 id="cn-titulo">Cancelar pedido</h2>
+    <label>Motivo (lo ve el cliente)
+      <select id="cn-motivo">
+        <option>Se nos ha agotado un producto</option>
+        <option>No podemos atenderlo a esa hora</option>
+        <option>No vino a recogerlo</option>
+        <option>Lo pidió el cliente</option>
+      </select></label>
+    <div class="cb-btns">
+      <button class="b b-mal" value="si">Cancelar pedido</button>
+      <button class="b" value="cancel">Volver</button>
+    </div>
+  </form>
+</dialog>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/pedir/api.js"></script>
+<script src="/pedir/ticket.js"></script>
+<script src="comandas.js"></script>
+</body>
+</html>
