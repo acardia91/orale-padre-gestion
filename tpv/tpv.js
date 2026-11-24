@@ -156,7 +156,8 @@
     const cat = cats.find(c => c.clave === catActiva);
     $('#prods').innerHTML = (cat ? cat.productos : []).map(id => idx.prod.get(id)).filter(p => p && !p.oculto).map(p => {
        const ag = p.agotado || agotados.has(p.id);
-      return `<button class="prod ${p.grupos.length ? 'extras' : ''}" type="button" data-prod="${p.id}" ${ag ? 'disabled' : ''}>
+      return `<button class="prod ${p.grupos.length ? 'extras' : ''} ${p.foto ? 'con-foto' : ''}" type="button" data-prod="${p.id}" ${ag ? 'disabled' : ''}>
+        ${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : `<i class="ini">${esc(p.nombre.replace(/^(Burro|Nude|Taco|Quesadilla|Combo)\s+/i, '').slice(0, 2))}</i>`}
         <b>${esc(p.nombre)}</b><span>${ag ? 'Agotado' : euros(p.precio)}</span></button>`;
     }).join('');
   }
