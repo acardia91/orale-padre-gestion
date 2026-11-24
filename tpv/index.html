@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611241215">
+<link rel="stylesheet" href="tpv.css?v=202611241313">
 </head>
 <body>
 
@@ -30,12 +30,13 @@
   <header class="barra">
     <button class="b-atras" id="b-atras" type="button" hidden aria-label="Volver a la sala">‹ Sala</button>
     <div class="b-local"><span class="org-ico">ÓP</span><div><strong id="t-local">Tomares</strong><span id="t-reloj"></span></div></div>
+    <span class="t-quien" id="t-quien" title=""></span>
     <span class="demo" id="t-demo" hidden>DEMO</span>
     <div class="b-ctrl">
       <button class="b" id="b-barra" type="button">+ Barra</button>
       <button class="b" id="b-llevar" type="button">+ Para llevar</button>
       <button class="b" id="b-caja" type="button">Caja</button>
-      <button class="b b-mini" id="b-salir" type="button">Salir</button>
+      <button class="b b-mini" id="b-salir" type="button" title="Cerrar sesión (cambiar de persona)">Salir</button>
     </div>
   </header>
 
@@ -79,6 +80,31 @@
     </aside>
   </main>
 </div>
+
+<p class="aviso-flota" id="t-aviso" role="status" aria-live="polite" hidden></p>
+
+<!-- ── Quitar producto enviado / anular cuenta (con clave de encargado) ── -->
+<dialog class="dlg" id="dlg-quitar">
+  <form method="dialog">
+    <h2 id="dq-titulo">Quitar producto</h2>
+    <p id="dq-detalle" style="margin:0 0 12px"></p>
+    <label class="campo" id="dq-cant-l">Cuántos quitar<input id="dq-cant" type="number" min="1" value="1" inputmode="numeric"></label>
+    <label class="campo">Motivo<input id="dq-motivo" maxlength="120" autocomplete="off" placeholder="Por qué se quita"></label>
+    <div class="rapidos" id="dq-motivos">
+      <button type="button" data-mot="Error al marcar">Error al marcar</button>
+      <button type="button" data-mot="El cliente lo cambia">El cliente lo cambia</button>
+      <button type="button" data-mot="Tarda demasiado">Tarda demasiado</button>
+      <button type="button" data-mot="Producto con fallo">Producto con fallo</button>
+    </div>
+    <label class="campo" id="dq-pin-l">Clave del encargado<input id="dq-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+    <p class="nota-pin" id="dq-pin-nota"></p>
+    <p class="err" id="dq-error" role="alert" hidden></p>
+    <div class="dlg-pie">
+      <button class="b" value="cancel">Volver</button>
+      <button class="b b-mal" type="button" id="dq-ok">Confirmar</button>
+    </div>
+  </form>
+</dialog>
 
 <!-- ── Extras del producto ── -->
 <dialog class="dlg dlg-ancho" id="dlg-prod">
@@ -157,20 +183,45 @@
 <!-- ── Caja del día ── -->
 <dialog class="dlg dlg-ancho" id="dlg-caja">
   <form method="dialog">
-    <h2>Caja de hoy</h2>
+    <h2>Caja</h2>
+    <section class="cierre">
+      <h3>Cierre de caja <small>desde <span id="cz-desde"></span></small></h3>
+      <p class="err" id="cz-abiertas" hidden></p>
+      <div class="cz-grid">
+        <div><small>Fondo inicial</small><b id="cz-fondo"></b></div>
+        <div><small>Ventas efectivo</small><b id="cz-efectivo"></b></div>
+        <div><small>Tarjeta</small><b id="cz-tarjeta"></b></div>
+        <div><small>Online</small><b id="cz-online"></b></div>
+        <div><small>Anulaciones</small><b id="cz-anul"></b></div>
+        <div class="cz-dest"><small>Debe haber en el cajón</small><b id="cz-esperado"></b></div>
+      </div>
+      <div class="cz-campos">
+        <label class="campo">Efectivo contado<input id="cz-contado" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
+        <div class="cz-desc"><small>Descuadre</small><b id="cz-descuadre">—</b></div>
+        <label class="campo">Retiras del cajón<input id="cz-retirado" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
+        <div class="cz-desc"><small>Queda de fondo</small><b id="cz-queda">—</b></div>
+      </div>
+      <label class="campo">Notas<input id="cz-notas" maxlength="300" autocomplete="off" placeholder="Obligatorias si la caja no cuadra"></label>
+      <p class="err" id="cz-error" role="alert" hidden></p>
+      <div class="cz-btns">
+        <button class="b b-mini" type="button" id="cz-pin" hidden>Mi clave de encargado</button>
+        <button class="b b-ok" type="button" id="cz-ok">Cerrar caja e imprimir Z</button>
+      </div>
+    </section>
+    <h3 class="sub">Tickets de hoy</h3>
     <div class="caja-res" id="cj-res"></div>
     <div class="caja-lista" id="cj-lista"></div>
     <div class="dlg-pie">
-      <button class="b" type="button" id="cj-imprimir">Imprimir resumen</button>
-      <button class="b b-ok" value="ok">Cerrar</button>
+      <button class="b" type="button" id="cj-imprimir">Imprimir resumen del día</button>
+      <button class="b b-ok" value="ok">Volver</button>
     </div>
   </form>
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241215"></script>
-<script src="/pedir/ticket.js?v=202611241215"></script>
-<script src="/pedir/plano.js?v=202611241215"></script>
-<script src="tpv.js?v=202611241215"></script>
+<script src="/pedir/api.js?v=202611241313"></script>
+<script src="/pedir/ticket.js?v=202611241313"></script>
+<script src="/pedir/plano.js?v=202611241313"></script>
+<script src="tpv.js?v=202611241313"></script>
 </body>
 </html>

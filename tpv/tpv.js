@@ -12,6 +12,15 @@
   // Lo que el camarero ha marcado y aún no ha enviado a cocina, por cuenta (sobrevive a recargar).
   const pendientes = ls('op-tpv-pendientes') || {};
   const guardaPend = () => ls('op-tpv-pendientes', pendientes);
+  let SESION = null; const enviando = {};
+  const esEncargado = () => !!(SESION && SESION.roles && SESION.roles[LOCAL] === 'encargado');
+
+  /* Aviso flotante: verde si ha ido bien, rojo si no. */
+  let tAviso = null;
+  function aviso(texto, mal) {
+    const el = $('#t-aviso'); el.textContent = texto; el.className = 'aviso-flota' + (mal ? ' mal' : ''); el.hidden = false;
+    clearTimeout(tAviso); tAviso = setTimeout(() => { el.hidden = true; }, mal ? 6000 : 3000);
+  }
 
   if (DEMO) $('#t-demo').hidden = false;
 
@@ -29,6 +38,7 @@
   $('#b-salir').onclick = async () => { if (confirm('¿Cerrar sesión en este TPV?')) { await api.salir(); location.reload(); } };
 
   async function entrar(s) {
+    SESION = s;
     if (!s.locales.length) { $('#e-error').textContent = 'Tu usuario no tiene ningún local asignado.'; $('#e-error').hidden = false; $('#vista-entrar').hidden = false; return; }
     if (!s.locales.includes(LOCAL)) LOCAL = s.locales[0];
     ls('op-tpv-local', LOCAL);
@@ -37,11 +47,15 @@
       ls('op-tpv-local', id); location.search = '?local=' + encodeURIComponent(id);
     });
     $('#vista-entrar').hidden = true; $('#vista-app').hidden = false;
+    // Quién está usando el TPV (todo lo que haga queda a su nombre).
+    $('#t-quien').textContent = (s.email || '').split('@')[0].replace(/^orale\.padre\.food\+/, '') + (s.roles[LOCAL] === 'encargado' ? ' · encargado' : s.roles[LOCAL] === 'cocina' ? ' · cocina' : ' · sala');
+    $('#t-quien').title = s.email || '';
     [carta, mesas] = await Promise.all([api.carta(LOCAL), api.mesas(LOCAL)]);
     idx = indexar(carta);
     zona = mesas[0] ? mesas[0].zona : null;
     await recarga();
-    api.escuchar(LOCAL, () => recarga());
+    // Los avisos en vivo llegan a ráfagas: se agrupan para no repintar diez veces seguidas.
+    let tRec = null; api.escuchar(LOCAL, () => { clearTimeout(tRec); tRec = setTimeout(recarga, 250); });
     setInterval(recarga, 30000);
     setInterval(reloj, 15000); reloj();
   }
@@ -199,7 +213,16 @@
     $('#b-barra').hidden = $('#b-llevar').hidden = false;
     pintaSala();
   }
-  $('#b-atras').onclick = verSala;
+  $('#b-atras').onclick = async () => {
+    const pend = cuenta && (pendientes[cuenta.id] || []);
+    if (pend && pend.length && !enviando[cuenta.id]) {
+      const n = pend.reduce((s, l) => s + l.cantidad, 0);
+      if (confirm(`Hay ${n} ${n === 1 ? 'producto' : 'productos'} sin enviar a cocina.\n\nAceptar: enviarlos ahora.\nCancelar: volver a la sala sin enviar (se quedan guardados en esta mesa).`)) {
+        if (!(await enviar())) return;
+      }
+    }
+    verSala();
+  };
 
   function visibles() {
     const hoy = partesMadrid(new Date()).dow;
@@ -238,10 +261,11 @@
     const ESTADO = { nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
     const enviados = pedidosCuenta.slice().sort((a, b) => a.numero - b.numero).map(p => `
       <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span><span class="estado ${p.estado}">${ESTADO[p.estado]}</span></div>
-      ${p.lineas.map(l => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''}">
+      ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''}" ${p.estado !== 'cancelado' ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
         <div>${esc(l.nombre)}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}</div>
-        <span class="imp">${euros(l.unitario * l.cantidad)}</span></div>`).join('')}`).join('');
+        <span class="imp">${euros(l.unitario * l.cantidad)}</span></div>`).join('')}
+      ${(p.anuladas || []).map(l => `<div class="ln quitada"><span class="cant-fija">${l.cantidad}×</span><div>${esc(l.nombre)}<small>Quitado: ${esc(l.motivo || '')}</small></div><span class="imp">−${euros(l.unitario * l.cantidad)}</span></div>`).join('')}`).join('');
     const pend = pendientes[cuenta.id] || [];
     const pendHTML = pend.length ? `<div class="grupo-env"><span>Sin enviar</span></div>` + pend.map((l, i) => {
       const p = idx.prod.get(l.producto); const ops = nombreOps(l);
@@ -254,12 +278,17 @@
     const tEnv = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
     const tPend = pend.reduce((s, l) => s + (idx.prod.has(l.producto) ? precioLinea(idx, l) * l.cantidad : 0), 0);
     $('#c-total').textContent = euros(tEnv + tPend);
-    $('#c-enviar').textContent = pend.length ? `Enviar a cocina (${pend.reduce((s, l) => s + l.cantidad, 0)})` : 'Enviar a cocina';
-    $('#c-enviar').disabled = !pend.length;
+    if (enviando[cuenta.id]) { $('#c-enviar').textContent = 'Enviando…'; $('#c-enviar').disabled = true; }
+    else {
+      $('#c-enviar').textContent = pend.length ? `Enviar a cocina (${pend.reduce((s, l) => s + l.cantidad, 0)})` : 'Enviar a cocina';
+      $('#c-enviar').disabled = !pend.length;
+    }
     $('#c-cobrar').disabled = !(tEnv + tPend);
     const el = $('#c-lineas'); el.scrollTop = el.scrollHeight;
   }
   $('#c-lineas').addEventListener('click', e => {
+    const env = e.target.closest('.ln.enviada[data-pid]');
+    if (env) { abreQuitar(env.dataset.pid, +env.dataset.idx); return; }
     const t = e.target; const pend = pendientes[cuenta.id]; if (!pend) return;
     if (t.dataset.mas) pend[t.dataset.mas].cantidad = Math.min(20, pend[t.dataset.mas].cantidad + 1);
     else if (t.dataset.menos) { pend[t.dataset.menos].cantidad--; if (pend[t.dataset.menos].cantidad < 1) pend.splice(t.dataset.menos, 1); }
@@ -268,14 +297,18 @@
   });
 
   async function enviar() {
-    const pend = pendientes[cuenta.id] || []; if (!pend.length) return true;
-    const btn = $('#c-enviar'); btn.disabled = true; btn.textContent = 'Enviando…';
+    const c = cuenta; const pend = pendientes[c.id] || []; if (!pend.length) return true;
+    if (enviando[c.id]) return false;                 // ya va de camino: nada de comandas dobles
+    enviando[c.id] = true; pintaCuenta();
+    const n = pend.reduce((s, l) => s + l.cantidad, 0);
     try {
-      await api.enviarComanda(cuenta.id, pend.map(({ producto, cantidad, opciones, nota }) => ({ producto, cantidad, opciones, nota })), $('#c-nota').value.trim());
-      delete pendientes[cuenta.id]; guardaPend(); $('#c-nota').value = '';
-      pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta();
+      const r = await api.enviarComanda(c.id, pend.map(({ producto, cantidad, opciones, nota }) => ({ producto, cantidad, opciones, nota })), $('#c-nota').value.trim());
+      delete pendientes[c.id]; guardaPend(); $('#c-nota').value = '';
+      aviso(`✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
+      if (cuenta && cuenta.id === c.id) pedidosCuenta = await api.pedidosDeCuenta(c.id);
       return true;
-    } catch (ex) { alert(mensajeError(ex)); pintaCuenta(); return false; }
+    } catch (ex) { aviso('✗ No se ha enviado: ' + mensajeError(ex) + '. Vuelve a intentarlo.', true); return false; }
+    finally { delete enviando[c.id]; if (cuenta && cuenta.id === c.id) pintaCuenta(); }
   }
   $('#c-enviar').onclick = enviar;
 
@@ -320,19 +353,16 @@
     if (m === 'precuenta') {
       const lineas = pedidosCuenta.filter(p => p.estado !== 'cancelado').flatMap(p => p.lineas);
       if ((pendientes[cuenta.id] || []).length) alert('Ojo: hay productos sin enviar a cocina; no salen en la pre-cuenta.');
-      OP.imprimir(OP.ticketPrecuenta(cuenta.nombre, lineas, calculaTicket(lineas).total));
+      const tot = calculaTicket(lineas).total;
+      OP.imprimir(OP.ticketPrecuenta(cuenta.nombre, lineas, tot));
+      api.registrarPrecuenta(cuenta.id, tot);
     }
     if (m === 'mover') {
       const libres = mesas.filter(x => x.tipo !== 'deco' && !cuentas.some(c => c.mesa_id === x.id));
       $('#mv-mesas').innerHTML = libres.map(x => `<button class="mesa" type="button" value="${esc(x.id)}"><strong>${esc(x.nombre)}</strong><small>${esc(x.zona)}</small></button>`).join('') || '<p class="vacio">No hay mesas libres.</p>';
       $('#dlg-mover').showModal();
     }
-    if (m === 'anular') {
-      const motivo = prompt('Motivo para anular la cuenta (queda registrado):', '');
-      if (!motivo || motivo.trim().length < 3) return;
-      try { await api.anularCuenta(cuenta.id, motivo.trim()); delete pendientes[cuenta.id]; guardaPend(); await recarga(); verSala(); }
-      catch (ex) { alert(mensajeError(ex)); }
-    }
+    if (m === 'anular') abreAnular();
   });
   $('#mv-mesas').addEventListener('click', async e => {
     const b = e.target.closest('button.mesa'); if (!b) return;
@@ -405,10 +435,81 @@
     finally { btn.disabled = false; }
   };
 
-  /* ── Caja del día ── */
+  /* ══ Control: quitar productos enviados y anular cuentas (con clave de encargado) ══ */
+  const dq = $('#dlg-quitar'); let qAcc = null;
+  function prepQuitar(titulo, detalle, conCantidad, max) {
+    $('#dq-titulo').textContent = titulo; $('#dq-detalle').innerHTML = detalle;
+    $('#dq-cant-l').hidden = !conCantidad; $('#dq-cant').max = max || 1; $('#dq-cant').value = 1;
+    $('#dq-motivo').value = ''; $('#dq-pin').value = ''; $('#dq-error').hidden = true;
+    $('#dq-pin-l').hidden = esEncargado();
+    $('#dq-pin-nota').textContent = esEncargado() ? 'Eres encargado: queda registrado a tu nombre.' : 'Hace falta la clave de un encargado. Queda registrado quién lo pide y quién lo autoriza.';
+    dq.showModal();
+  }
+  function abreQuitar(pid, i) {
+    const p = pedidosCuenta.find(x => x.id === pid); const l = p && p.lineas[i]; if (!l) return;
+    qAcc = { tipo: 'linea', pid, i };
+    prepQuitar('Quitar producto', `<b>${l.cantidad}× ${esc(l.nombre)}</b> · comanda #${p.numero} · ${euros(l.unitario * l.cantidad)}<br><small>Ya se mandó a cocina: avisa en cocina si hay que pararlo.</small>`, l.cantidad > 1, l.cantidad);
+  }
+  function abreAnular() {
+    const tot = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
+    qAcc = { tipo: 'cuenta' };
+    prepQuitar('Anular cuenta', `<b>${esc(cuenta.nombre)}</b> · ${euros(tot)} enviados a cocina<br><small>La cuenta se cierra sin cobrar y sin ticket.</small>`, false);
+  }
+  $('#dq-motivos').addEventListener('click', e => { const b = e.target.closest('[data-mot]'); if (b) { $('#dq-motivo').value = b.dataset.mot; $('#dq-motivo').focus(); } });
+  $('#dq-ok').onclick = async () => {
+    const motivo = $('#dq-motivo').value.trim(); const pin = $('#dq-pin').value.trim();
+    const fallo = t => { $('#dq-error').textContent = t; $('#dq-error').hidden = false; };
+    if (motivo.length < 3) return fallo('Escribe el motivo (queda registrado).');
+    if (!esEncargado() && !/^[0-9]{4,8}$/.test(pin)) return fallo('Falta la clave del encargado.');
+    const btn = $('#dq-ok'); btn.disabled = true;
+    try {
+      if (qAcc.tipo === 'linea') {
+        await api.anularLinea(qAcc.pid, qAcc.i, +$('#dq-cant').value || 1, motivo, pin);
+        dq.close(); aviso('Producto quitado y registrado. Avisa en cocina si ya lo estaban haciendo.');
+        pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta();
+      } else {
+        await api.anularCuenta(cuenta.id, motivo, pin);
+        dq.close(); aviso('Cuenta anulada y registrada.');
+        delete pendientes[cuenta.id]; guardaPend(); await recarga(); verSala();
+      }
+    } catch (ex) {
+      const m = mensajeError(ex); fallo(m);
+      if (/clave de encargado incorrecta/i.test(m)) { api.apuntarPinFallido(LOCAL, qAcc.tipo === 'linea' ? 'quitar producto' : 'anular cuenta'); $('#dq-pin').value = ''; $('#dq-pin').focus(); }
+    } finally { btn.disabled = false; }
+  };
+
+  /* ══ Caja: resumen desde el último cierre y cierre de caja ══ */
+  let resumen = null;
+  const cent = v => { const n = Math.round(parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')) * 100); return isNaN(n) ? null : n; };
+  function pintaCierre() {
+    if (!resumen) return;
+    const esperado = resumen.fondo_inicial + resumen.efectivo;
+    const contado = cent($('#cz-contado').value);
+    $('#cz-esperado').textContent = euros(esperado);
+    if (contado == null) { $('#cz-descuadre').textContent = '—'; $('#cz-descuadre').className = ''; }
+    else { const d = contado - esperado; $('#cz-descuadre').textContent = (d > 0 ? '+' : '') + euros(d) + (d === 0 ? ' · cuadra' : d > 0 ? ' · sobra' : ' · falta'); $('#cz-descuadre').className = d === 0 ? 'ok' : 'mal'; }
+    if (contado != null && $('#cz-retirado').dataset.tocado !== '1') $('#cz-retirado').value = (Math.max(0, contado - resumen.fondo_inicial) / 100).toFixed(2).replace('.', ',');
+    const ret = cent($('#cz-retirado').value) || 0;
+    $('#cz-queda').textContent = contado == null ? '—' : euros(contado - ret);
+  }
+  $('#cz-contado').addEventListener('input', pintaCierre);
+  $('#cz-retirado').addEventListener('input', () => { $('#cz-retirado').dataset.tocado = '1'; pintaCierre(); });
+
+
   let tickets = [];
   $('#b-caja').onclick = async () => {
-    tickets = await api.ticketsDelDia(LOCAL);
+    try { [tickets, resumen] = await Promise.all([api.ticketsDelDia(LOCAL), api.resumenCaja(LOCAL)]); }
+    catch (ex) { aviso('No se ha podido cargar la caja: ' + mensajeError(ex), true); return; }
+    const desde = new Date(resumen.desde).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    $('#cz-desde').textContent = desde;
+    $('#cz-fondo').textContent = euros(resumen.fondo_inicial); $('#cz-efectivo').textContent = euros(resumen.efectivo);
+    $('#cz-tarjeta').textContent = euros(resumen.tarjeta); $('#cz-online').textContent = euros(resumen.online);
+    $('#cz-anul').textContent = resumen.anulaciones ? `${resumen.anulaciones} (${euros(resumen.importe_anulado)})` : '0';
+    $('#cz-abiertas').hidden = !resumen.cuentas_abiertas;
+    $('#cz-abiertas').textContent = `Ojo: hay ${resumen.cuentas_abiertas} ${resumen.cuentas_abiertas === 1 ? 'cuenta abierta' : 'cuentas abiertas'} sin cobrar.`;
+    $('#cz-contado').value = ''; $('#cz-retirado').value = ''; $('#cz-retirado').dataset.tocado = ''; $('#cz-notas').value = ''; $('#cz-error').hidden = true;
+    $('#cz-pin').hidden = !esEncargado();
+    pintaCierre();
     const suma = f => tickets.filter(f).reduce((s, t) => s + t.total, 0);
     const iva = {}; tickets.forEach(t => t.desglose_iva.forEach(d => { iva[d.tipo] = iva[d.tipo] || { base: 0, cuota: 0 }; iva[d.tipo].base += d.base; iva[d.tipo].cuota += d.cuota; }));
     $('#cj-res').innerHTML = `
@@ -425,6 +526,43 @@
     $('#dlg-caja').showModal();
   };
   $('#cj-lista').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) OP.imprimir(OP.ticketFactura(tickets.find(t => t.id === b.dataset.t))); });
+  $('#cz-ok').onclick = async () => {
+    const contado = cent($('#cz-contado').value); const ret = cent($('#cz-retirado').value) || 0;
+    const fallo = t => { $('#cz-error').textContent = t; $('#cz-error').hidden = false; };
+    if (contado == null) return fallo('Cuenta el efectivo del cajón y escríbelo.');
+    if (ret > contado) return fallo('No puedes retirar más de lo que hay.');
+    const d = contado - (resumen.fondo_inicial + resumen.efectivo);
+    if (d !== 0 && $('#cz-notas').value.trim().length < 3) return fallo('La caja no cuadra: explica el descuadre en las notas.');
+    if (!confirm(`¿Cerrar la caja?\n\nEfectivo contado: ${euros(contado)}\nDescuadre: ${euros(d)}\nRetiras: ${euros(ret)}\nSe queda en el cajón: ${euros(contado - ret)}`)) return;
+    const btn = $('#cz-ok'); btn.disabled = true;
+    try {
+      const z = await api.cerrarCaja(LOCAL, contado, ret, $('#cz-notas').value.trim());
+      $('#dlg-caja').close(); aviso('✓ Caja cerrada' + (z.descuadre ? ' con descuadre de ' + euros(z.descuadre) : ', cuadra'));
+      OP.imprimir(`<div class="c g">CIERRE DE CAJA (Z)</div><div class="c">${esc(local.nombre)}</div>
+        <div class="c">${new Date(z.desde).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}<br>a ${new Date(z.hasta).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}</div>
+        <div class="c">Cierra: ${esc((SESION && SESION.email) || '')}</div><hr>
+        <div class="l"><span>Tickets</span><span>${z.tickets}${z.primer_ticket ? ` (${esc(z.primer_ticket)} a ${esc(z.ultimo_ticket)})` : ''}</span></div>
+        <div class="l"><span>Efectivo</span><span>${euros(z.efectivo)}</span></div>
+        <div class="l"><span>Tarjeta</span><span>${euros(z.tarjeta)}</span></div>
+        <div class="l"><span>Online</span><span>${euros(z.online)}</span></div>
+        <div class="l"><span>Descuentos</span><span>${euros(z.descuentos)}</span></div>
+        <div class="l"><span>Invitaciones</span><span>${z.invitaciones}</span></div>
+        <div class="l"><span>Anulaciones</span><span>${z.anulaciones} · ${euros(z.importe_anulado)}</span></div><hr>
+        <div class="l tot"><span>VENTAS</span><span>${euros(z.efectivo + z.tarjeta + z.online)}</span></div><hr>
+        <div class="l"><span>Fondo inicial</span><span>${euros(z.fondo_inicial)}</span></div>
+        <div class="l"><span>Esperado en cajón</span><span>${euros(z.fondo_inicial + z.efectivo)}</span></div>
+        <div class="l"><span>Contado</span><span>${euros(z.efectivo_contado)}</span></div>
+        <div class="l g"><span>DESCUADRE</span><span>${euros(z.descuadre)}</span></div>
+        <div class="l"><span>Retirado</span><span>${euros(z.retirado)}</span></div>
+        <div class="l"><span>Queda de fondo</span><span>${euros(z.fondo_siguiente)}</span></div>
+        ${z.notas ? `<hr><div>${esc(z.notas)}</div>` : ''}`);
+    } catch (ex) { fallo(mensajeError(ex)); } finally { btn.disabled = false; }
+  };
+  $('#cz-pin').onclick = async () => {
+    const pin = prompt('Tu nueva clave de encargado (4 a 8 cifras). Te la pedirán para quitar productos o anular cuentas cuando no estés tú:', '');
+    if (pin === null) return;
+    try { await api.fijarPin(pin.trim()); aviso('✓ Clave de encargado guardada'); } catch (ex) { aviso(mensajeError(ex), true); }
+  };
   $('#cj-imprimir').onclick = () => {
     const suma = f => tickets.filter(f).reduce((s, t) => s + t.total, 0);
     OP.imprimir(`<div class="c g">CIERRE DE CAJA</div><div class="c">${esc(local.nombre)}</div>
