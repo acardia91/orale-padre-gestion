@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241129">
+<link rel="stylesheet" href="admin.css?v=202611241138">
 </head>
 <body>
 
@@ -46,7 +46,8 @@
   </aside>
 
   <header class="topbar">
-    <div class="org"><span class="org-ico">ÓP</span><div><b id="a-local">Tomares</b><small>Órale Padre</small></div></div>
+    <label class="org" title="Cambiar de local"><span class="org-ico">ÓP</span>
+      <div><small>Órale Padre</small><select id="a-locales" aria-label="Local"></select></div></label>
     <span class="demo" id="a-demo" hidden>DEMO</span>
     <div class="topbar-der">
       <span class="usuario" id="a-usuario"></span>
@@ -70,6 +71,7 @@
       </div>
     </header>
     <div class="kpis" id="r-kpis"></div>
+    <div class="panel" id="r-locales-panel" hidden><h2>Por local</h2><div class="tabla-wrap"><table class="tabla" id="r-locales"></table></div></div>
     <div class="dos-col">
       <div class="panel"><h2>Ventas por hora</h2><div class="barras" id="r-horas"></div></div>
       <div class="panel"><h2>Lo más vendido</h2><table class="tabla" id="r-top"></table></div>
@@ -84,6 +86,12 @@
       <p class="nota">Control antifraude: cuentas anuladas y comandas canceladas, con su motivo.</p>
       <div class="tabla-wrap"><table class="tabla" id="r-anul"></table></div>
     </div>
+  </section>
+
+  <!-- ══ ELEGIR LOCAL (secciones que son de un local concreto) ══ -->
+  <section class="sec" data-sec="elige" hidden>
+    <header class="cab"><div><h1 id="el-titulo">Elige un local</h1><p>Esta sección es de un local concreto. Elige cuál:</p></div></header>
+    <div class="locales-grid" id="el-locales"></div>
   </section>
 
   <!-- ══ CARTA ══ -->
@@ -370,14 +378,14 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241129"></script>
-<script src="/pedir/plano.js?v=202611241129"></script>
-<script src="/pedir/ticket.js?v=202611241129"></script>
-<script src="sec-plano.js?v=202611241129"></script>
-<script src="sec-resumen.js?v=202611241129"></script>
-<script src="sec-carta.js?v=202611241129"></script>
-<script src="sec-local.js?v=202611241129"></script>
-<script src="sec-promos.js?v=202611241129"></script>
-<script src="admin.js?v=202611241129"></script>
+<script src="/pedir/api.js?v=202611241138"></script>
+<script src="/pedir/plano.js?v=202611241138"></script>
+<script src="/pedir/ticket.js?v=202611241138"></script>
+<script src="sec-plano.js?v=202611241138"></script>
+<script src="sec-resumen.js?v=202611241138"></script>
+<script src="sec-carta.js?v=202611241138"></script>
+<script src="sec-local.js?v=202611241138"></script>
+<script src="sec-promos.js?v=202611241138"></script>
+<script src="admin.js?v=202611241138"></script>
 </body>
 </html>
