@@ -264,3 +264,4 @@ textarea{resize:vertical}
 .locales-grid small{color:var(--humo)}
 .barra-h{height:8px;background:var(--fondo);border-radius:99px;overflow:hidden}
 .barra-h span{display:block;height:100%;background:var(--burdeos);border-radius:99px}
+.cab-acc input[type=date]{width:auto;padding:6px 8px;font-size:13px}

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241138">
+<link rel="stylesheet" href="admin.css?v=202611241206">
 </head>
 <body>
 
@@ -32,12 +32,13 @@
       <p class="lat-grupo">Negocio</p>
       <a href="#resumen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Ventas y facturas</span></a>
       <a href="#carta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg><span>Carta y productos</span></a>
+      <a href="#clientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8"/></svg><span>Clientes</span></a>
       <a href="#promos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7 7h.01"/></svg><span>Promociones</span></a>
       <p class="lat-grupo">Local</p>
       <a href="#plano"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3zM3 12h7M14 3v6M14 14h7"/></svg><span>Plano del local</span></a>
       <a href="#local"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12zM12 12a2 2 0 100-4 2 2 0 000 4"/></svg><span>Local y horario</span></a>
       <a href="#usuarios"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 10a4 4 0 100-8 4 4 0 000 8M22 20v-2a4 4 0 00-3-3.9M16 2.1a4 4 0 010 7.8"/></svg><span>Usuarios</span></a>
-      <a class="pronto" title="Próximamente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"/></svg><span>Reservas</span><em>Pronto</em></a>
+      <a href="#reservas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"/></svg><span>Reservas</span></a>
     </nav>
     <div class="lat-pie">
       <a href="/tpv/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v12H3zM8 20h8M12 16v4"/></svg><span>Abrir TPV</span></a>
@@ -214,6 +215,33 @@
     <div class="panel"><div class="tabla-wrap"><table class="tabla" id="pm-lista"></table></div></div>
   </section>
 
+  <!-- ══ RESERVAS ══ -->
+  <section class="sec" data-sec="reservas" hidden>
+    <header class="cab">
+      <div><h1>Reservas</h1><p>Las de la web entran solas. Las de teléfono o en persona, añádelas aquí.</p></div>
+      <div class="cab-acc">
+        <button class="b b-mini" type="button" id="rv-ant" aria-label="Día anterior">‹</button>
+        <input type="date" id="rv-dia" aria-label="Día">
+        <button class="b b-mini" type="button" id="rv-sig" aria-label="Día siguiente">›</button>
+        <button class="b b-mini" type="button" id="rv-hoy">Hoy</button>
+        <button class="b b-ok" type="button" id="rv-nueva">+ Nueva reserva</button>
+      </div>
+    </header>
+    <div class="kpis" id="rv-kpis"></div>
+    <div class="panel"><div class="tabla-wrap"><table class="tabla" id="rv-lista"></table></div></div>
+  </section>
+
+  <!-- ══ CLIENTES ══ -->
+  <section class="sec" data-sec="clientes" hidden>
+    <header class="cab">
+      <div><h1>Clientes</h1><p>Todos los clientes de la casa: quien ha pedido por la web o ha reservado, con su historial.</p></div>
+      <div class="cab-acc"><button class="b b-mini" type="button" id="cl-csv">Exportar CSV</button></div>
+    </header>
+    <div class="filtros" style="margin-top:16px"><input type="search" id="cl-buscar" placeholder="Buscar por nombre, teléfono o email…" autocomplete="off"></div>
+    <div class="kpis" id="cl-kpis"></div>
+    <div class="panel"><div class="tabla-wrap"><table class="tabla" id="cl-lista"></table></div></div>
+  </section>
+
   <!-- ══ LOCAL Y HORARIO ══ -->
   <section class="sec" data-sec="local" hidden>
     <header class="cab">
@@ -231,6 +259,15 @@
         <div class="dos">
           <label>Minutos de preparación<input id="l-prep" type="number" min="5" max="120" step="5"></label>
           <label class="chk"><input type="checkbox" id="l-acepta"> Aceptar pedidos online</label>
+        </div>
+        <h2 style="margin-top:14px">Pago de los pedidos online</h2>
+        <label class="chk"><input type="checkbox" id="l-pago-local"> Pago al recoger (efectivo o datáfono)</label>
+        <label class="chk"><input type="checkbox" id="l-pago-online"> Pago online con tarjeta (Stripe)</label>
+        <h2 style="margin-top:14px">Reservas</h2>
+        <label class="chk"><input type="checkbox" id="l-reservas"> Aceptar reservas online</label>
+        <div class="dos">
+          <label>Máx. personas por reserva web<input id="l-res-max" type="number" min="1" max="30"></label>
+          <label>Aforo por franja (comensales)<input id="l-res-aforo" type="number" min="1" max="300"></label>
         </div>
         <p class="nota" id="l-fiscales"></p>
       </form>
@@ -354,6 +391,48 @@
   </form>
 </dialog>
 
+<!-- Reserva -->
+<dialog class="dlg" id="dlg-reserva">
+  <form method="dialog" id="f-reserva">
+    <h2 id="fr-titulo">Nueva reserva</h2>
+    <div class="dos">
+      <label>Día<input id="fr-dia" type="date" required></label>
+      <label>Hora<input id="fr-hora" type="time" step="900" required></label>
+    </div>
+    <div class="dos">
+      <label>Personas<input id="fr-personas" type="number" min="1" max="50" value="2" required></label>
+      <label>Origen<select id="fr-origen"><option value="telefono">Por teléfono</option><option value="local">En el local</option></select></label>
+    </div>
+    <label>Nombre<input id="fr-nombre" maxlength="60" required></label>
+    <div class="dos">
+      <label>Teléfono<input id="fr-tel" type="tel" required></label>
+      <label>Email (opcional)<input id="fr-email" type="email"></label>
+    </div>
+    <label>Notas<textarea id="fr-notas" rows="2" maxlength="300"></textarea></label>
+    <p class="aviso" id="fr-error" hidden></p>
+    <div class="dlg-pie"><span class="hueco"></span>
+      <button class="b" value="cancel" formnovalidate>Cancelar</button>
+      <button class="b b-ok" type="button" id="fr-ok">Guardar reserva</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Ficha de cliente -->
+<dialog class="dlg" id="dlg-cliente">
+  <form method="dialog" id="f-cliente">
+    <h2 id="fc-titulo">Cliente</h2>
+    <div class="kpis" id="fc-kpis" style="margin-top:0"></div>
+    <label>Notas del equipo (alergias, preferencias…)<textarea id="fc-notas" rows="3" maxlength="500"></textarea></label>
+    <label class="chk" style="flex-direction:row"><input type="checkbox" id="fc-mkt"> Acepta comunicaciones (promos, club)</label>
+    <div class="panel" style="padding:12px 14px"><h2>Pedidos</h2><div class="tabla-wrap"><table class="tabla" id="fc-pedidos"></table></div></div>
+    <div class="panel" style="padding:12px 14px"><h2>Reservas</h2><div class="tabla-wrap"><table class="tabla" id="fc-reservas"></table></div></div>
+    <div class="dlg-pie"><span class="hueco"></span>
+      <button class="b" value="cancel" formnovalidate>Cerrar</button>
+      <button class="b b-ok" type="button" id="fc-ok">Guardar notas</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- Grupo de extras -->
 <dialog class="dlg" id="dlg-grupo">
   <form method="dialog" id="f-grupo">
@@ -378,14 +457,16 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241138"></script>
-<script src="/pedir/plano.js?v=202611241138"></script>
-<script src="/pedir/ticket.js?v=202611241138"></script>
-<script src="sec-plano.js?v=202611241138"></script>
-<script src="sec-resumen.js?v=202611241138"></script>
-<script src="sec-carta.js?v=202611241138"></script>
-<script src="sec-local.js?v=202611241138"></script>
-<script src="sec-promos.js?v=202611241138"></script>
-<script src="admin.js?v=202611241138"></script>
+<script src="/pedir/api.js?v=202611241206"></script>
+<script src="/pedir/plano.js?v=202611241206"></script>
+<script src="/pedir/ticket.js?v=202611241206"></script>
+<script src="sec-plano.js?v=202611241206"></script>
+<script src="sec-resumen.js?v=202611241206"></script>
+<script src="sec-carta.js?v=202611241206"></script>
+<script src="sec-local.js?v=202611241206"></script>
+<script src="sec-reservas.js?v=202611241206"></script>
+<script src="sec-clientes.js?v=202611241206"></script>
+<script src="sec-promos.js?v=202611241206"></script>
+<script src="admin.js?v=202611241206"></script>
 </body>
 </html>

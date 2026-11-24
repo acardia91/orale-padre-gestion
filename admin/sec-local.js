@@ -10,13 +10,16 @@
   /* ══ Local y horario ══ */
   function estado() {
     return JSON.stringify({ n: $('#l-nombre').value, t: $('#l-telefono').value, d: $('#l-direccion').value, f: $('#l-fiscal').value,
-      p: $('#l-prep').value, a: $('#l-acepta').checked, h: leeHorario() });
+      p: $('#l-prep').value, a: $('#l-acepta').checked, h: leeHorario(), pl: $('#l-pago-local').checked, po: $('#l-pago-online').checked,
+      r: $('#l-reservas').checked, rm: $('#l-res-max').value, ra: $('#l-res-aforo').value });
   }
   async function cargarLocal() {
     local = await api.local(LOCAL);
     $('#l-nombre').value = local.nombre || ''; $('#l-telefono').value = local.telefono || '';
     $('#l-direccion').value = local.direccion || ''; $('#l-fiscal').value = local.direccion_fiscal || '';
     $('#l-prep').value = local.minutos_prep; $('#l-acepta').checked = !!local.acepta_pedidos;
+    $('#l-pago-local').checked = local.pago_local !== false; $('#l-pago-online').checked = !!local.pago_online;
+    $('#l-reservas').checked = !!local.acepta_reservas; $('#l-res-max').value = local.reservas_max_personas || 10; $('#l-res-aforo').value = local.reservas_aforo || 40;
     $('#l-fiscales').innerHTML = `Facturas a nombre de <b>${esc(local.razon_social || '—')}</b>, NIF <b>${esc(local.cif || '—')}</b>, serie <b>${esc(local.serie || '—')}</b>. Para cambiar la razón social, el NIF o la serie, pídemelo: afecta a la numeración legal de los tickets.`;
     $('#l-horario').innerHTML = `<thead><tr><th>Día</th><th>Turno 1</th><th>Turno 2</th><th></th></tr></thead><tbody>` +
       NOMBRES.map((n, i) => {
@@ -51,7 +54,8 @@
     try {
       await api.guardarLocal(LOCAL, { nombre: $('#l-nombre').value.trim(), telefono: $('#l-telefono').value.trim(), direccion: $('#l-direccion').value.trim(),
         direccion_fiscal: $('#l-fiscal').value.trim(), minutos_prep: Math.max(5, Math.min(120, +$('#l-prep').value || 20)),
-        acepta_pedidos: $('#l-acepta').checked, horario: h });
+        acepta_pedidos: $('#l-acepta').checked, horario: h, pago_local: $('#l-pago-local').checked, pago_online: $('#l-pago-online').checked,
+        acepta_reservas: $('#l-reservas').checked, reservas_max_personas: +$('#l-res-max').value || 10, reservas_aforo: +$('#l-res-aforo').value || 40 });
       await cargarLocal(); btn.textContent = '✓ Guardado'; setTimeout(() => { btn.textContent = 'Guardar'; }, 1500);
     } catch (ex) { err.textContent = mensajeError(ex); err.hidden = false; }
     finally { btn.disabled = false; }

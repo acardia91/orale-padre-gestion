@@ -49,8 +49,8 @@
     ir();
   }
 
-  const SECCIONES = ['resumen', 'carta', 'plano', 'promos', 'local', 'usuarios'];
-  const TITULOS = { carta: 'Carta y productos', plano: 'Plano del local', promos: 'Promociones', local: 'Local y horario', usuarios: 'Usuarios' };
+  const SECCIONES = ['resumen', 'carta', 'clientes', 'promos', 'plano', 'reservas', 'local', 'usuarios'];
+  const TITULOS = { reservas: 'Reservas', carta: 'Carta y productos', plano: 'Plano del local', promos: 'Promociones', local: 'Local y horario', usuarios: 'Usuarios' };
   async function ir() {
     const sec = SECCIONES.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'resumen';
     const mod = window.ADMIN[sec];
