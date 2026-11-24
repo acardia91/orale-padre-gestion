@@ -196,6 +196,25 @@
       const g = lee(K.promos, {}); g[local] = (await this.promociones(local)).filter(x => x.id !== id); guarda(K.promos, g); avisa();
     },
     async ticketsEntre(local, desde, hasta) { return lee(K.tickets, []).filter(t => t.local === local && t.fecha >= desde && t.fecha < hasta); },
+    async deliveryEntre(desde, hasta) { return lee('op-demo-delivery', []).filter(r => r.fecha >= desde && r.fecha <= hasta); },
+    async resumenesDelivery(desde, hasta) { return lee('op-demo-delivery-res', []).filter(r => r.fecha >= desde && r.fecha <= hasta).sort((a, b) => b.fecha.localeCompare(a.fecha)); },
+    async guardarDelivery(filas, resumenes) {
+      const c = v => v == null || v === '' ? null : Math.round(+v * 100);
+      const ds = lee('op-demo-delivery', []); (filas || []).forEach(f => {
+        const r = { local: f.local, fecha: f.fecha, plataforma: f.plataforma, pedidos: +f.pedidos || 0, ventas: c(f.ventas_eur) || 0, comision: c(f.comision_eur),
+          anuncios: c(f.anuncios_eur), promociones: c(f.promociones_eur), neto: c(f.neto_eur), cancelados: f.cancelados ?? null, errores: f.errores ?? null,
+          valoracion: f.valoracion ?? null, valoracion_tipo: f.valoracion_tipo || null, resenas: f.resenas ?? null, tiempo_prep: f.tiempo_prep ?? null, minutos_cerrado: f.minutos_cerrado ?? null, detalle: f.detalle || null };
+        const i = ds.findIndex(x => x.local === r.local && x.fecha === r.fecha && x.plataforma === r.plataforma); if (i >= 0) ds[i] = r; else ds.push(r); });
+      guarda('op-demo-delivery', ds);
+      const rs = lee('op-demo-delivery-res', []); (resumenes || []).forEach(x => { const i = rs.findIndex(y => y.fecha === x.fecha && y.local === (x.local || 'general'));
+        const r = { fecha: x.fecha, local: x.local || 'general', texto: x.texto, alertas: x.alertas || null }; if (i >= 0) rs[i] = r; else rs.push(r); });
+      guarda('op-demo-delivery-res', rs); return { filas: (filas || []).length, resumenes: (resumenes || []).length };
+    },
+    async costes(local) { return lee('op-demo-costes', {})[local] || {}; },
+    async guardarCostes(local, costes) { const t = lee('op-demo-costes', {}); t[local] = t[local] || {};
+      costes.forEach(c => { if (c.coste == null) delete t[local][c.producto]; else t[local][c.producto] = { producto: c.producto, coste: c.coste, fuente: c.fuente }; });
+      guarda('op-demo-costes', t); return costes.length; },
+    async costesEscandallo() { return [{ nombre: 'Don Brasa', coste: 308 }, { nombre: 'Black Chancho', coste: 169 }, { nombre: 'Dona Dolores', coste: 191 }, { nombre: 'Pollo Padre', coste: 198 }]; },
     async pedidosEntre(local, desde, hasta) { return lee(K.pedidos, []).filter(p => p.local === local && p.creado >= desde && p.creado < hasta); },
     async ventasImportadasEntre() { return []; },
     async productosImportados() { return []; },
@@ -510,6 +529,13 @@
     async cambiarRol(local, email, rol) { ok(await cliente().rpc('cambiar_rol', { p_local: local, p_email: email, p_rol: rol })); },
     async quitarStaff(local, email) { ok(await cliente().rpc('quitar_staff', { p_local: local, p_email: email })); },
     async ticketsEntre(local, desde, hasta) { return ok(await cliente().from('tickets').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('numero')); },
+    // ── Delivery (Uber/Glovo) y costes de escandallo (sólo encargados) ──
+    async deliveryEntre(desde, hasta) { return ok(await cliente().from('delivery_diario').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha')); },
+    async resumenesDelivery(desde, hasta) { return ok(await cliente().from('delivery_resumen').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false })); },
+    async guardarDelivery(filas, resumenes, fuente) { return ok(await cliente().rpc('guardar_delivery', { p_filas: filas || [], p_resumenes: resumenes || [], p_fuente: fuente || 'manual' })); },
+    async costes(local) { return Object.fromEntries(ok(await cliente().from('costes_producto').select('producto,coste,fuente').eq('local', local)).map(r => [r.producto, r])); },
+    async guardarCostes(local, costes) { return ok(await cliente().rpc('guardar_costes', { p_local: local, p_costes: costes })); },
+    async costesEscandallo() { return ok(await cliente().rpc('costes_escandallo')); },
     async pedidosEntre(local, desde, hasta) { return ok(await cliente().from('pedidos').select('*').eq('local', local).gte('creado', desde).lt('creado', hasta).order('creado')); },
     async cuentasEntre(local, desde, hasta) { return ok(await cliente().from('cuentas').select('*').eq('local', local).gte('abierta', desde).lt('abierta', hasta).order('abierta')); },
     async ventasImportadasEntre(local, desde, hasta) { return ok(await cliente().from('ventas_importadas').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('fecha')); },
