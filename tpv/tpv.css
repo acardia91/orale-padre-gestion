@@ -182,3 +182,6 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .caja-res b{font-size:22px;letter-spacing:-.01em}
 .caja-lista{margin-top:14px;max-height:40vh;overflow:auto;border-top:1px solid var(--borde)}
 .caja-lista .fila{display:grid;grid-template-columns:auto 1fr auto auto auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--borde)}
+
+.sel-local{border:0;padding:0 18px 0 0;font:inherit;font-weight:700;font-size:15px;color:var(--tinta);background:transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A6A6D' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>") right center/14px no-repeat;-webkit-appearance:none;appearance:none;width:auto;box-shadow:none;cursor:pointer}
+.sel-local:focus{box-shadow:none}

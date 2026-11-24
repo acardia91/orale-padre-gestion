@@ -32,6 +32,10 @@
     if (!s.locales.length) { $('#e-error').textContent = 'Tu usuario no tiene ningún local asignado.'; $('#e-error').hidden = false; $('#vista-entrar').hidden = false; return; }
     if (!s.locales.includes(LOCAL)) LOCAL = s.locales[0];
     ls('op-tpv-local', LOCAL);
+    OP.selectorLocal($('#t-local'), s.locales, LOCAL, id => {
+      if (Object.values(pendientes).some(l => l.length) && !confirm('Hay productos sin enviar a cocina en este local. ¿Cambiar de local igualmente?')) { location.reload(); return; }
+      ls('op-tpv-local', id); location.search = '?local=' + encodeURIComponent(id);
+    });
     $('#vista-entrar').hidden = true; $('#vista-app').hidden = false;
     [carta, mesas] = await Promise.all([api.carta(LOCAL), api.mesas(LOCAL)]);
     idx = indexar(carta);
@@ -46,7 +50,7 @@
   async function recarga() {
     try { [local, cuentas, agotados, mesas] = await Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL)]); }
     catch (e) { console.warn(e); return; }
-    $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
+    if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
     if (cuenta) {
       const c = cuentas.find(x => x.id === cuenta.id);
       if (!c) { cuenta = null; verSala(); return; }      // la cobraron o anularon desde otro TPV
