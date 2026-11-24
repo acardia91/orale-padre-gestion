@@ -131,11 +131,12 @@
       </div>
       <ul class="ped-lineas">${p.lineas.map(l => `<li><b>${l.cantidad}×</b>${esc(l.nombre)}
         ${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}
-        ${l.nota ? `<small class="nota">⚠ ${esc(l.nota)}</small>` : ''}</li>`).join('')}</ul>
+        ${l.nota ? `<small class="nota">⚠ ${esc(l.nota)}</small>` : ''}</li>`).join('')}
+        ${(p.anuladas || []).map(l => `<li class="quitada"><b>${l.cantidad}×</b>${esc(l.nombre)}<small class="nota">✕ QUITADO · ${esc(l.motivo || '')}</small></li>`).join('')}</ul>
       ${p.notas ? `<p class="ped-notas">📝 ${esc(p.notas)}</p>` : ''}
       <div class="ped-pie">
         <span class="imp">${euros(p.total)}<small>${p.canal === 'sala' ? 'Se cobra en el TPV' : p.pagado ? esc(PAGO[p.pago_metodo]) : 'Paga al recoger'}</small></span>
-        <button class="lnk" data-acc="cancelar" data-id="${p.id}">Cancelar</button>
+        ${p.canal === 'sala' ? '' : `<button class="lnk" data-acc="cancelar" data-id="${p.id}">Cancelar</button>`}
         <button class="b" data-acc="imprimir" data-id="${p.id}">Ticket</button>
         ${p.estado !== 'nuevo' ? `<button class="b" data-acc="atras" data-id="${p.id}" title="Volver al paso anterior">↩</button>` : ''}
         <button class="b b-ok" data-acc="${boton[0]}" data-id="${p.id}">${boton[1]}</button>
