@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin · Órale Padre</title>
+<meta name="theme-color" content="#241A1C">
+<link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<section class="entrar" id="vista-entrar" hidden>
+  <form id="form-entrar">
+    <img src="/img/logo-tinta.png" alt="Órale Padre" width="160">
+    <h1>Admin</h1>
+    <label>Email<input id="e-email" type="email" autocomplete="username" required></label>
+    <label>Contraseña<input id="e-pass" type="password" autocomplete="current-password" required></label>
+    <button class="b b-ok" type="submit">Entrar</button>
+    <p class="e-error" id="e-error" role="alert" hidden></p>
+  </form>
+</section>
+
+<div class="app" id="vista-app" hidden>
+  <aside class="lateral">
+    <img src="/img/logo.png" alt="Órale Padre" width="110">
+    <p class="lat-local" id="a-local">Tomares</p>
+    <span class="demo" id="a-demo" hidden>DEMO</span>
+    <nav id="a-nav">
+      <a href="#resumen">Ventas y facturas</a>
+      <a href="#carta">Carta y productos</a>
+      <a href="#plano">Plano del local</a>
+      <a href="#local">Local y horario</a>
+      <a href="#usuarios">Usuarios</a>
+      <a href="#promos">Promociones</a>
+      <a class="pronto" title="Próximamente">Reservas</a>
+    </nav>
+    <div class="lat-pie">
+      <a href="/tpv/" target="_blank" rel="noopener">Abrir TPV ↗</a>
+      <a href="/comandas/" target="_blank" rel="noopener">Abrir comandas ↗</a>
+      <button type="button" id="a-salir">Salir</button>
+    </div>
+  </aside>
+
+  <main class="contenido">
+
+  <!-- ══ VENTAS Y FACTURAS ══ -->
+  <section class="sec" data-sec="resumen" hidden>
+    <header class="cab">
+      <div><h1>Ventas y facturas</h1><p>Lo vendido en el periodo, con el IVA desglosado y todas las facturas simplificadas.</p></div>
+      <div class="cab-acc periodo" role="group" aria-label="Periodo">
+        <button class="b b-mini" type="button" data-rango="hoy">Hoy</button>
+        <button class="b b-mini" type="button" data-rango="ayer">Ayer</button>
+        <button class="b b-mini" type="button" data-rango="7">7 días</button>
+        <button class="b b-mini" type="button" data-rango="mes">Este mes</button>
+        <button class="b b-mini" type="button" data-rango="trim">Trimestre</button>
+        <input type="date" id="r-desde" aria-label="Desde"><input type="date" id="r-hasta" aria-label="Hasta">
+      </div>
+    </header>
+    <div class="kpis" id="r-kpis"></div>
+    <div class="dos-col">
+      <div class="panel"><h2>Ventas por hora</h2><div class="barras" id="r-horas"></div></div>
+      <div class="panel"><h2>Lo más vendido</h2><table class="tabla" id="r-top"></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-cab"><h2>Facturas simplificadas</h2>
+        <button class="b b-mini" type="button" id="r-csv">Exportar para la gestoría (CSV)</button></div>
+      <div class="tabla-wrap"><table class="tabla" id="r-facturas"></table></div>
+    </div>
+    <div class="panel">
+      <h2>Anulaciones y cancelaciones</h2>
+      <p class="nota">Control antifraude: cuentas anuladas y comandas canceladas, con su motivo.</p>
+      <div class="tabla-wrap"><table class="tabla" id="r-anul"></table></div>
+    </div>
+  </section>
+
+  <!-- ══ CARTA ══ -->
+  <section class="sec" data-sec="carta" hidden>
+    <header class="cab">
+      <div><h1>Carta y productos</h1><p>Lo que cambies aquí sale en la web de pedidos y en el TPV en cuanto pulses <b>Publicar</b>.</p></div>
+      <div class="cab-acc">
+        <span class="sucio" id="c-sucio" hidden>Cambios sin publicar</span>
+        <button class="b" type="button" id="c-descartar" disabled>Descartar</button>
+        <button class="b b-ok" type="button" id="c-publicar" disabled>Publicar carta</button>
+      </div>
+    </header>
+    <div class="pestanas" role="tablist">
+      <button type="button" role="tab" data-ctab="productos" class="activa">Productos</button>
+      <button type="button" role="tab" data-ctab="extras">Extras y combos</button>
+      <button type="button" role="tab" data-ctab="categorias">Categorías</button>
+    </div>
+    <p class="aviso" id="c-error" role="alert" hidden></p>
+
+    <div data-cpanel="productos">
+      <div class="filtros">
+        <input type="search" id="c-buscar" placeholder="Buscar producto…" autocomplete="off">
+        <select id="c-filtro-cat" aria-label="Categoría"></select>
+        <button class="b b-ok b-mini" type="button" id="c-nuevo">+ Nuevo producto</button>
+      </div>
+      <div class="tabla-wrap"><table class="tabla prods" id="c-lista"></table></div>
+    </div>
+
+    <div data-cpanel="extras" hidden>
+      <p class="nota">Un <b>grupo de extras</b> es una pregunta con opciones: "¿Salsa extra?", "Elige tu bebida", "Quitar ingredientes". Un <b>combo</b> es un producto con precio cerrado y uno o varios grupos obligatorios (mínimo 1): por ejemplo, Combo Cañito = 12,90 € con "Elige tu bebida".</p>
+      <div class="filtros"><button class="b b-ok b-mini" type="button" id="g-nuevo">+ Nuevo grupo de extras</button></div>
+      <div id="g-lista" class="grupos"></div>
+    </div>
+
+    <div data-cpanel="categorias" hidden>
+      <p class="nota">El orden de aquí es el orden en la web y en el TPV. Las promos de días concretos solo se ven esos días.</p>
+      <div class="filtros"><button class="b b-ok b-mini" type="button" id="k-nueva">+ Nueva categoría</button></div>
+      <div id="k-lista" class="cats-lista"></div>
+    </div>
+  </section>
+
+  <!-- ══ PLANO ══ -->
+  <section class="sec" data-sec="plano" id="plano" hidden>
+    <header class="cab">
+      <div>
+        <h1>Plano del local</h1>
+        <p>Coloca las mesas como están en el local. Arrastra para mover, tira de la esquina azul para cambiar el tamaño.</p>
+      </div>
+      <div class="cab-acc">
+        <span class="sucio" id="p-sucio" hidden>Cambios sin guardar</span>
+        <button class="b" type="button" id="p-descartar" disabled>Descartar</button>
+        <button class="b b-ok" type="button" id="p-guardar" disabled>Guardar plano</button>
+      </div>
+    </header>
+
+    <div class="zonas">
+      <nav id="p-zonas" aria-label="Zonas"></nav>
+      <button class="b b-mini" type="button" id="p-zona-nueva">+ Zona</button>
+      <button class="b b-mini" type="button" id="p-zona-renombrar">Renombrar zona</button>
+    </div>
+
+    <div class="editor">
+      <div class="lienzo-wrap">
+        <div class="herramientas" role="toolbar" aria-label="Añadir al plano">
+          <span>Añadir:</span>
+          <button type="button" data-add="cuadrada">▢ Mesa</button>
+          <button type="button" data-add="redonda">◯ Mesa redonda</button>
+          <button type="button" data-add="rectangular">▭ Mesa larga</button>
+          <button type="button" data-add="taburete">• Taburete</button>
+          <span class="sep"></span>
+          <button type="button" data-add="barra">Barra</button>
+          <button type="button" data-add="pared">Pared</button>
+          <button type="button" data-add="puerta">Puerta</button>
+          <button type="button" data-add="planta">Planta</button>
+        </div>
+        <div id="lienzo"></div>
+        <p class="ayuda">Consejo: con un elemento seleccionado, las flechas del teclado lo mueven poco a poco (con Mayúsculas, más rápido). Supr lo elimina.</p>
+      </div>
+
+      <aside class="props" id="props">
+        <p class="props-vacio" id="props-vacio">Toca una mesa o un elemento del plano para editarlo.</p>
+        <form id="props-form" hidden>
+          <h2 id="pr-titulo">Mesa</h2>
+          <label>Nombre<input id="pr-nombre" maxlength="30" autocomplete="off"></label>
+          <label id="pr-plazas-l">Comensales<input id="pr-plazas" type="number" min="1" max="30" inputmode="numeric"></label>
+          <label>Forma
+            <select id="pr-forma">
+              <optgroup label="Mesas (se abren en el TPV)">
+                <option value="cuadrada">Cuadrada</option><option value="redonda">Redonda</option>
+                <option value="rectangular">Larga</option><option value="taburete">Taburete</option>
+              </optgroup>
+              <optgroup label="Decoración (sólo dibujo)">
+                <option value="barra">Barra</option><option value="pared">Pared</option>
+                <option value="puerta">Puerta</option><option value="planta">Planta</option>
+              </optgroup>
+            </select></label>
+          <div class="dos">
+            <label>Ancho<input id="pr-ancho" type="number" min="10" max="1000" step="10" inputmode="numeric"></label>
+            <label>Alto<input id="pr-alto" type="number" min="10" max="625" step="10" inputmode="numeric"></label>
+          </div>
+          <div class="botones">
+            <button class="b" type="button" id="pr-girar">↻ Girar 90°</button>
+            <button class="b" type="button" id="pr-duplicar">Duplicar</button>
+            <button class="b b-mal" type="button" id="pr-borrar">Eliminar</button>
+          </div>
+        </form>
+        <div class="resumen" id="p-resumen"></div>
+      </aside>
+    </div>
+    <p class="aviso" id="p-error" role="alert" hidden></p>
+  </section>
+
+  <!-- ══ PROMOCIONES ══ -->
+  <section class="sec" data-sec="promos" hidden>
+    <header class="cab">
+      <div><h1>Promociones</h1><p>Descuentos que el camarero puede aplicar al cobrar en el TPV. Cada ticket guarda qué promoción se usó y con qué nota.</p></div>
+      <div class="cab-acc"><button class="b b-ok" type="button" id="pm-nueva">+ Nueva promoción</button></div>
+    </header>
+    <p class="aviso" id="pm-error" role="alert" hidden></p>
+    <div class="panel"><div class="tabla-wrap"><table class="tabla" id="pm-lista"></table></div></div>
+  </section>
+
+  <!-- ══ LOCAL Y HORARIO ══ -->
+  <section class="sec" data-sec="local" hidden>
+    <header class="cab">
+      <div><h1>Local y horario</h1><p>Datos que ven los clientes y horario en el que se aceptan pedidos para recoger.</p></div>
+      <div class="cab-acc"><button class="b b-ok" type="button" id="l-guardar">Guardar</button></div>
+    </header>
+    <p class="aviso" id="l-error" role="alert" hidden></p>
+    <div class="dos-col">
+      <form class="panel form" id="l-form" onsubmit="return false">
+        <h2>Datos del local</h2>
+        <label>Nombre<input id="l-nombre" maxlength="60"></label>
+        <label>Teléfono<input id="l-telefono" type="tel" maxlength="20"></label>
+        <label>Dirección del local<input id="l-direccion" maxlength="120"></label>
+        <label>Dirección fiscal (sale en las facturas)<input id="l-fiscal" maxlength="120"></label>
+        <div class="dos">
+          <label>Minutos de preparación<input id="l-prep" type="number" min="5" max="120" step="5"></label>
+          <label class="chk"><input type="checkbox" id="l-acepta"> Aceptar pedidos online</label>
+        </div>
+        <p class="nota" id="l-fiscales"></p>
+      </form>
+      <div class="panel">
+        <h2>Horario de pedidos para recoger</h2>
+        <p class="nota">Dos turnos por día como máximo. Deja vacío un día para no aceptar pedidos.</p>
+        <table class="tabla horario" id="l-horario"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ USUARIOS ══ -->
+  <section class="sec" data-sec="usuarios" hidden>
+    <header class="cab">
+      <div><h1>Usuarios</h1><p>Quién puede entrar en el TPV, en comandas y en este panel.</p></div>
+    </header>
+    <p class="aviso" id="u-error" role="alert" hidden></p>
+    <div class="panel">
+      <table class="tabla" id="u-lista"></table>
+    </div>
+    <div class="panel">
+      <h2>Añadir a alguien</h2>
+      <ol class="pasos-lista">
+        <li>Crea su usuario en Supabase → <b>Authentication → Users → Add user → Create new user</b> (email, contraseña y "Auto confirm user").</li>
+        <li>Escribe aquí su email y su rol:</li>
+      </ol>
+      <form class="fila-form" id="u-form" onsubmit="return false">
+        <input id="u-email" type="email" placeholder="email@ejemplo.com" autocomplete="off">
+        <select id="u-rol"><option value="sala">Sala (TPV)</option><option value="cocina">Cocina (comandas)</option><option value="encargado">Encargado (todo)</option></select>
+        <button class="b b-ok" type="button" id="u-anadir">Añadir</button>
+      </form>
+      <p class="nota"><b>Sala</b> y <b>cocina</b> entran en el TPV y en comandas. Solo el <b>encargado</b> entra en este panel.</p>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<!-- Ficha de producto -->
+<dialog class="dlg" id="dlg-prod">
+  <form method="dialog" id="f-prod">
+    <h2 id="fp-titulo">Producto</h2>
+    <div class="fp-grid">
+      <div class="fp-foto">
+        <img id="fp-img" alt="" hidden>
+        <div class="fp-sin" id="fp-sin">Sin foto</div>
+        <label class="b b-mini">Subir foto<input type="file" id="fp-archivo" accept="image/jpeg,image/png,image/webp" hidden></label>
+        <button class="b b-mini b-mal" type="button" id="fp-quitar-foto">Quitar foto</button>
+      </div>
+      <div class="fp-campos">
+        <label>Nombre *<input id="fp-nombre" maxlength="60" required></label>
+        <div class="dos">
+          <label>Precio (€) *<input id="fp-precio" inputmode="decimal" required></label>
+          <label>Categoría<select id="fp-cat"></select></label>
+        </div>
+        <label>Descripción<textarea id="fp-desc" rows="3" maxlength="400"></textarea></label>
+      </div>
+    </div>
+    <fieldset class="fs"><legend>Alérgenos</legend><div class="checks" id="fp-alerg"></div></fieldset>
+    <fieldset class="fs"><legend>Extras que se pueden elegir</legend><div class="checks" id="fp-grupos"></div></fieldset>
+    <fieldset class="fs"><legend>Opciones</legend>
+      <div class="checks">
+        <label><input type="checkbox" id="fp-alcohol"> Lleva alcohol (21% de IVA para llevar)</label>
+        <label><input type="checkbox" id="fp-agotado"> Agotado (se ve pero no se puede pedir)</label>
+        <label><input type="checkbox" id="fp-oculto"> Oculto (no sale en la web ni en el TPV)</label>
+      </div>
+    </fieldset>
+    <p class="aviso" id="fp-error" hidden></p>
+    <div class="dlg-pie">
+      <button class="b b-mal" type="button" id="fp-borrar">Eliminar producto</button>
+      <span class="hueco"></span>
+      <button class="b" value="cancel" formnovalidate>Cancelar</button>
+      <button class="b b-ok" type="button" id="fp-ok">Aplicar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Promoción -->
+<dialog class="dlg" id="dlg-promo">
+  <form method="dialog" id="f-promo">
+    <h2 id="fm-titulo">Promoción</h2>
+    <div class="dos">
+      <label>Código *<input id="fm-codigo" maxlength="20" placeholder="EMPLEADOS" autocomplete="off"></label>
+      <label>Tipo
+        <select id="fm-tipo">
+          <option value="porcentaje">% de descuento en toda la cuenta</option>
+          <option value="importe">Importe fijo de descuento (€)</option>
+          <option value="producto">Productos gratis (p. ej. 2 tacos)</option>
+        </select></label>
+    </div>
+    <label>Nombre (sale en el ticket) *<input id="fm-nombre" maxlength="60" placeholder="Oferta para empleados"></label>
+    <div class="dos">
+      <label id="fm-valor-l">Valor<input id="fm-valor" inputmode="decimal"></label>
+      <label id="fm-uds-l" hidden>Unidades gratis<input id="fm-uds" type="number" min="1" max="20"></label>
+    </div>
+    <fieldset class="fs" id="fm-prods-fs" hidden><legend>Productos que entran en la promoción</legend>
+      <p class="nota">Se regalan las unidades más baratas de entre estos productos.</p>
+      <div class="checks" id="fm-prods"></div></fieldset>
+    <fieldset class="fs"><legend>Opciones</legend><div class="checks">
+      <label><input type="checkbox" id="fm-nota"> Pedir una nota al aplicarla (nombre del empleado, del socio…)</label>
+      <label><input type="checkbox" id="fm-activa"> Activa</label>
+    </div></fieldset>
+    <p class="aviso" id="fm-error" hidden></p>
+    <div class="dlg-pie">
+      <button class="b b-mal" type="button" id="fm-borrar">Eliminar</button>
+      <span class="hueco"></span>
+      <button class="b" value="cancel" formnovalidate>Cancelar</button>
+      <button class="b b-ok" type="button" id="fm-ok">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Grupo de extras -->
+<dialog class="dlg" id="dlg-grupo">
+  <form method="dialog" id="f-grupo">
+    <h2>Grupo de extras</h2>
+    <label>Pregunta que ve el cliente<input id="fg-nombre" maxlength="80" placeholder="¿Quieres añadir alguna salsa?"></label>
+    <div class="dos">
+      <label>Mínimo a elegir<input id="fg-min" type="number" min="0" max="20"></label>
+      <label>Máximo a elegir<input id="fg-max" type="number" min="1" max="20"></label>
+    </div>
+    <p class="nota">Mínimo 0 = opcional. Mínimo 1 y máximo 1 = elegir una sí o sí (bebida del combo).</p>
+    <table class="tabla" id="fg-opciones"></table>
+    <button class="b b-mini" type="button" id="fg-mas">+ Añadir opción</button>
+    <p class="nota" id="fg-uso"></p>
+    <p class="aviso" id="fg-error" hidden></p>
+    <div class="dlg-pie">
+      <button class="b b-mal" type="button" id="fg-borrar">Eliminar grupo</button>
+      <span class="hueco"></span>
+      <button class="b" value="cancel" formnovalidate>Cancelar</button>
+      <button class="b b-ok" type="button" id="fg-ok">Aplicar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/pedir/api.js"></script>
+<script src="/pedir/plano.js"></script>
+<script src="/pedir/ticket.js"></script>
+<script src="sec-plano.js"></script>
+<script src="sec-resumen.js"></script>
+<script src="sec-carta.js"></script>
+<script src="sec-local.js"></script>
+<script src="sec-promos.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
