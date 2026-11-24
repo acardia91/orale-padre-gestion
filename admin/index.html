@@ -248,6 +248,17 @@
       </form>
       <p class="nota"><b>Sala</b> y <b>cocina</b> entran en el TPV y en comandas. Solo el <b>encargado</b> entra en este panel.</p>
     </div>
+    <div class="panel">
+      <h2>Cambiar mi contraseña</h2>
+      <p class="nota">La contraseña de tu propio usuario. Mínimo 8 caracteres. Apúntala en un sitio seguro.</p>
+      <form class="fila-form" id="pw-form" onsubmit="return false" autocomplete="on">
+        <input type="email" autocomplete="username" id="pw-user" hidden>
+        <input id="pw-1" type="password" autocomplete="new-password" placeholder="Contraseña nueva" minlength="8">
+        <input id="pw-2" type="password" autocomplete="new-password" placeholder="Repítela" minlength="8">
+        <button class="b b-ok" type="button" id="pw-ok">Guardar contraseña</button>
+      </form>
+      <p class="aviso" id="pw-msg" hidden></p>
+    </div>
   </section>
 
   </main>

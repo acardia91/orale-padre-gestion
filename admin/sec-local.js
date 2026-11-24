@@ -91,5 +91,13 @@
     catch (ex) { err.textContent = mensajeError(ex); err.hidden = false; }
     cargarUsuarios();
   };
+  $('#pw-ok').onclick = async () => {
+    const m = $('#pw-msg'); const a = $('#pw-1').value, b = $('#pw-2').value;
+    const di = (t, ok) => { m.textContent = t; m.hidden = false; m.style.background = ok ? '#E4EEDD' : ''; m.style.color = ok ? '#4F7A3A' : ''; };
+    if (a.length < 8) return di('Mínimo 8 caracteres.');
+    if (a !== b) return di('Las dos contraseñas no coinciden.');
+    try { await api.cambiarPassword(a); $('#pw-1').value = $('#pw-2').value = ''; di('Contraseña guardada. La próxima vez entra con ella.', true); }
+    catch (ex) { di('No se ha podido guardar: ' + mensajeError(ex)); }
+  };
   window.ADMIN.usuarios = { async init(l) { LOCAL = l; await cargarUsuarios(); }, mostrar: cargarUsuarios };
 })();
