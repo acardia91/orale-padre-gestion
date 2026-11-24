@@ -81,6 +81,7 @@
       <div class="l"><span>${{ efectivo: 'Efectivo', tarjeta: 'Tarjeta', invitacion: 'Invitación' }[t.metodo] || t.metodo}</span><span>${euros(t.metodo === 'efectivo' ? t.entregado : t.total)}</span></div>
       ${t.metodo === 'efectivo' ? `<div class="l"><span>Cambio</span><span>${euros(t.cambio)}</span></div>` : ''}
       <hr><div class="c">¡Gracias, padre! · oralepadre.com</div>
+      <div class="c peq">¿Qué tal? Cuéntanoslo en<br><b>oralepadre.com/opinion</b></div>
       <div class="c peq">Huella: ${esc(t.hash.slice(0, 16))}</div>`;
   }
 
