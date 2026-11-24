@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611241138">
+<link rel="stylesheet" href="tpv.css?v=202611241215">
 </head>
 <body>
 
@@ -41,6 +41,10 @@
 
   <!-- ── Sala ── -->
   <main class="sala" id="vista-sala">
+    <section class="recoger" id="recoger-sec" hidden>
+      <h2 class="sub" style="margin-top:0">Para recoger · pedidos web de hoy <span class="n-recoger" id="n-recoger"></span></h2>
+      <div class="mesas" id="recoger"></div>
+    </section>
     <nav class="zonas" id="zonas"></nav>
     <div class="mesas" id="mesas"></div>
     <h2 class="sub" id="sub-barra">Barra y para llevar</h2>
@@ -120,6 +124,27 @@
   </form>
 </dialog>
 
+<!-- ── Pedido web para recoger ── -->
+<dialog class="dlg" id="dlg-recoger">
+  <form method="dialog">
+    <h2 id="rc-titulo">Pedido</h2>
+    <p id="rc-cliente" style="margin:0 0 8px"></p>
+    <ul class="rc-lineas" id="rc-lineas"></ul>
+    <p class="cb-total" id="rc-total"></p>
+    <p id="rc-estado-pago" style="margin:4px 0 0;font-weight:700"></p>
+    <label class="campo" id="rc-entregado-l">Entrega el cliente (efectivo)<input id="rc-entregado" inputmode="decimal" autocomplete="off" placeholder="Opcional"></label>
+    <label class="chk"><input type="checkbox" id="rc-imprimir" checked> Imprimir ticket</label>
+    <p class="err" id="rc-error" role="alert" hidden></p>
+    <div class="dlg-pie rc-botones">
+      <button class="b" value="cancel">Cerrar</button>
+      <button class="b" type="button" id="rc-comanda">Comanda</button>
+      <button class="b b-ok" type="button" id="rc-efectivo">Cobrar efectivo y entregar</button>
+      <button class="b b-ok" type="button" id="rc-tarjeta">Cobrar tarjeta y entregar</button>
+      <button class="b b-ok" type="button" id="rc-entregar">Entregar</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- ── Mover de mesa ── -->
 <dialog class="dlg" id="dlg-mover">
   <form method="dialog">
@@ -143,9 +168,9 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241138"></script>
-<script src="/pedir/ticket.js?v=202611241138"></script>
-<script src="/pedir/plano.js?v=202611241138"></script>
-<script src="tpv.js?v=202611241138"></script>
+<script src="/pedir/api.js?v=202611241215"></script>
+<script src="/pedir/ticket.js?v=202611241215"></script>
+<script src="/pedir/plano.js?v=202611241215"></script>
+<script src="tpv.js?v=202611241215"></script>
 </body>
 </html>

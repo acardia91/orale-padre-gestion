@@ -8,7 +8,7 @@
 
   let LOCAL = new URLSearchParams(location.search).get('local') || ls('op-tpv-local') || 'tomares';
   let local, carta, idx, mesas = [], cuentas = [], agotados = new Set();
-  let zona = null, cuenta = null, pedidosCuenta = [], catActiva = null;
+  let zona = null, cuenta = null, pedidosCuenta = [], catActiva = null, web = [];
   // Lo que el camarero ha marcado y aún no ha enviado a cocina, por cuenta (sobrevive a recargar).
   const pendientes = ls('op-tpv-pendientes') || {};
   const guardaPend = () => ls('op-tpv-pendientes', pendientes);
@@ -48,7 +48,11 @@
   function reloj() { $('#t-reloj').textContent = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', hour: '2-digit', minute: '2-digit' }); }
 
   async function recarga() {
-    try { [local, cuentas, agotados, mesas] = await Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL)]); }
+    try {
+      let hoy;
+      [local, cuentas, agotados, mesas, hoy] = await Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL), api.pedidosDelDia(LOCAL)]);
+      web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
+    }
     catch (e) { console.warn(e); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
     if (cuenta) {
@@ -61,7 +65,18 @@
   /* ══ Sala ══ */
   const minutos = d => Math.round((Date.now() - new Date(d)) / 60000);
   const totales = {};                     // total enviado de cada cuenta abierta
+  function pintaRecoger() {
+    $('#recoger-sec').hidden = !web.length; $('#n-recoger').textContent = web.length || '';
+    const EST = { nuevo: 'Nuevo', preparando: 'Preparando', listo: 'Listo' };
+    $('#recoger').innerHTML = web.map(p => `<button class="mesa web ${p.estado}" type="button" data-web="${p.id}">
+      <span class="est">${EST[p.estado]}</span>
+      <strong>#${p.numero} · ${esc(p.cliente_nombre)}</strong>
+      <small>Recoge a las ${new Date(p.recogida).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</small>
+      <span class="imp">${euros(p.total)}</span>
+      <span class="pg ${p.pagado ? 'ok' : ''}">${p.pagado ? 'Pagado online' : 'Cobrar al recoger'}</span></button>`).join('');
+  }
   function pintaSala() {
+    pintaRecoger();
     const zonas = [...new Set(mesas.map(m => m.zona))];
     if (!zonas.includes(zona)) zona = zonas[0] || null;
     $('#zonas').innerHTML = zonas.length > 1 ? zonas.map(z => `<button type="button" data-zona="${esc(z)}" class="${z === zona ? 'activa' : ''}">${esc(z)}</button>`).join('') : '';
@@ -131,6 +146,43 @@
   }
   $('#b-barra').onclick = () => nuevaSuelta(false);
   $('#b-llevar').onclick = () => nuevaSuelta(true);
+
+  /* ══ Para recoger: cobrar y entregar pedidos web ══ */
+  const drc = $('#dlg-recoger'); let pWeb = null;
+  $('#recoger').addEventListener('click', e => {
+    const b = e.target.closest('[data-web]'); if (!b) return;
+    pWeb = web.find(p => p.id === b.dataset.web); if (!pWeb) return;
+    $('#rc-titulo').textContent = `Pedido web #${pWeb.numero}`;
+    $('#rc-cliente').innerHTML = `<b>${esc(pWeb.cliente_nombre)}</b> · <a href="tel:${esc(pWeb.cliente_tel || '')}">${esc(pWeb.cliente_tel || '')}</a>${pWeb.notas ? `<br><small>📝 ${esc(pWeb.notas)}</small>` : ''}`;
+    $('#rc-lineas').innerHTML = pWeb.lineas.map(l => `<li><span><b>${l.cantidad}×</b> ${esc(l.nombre)}${(l.opciones || []).map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}</span><span>${euros(l.unitario * l.cantidad)}</span></li>`).join('');
+    $('#rc-total').textContent = euros(pWeb.total);
+    $('#rc-estado-pago').textContent = pWeb.pagado ? '✓ Ya pagado online: sólo hay que entregarlo.' : 'Pendiente de cobro.';
+    $('#rc-estado-pago').style.color = pWeb.pagado ? 'var(--nopal)' : 'var(--mal)';
+    $('#rc-entregado').value = ''; $('#rc-error').hidden = true;
+    $('#rc-entregado-l').hidden = pWeb.pagado; $('#rc-efectivo').hidden = $('#rc-tarjeta').hidden = pWeb.pagado; $('#rc-entregar').hidden = !pWeb.pagado;
+    drc.showModal();
+  });
+  $('#rc-comanda').onclick = () => OP.imprimir(OP.ticketComanda(pWeb, local.nombre));
+  async function cobrarWeb(metodo) {
+    const fallo = t => { $('#rc-error').textContent = t; $('#rc-error').hidden = false; };
+    let entregado = null;
+    if (metodo === 'efectivo' && $('#rc-entregado').value) {
+      entregado = Math.round(parseFloat($('#rc-entregado').value.replace(',', '.')) * 100);
+      if (isNaN(entregado) || entregado < pWeb.total) return fallo('El efectivo entregado no llega al total.');
+    }
+    try {
+      let t = null;
+      if (metodo) t = await api.cobrar({ pedido: pWeb.id, metodo, entregado });
+      await api.actualizarPedido(pWeb.id, { estado: 'entregado', entregado_at: new Date().toISOString() });
+      drc.close();
+      if (t && $('#rc-imprimir').checked) OP.imprimir(OP.ticketFactura(t));
+      if (t && t.cambio) alert('Cambio: ' + euros(t.cambio));
+      await recarga();
+    } catch (ex) { fallo(mensajeError(ex)); }
+  }
+  $('#rc-efectivo').onclick = () => cobrarWeb('efectivo');
+  $('#rc-tarjeta').onclick = () => cobrarWeb('tarjeta');
+  $('#rc-entregar').onclick = () => cobrarWeb(null);
 
   /* ══ Cuenta ══ */
   async function abrir(c) {

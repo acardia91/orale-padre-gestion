@@ -185,3 +185,19 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 
 .sel-local{border:0;padding:0 18px 0 0;font:inherit;font-weight:700;font-size:15px;color:var(--tinta);background:transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237A6A6D' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>") right center/14px no-repeat;-webkit-appearance:none;appearance:none;width:auto;box-shadow:none;cursor:pointer}
 .sel-local:focus{box-shadow:none}
+
+/* ── Para recoger (pedidos web) ── */
+.recoger{margin-bottom:22px}
+.n-recoger{display:inline-block;background:var(--oro);color:#fff;border-radius:99px;padding:0 8px;font-size:12px;margin-left:6px;letter-spacing:0}
+.n-recoger:empty{display:none}
+.mesa.web{border-left:5px solid var(--oro)}
+.mesa.web.listo{border-left-color:var(--nopal)}
+.mesa.web .est{align-self:flex-start;font-size:11px;font-weight:800;text-transform:uppercase;padding:2px 8px;border-radius:99px;background:var(--oro-cl);color:#8a5f0c}
+.mesa.web.preparando .est{background:var(--azul-cl);color:var(--azul)}
+.mesa.web.listo .est{background:var(--nopal-cl);color:var(--nopal)}
+.mesa.web .pg{font-size:12px;font-weight:700;color:var(--mal)}
+.mesa.web .pg.ok{color:var(--nopal)}
+.rc-lineas{list-style:none;margin:0;padding:0;max-height:40vh;overflow:auto}
+.rc-lineas li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--borde)}
+.rc-lineas small{display:block;color:var(--humo)}
+.rc-botones{justify-content:flex-start}
