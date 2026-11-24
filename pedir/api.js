@@ -171,6 +171,9 @@
     },
     async guardarLocal(id, datos) { const l = lee(K.locales, {}); l[id] = { ...(l[id] || {}), ...datos }; guarda(K.locales, l); avisa(); },
     async staffDelLocal() { return [{ email: 'demo@oralepadre.com', rol: 'encargado', ultimo_acceso: new Date().toISOString(), alta: new Date().toISOString() }]; },
+    async usuariosEquipo() { return [{ email: 'demo@oralepadre.com', ultimo_acceso: new Date().toISOString(), accesos: { tomares: 'encargado', 'san-luis': 'encargado' }, app_interna: false },
+      { email: 'camarero@oralepadre.com', ultimo_acceso: null, accesos: { tomares: 'sala' }, app_interna: false },
+      { email: 'cocinero@oralepadre.com', ultimo_acceso: null, accesos: {}, app_interna: true }]; },
     async anadirStaff() { throw new Error('USUARIO: en modo demo no se pueden añadir usuarios'); },
     async cambiarRol() { throw new Error('USUARIO: en modo demo no se pueden cambiar roles'); },
     async quitarStaff() { throw new Error('USUARIO: en modo demo no se pueden quitar usuarios'); },
@@ -516,6 +519,8 @@
     },
     async guardarLocal(id, datos) { ok(await cliente().rpc('guardar_local', { p_local: id, p_datos: datos })); },
     async staffDelLocal(local) { return ok(await cliente().rpc('listar_staff', { p_local: local })); },
+    // Todo el equipo (también quien aún no tiene acceso a ningún local), con sus accesos {local: rol}.
+    async usuariosEquipo() { return ok(await cliente().rpc('listar_usuarios_equipo')); },
     // Alta completa: crea el usuario de acceso (si no existe) y le da el rol en el local.
     async anadirStaff(local, email, rol, password) {
       const { data } = await cliente().auth.getSession(); if (!data.session) throw new Error('PERMISO: entra de nuevo en el admin');
