@@ -223,6 +223,8 @@
     // ── cocina ──
     async sesion() { return { email: 'demo@oralepadre.com', locales: ['tomares'], roles: { tomares: 'encargado' } }; },
     async entrar() { return this.sesion(); },
+    async enlaceEmail() { throw new Error('DEMO: en modo demo no hace falta entrar'); },
+    async cambiarPassword() { throw new Error('DEMO: en modo demo no hay contraseñas'); },
     async salir() {},
     async pedidosDelDia(local) {
       const dia = partesMadrid(new Date()).fecha;
@@ -377,6 +379,11 @@
     },
     async entrar(email, pass) { ok(await cliente().auth.signInWithPassword({ email, password: pass })); return this.sesion(); },
     async salir() { await cliente().auth.signOut(); },
+    // Entrar sin contraseña: Supabase manda un enlace al email (sólo a usuarios que ya existen).
+    async enlaceEmail(email) {
+      ok(await cliente().auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname } }));
+    },
+    async cambiarPassword(nueva) { ok(await cliente().auth.updateUser({ password: nueva })); },
     async pedidosDelDia(local) {
       const dia = partesMadrid(new Date()).fecha;
       return ok(await cliente().from('pedidos').select('*').eq('local', local).eq('dia', dia).order('numero'));
@@ -439,6 +446,32 @@
   };
 
   const euros = c => (c / 100).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+
+  /* ── Pantallas de entrada: añadir "recibir enlace por email" ── */
+  document.addEventListener('DOMContentLoaded', () => {
+    const f = document.getElementById('form-entrar'); if (!f || DEMO) return;
+    const err = document.getElementById('e-error'), em = document.getElementById('e-email');
+    const sep = document.createElement('p'); sep.className = 'e-o'; sep.textContent = 'o, sin contraseña';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'b'; b.textContent = 'Enviarme un enlace para entrar';
+    const ayuda = document.createElement('p'); ayuda.className = 'e-ayuda';
+    ayuda.textContent = 'Escribe tu email arriba y pulsa el botón: te llega un correo con un enlace que te deja dentro.';
+    f.append(sep, b, ayuda);
+    b.onclick = async () => {
+      err.hidden = true; const email = em.value.trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Escribe primero tu email.'; err.hidden = false; em.focus(); return; }
+      b.disabled = true; b.textContent = 'Enviando…';
+      try {
+        await (DEMO ? demo : real).enlaceEmail(email);
+        ayuda.innerHTML = '<b>Correo enviado.</b> Abre el email de “Supabase Auth” en el Gmail del negocio y pulsa el enlace desde este mismo dispositivo. Si no llega en 2 minutos, mira en Spam.';
+        b.textContent = 'Reenviar enlace';
+      } catch (ex) {
+        const t = String(ex.message || ex);
+        err.textContent = /rate|seconds|limit/i.test(t) ? 'Has pedido demasiados enlaces seguidos. Espera un minuto y vuelve a probar.'
+          : /signups not allowed|not found|Invalid/i.test(t) ? 'Ese email no tiene usuario en el sistema.' : 'No se ha podido enviar el enlace: ' + t;
+        err.hidden = false; b.textContent = 'Enviarme un enlace para entrar';
+      } finally { b.disabled = false; }
+    };
+  });
 
   window.OP = { api: DEMO ? demo : real, DEMO, CONFIG, franjas, enHorario, hhmm, partesMadrid,
                 indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, mensajeError, euros };
