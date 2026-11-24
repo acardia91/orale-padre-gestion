@@ -310,3 +310,19 @@ button.t-quien:hover{border-color:var(--burdeos,#7C2430)}
 }
 .prod img,.prod .ini{flex:none}
 .prods{grid-auto-rows:max-content}
+
+/* ── Reservas en el TPV ── */
+.reservas-tpv{margin-bottom:18px}
+.reservas-tpv .sub .b{margin-left:8px;vertical-align:middle;text-transform:none;letter-spacing:0}
+.rv-tira{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.rv-tira:empty::before{content:"No hay más reservas hoy.";color:var(--humo);font-size:14px}
+.rv-card{flex:0 0 220px;border:1px solid var(--borde);border-left:4px solid var(--azul,#2F6A9E);border-radius:0;background:var(--blanco);padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.rv-card.pendiente{border-left-color:var(--oro)}
+.rv-card.pronto{border-left-color:var(--burdeos);background:var(--burdeos-cl,#F6E7E7)}
+.rv-card b{font-size:18px}
+.rv-card strong{font-size:15px}
+.rv-card small{color:var(--humo);font-size:12.5px}
+.rv-card .rv-acc{display:flex;gap:6px;margin-top:6px}
+.rv-card .rv-acc .b{padding:7px 10px;font-size:13px}
+.rn-fila{display:grid;grid-template-columns:1fr 1fr 90px;gap:10px}
+.pl-el .rv-mesa,.mesa .rv-mesa{display:block;font-size:11px;font-weight:700;color:var(--azul,#2F6A9E)}

@@ -126,7 +126,11 @@
   async function recarga() {
     try {
       let hoy;
-      [local, cuentas, agotados, mesas, hoy] = await Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL), api.pedidosDelDia(LOCAL)]);
+      const d0 = new Date(); d0.setHours(0, 0, 0, 0); const d1 = new Date(d0); d1.setDate(d1.getDate() + 1);
+      let rvs;
+      [local, cuentas, agotados, mesas, hoy, rvs] = await Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL), api.pedidosDelDia(LOCAL),
+        api.reservasEntre ? api.reservasEntre(LOCAL, d0.toISOString(), d1.toISOString()).catch(() => []) : []]);
+      reservasHoy = (rvs || []).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
     }
     catch (e) { console.warn(e); return; }
@@ -141,6 +145,65 @@
   /* ══ Sala ══ */
   const minutos = d => Math.round((Date.now() - new Date(d)) / 60000);
   const totales = {};                     // total enviado de cada cuenta abierta
+  /* ══ Reservas de hoy ══ */
+  let reservasHoy = [], rvSentar = null;
+  const hhmm = f => new Date(f).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
+  const vivasRv = () => reservasHoy.filter(r => ['pendiente', 'confirmada'].includes(r.estado) && new Date(r.fecha) > Date.now() - 2 * 3600000);
+  // Próxima reserva de una mesa en las 2 próximas horas (para marcarla en el plano).
+  const reservaDeMesa = id => vivasRv().find(r => r.mesa_id === id && new Date(r.fecha) - Date.now() < 2 * 3600000);
+  function pintaReservas() {
+    const rs = vivasRv();
+    $('#n-rv').textContent = rs.length || '';
+    $('#rv-tpv').innerHTML = rs.map(r => { const min = (new Date(r.fecha) - Date.now()) / 60000; const mesa = mesas.find(m => m.id === r.mesa_id);
+      return `<div class="rv-card ${r.estado} ${min < 30 ? 'pronto' : ''}">
+        <b>${hhmm(r.fecha)}</b><strong>${esc(r.nombre)} · ${r.personas} pers.</strong>
+        <small>${mesa ? 'Mesa: ' + esc(mesa.nombre) : 'Sin mesa asignada'}${r.estado === 'pendiente' ? ' · <b style="font-size:12px;color:var(--oro)">Pendiente</b>' : ''}</small>
+        ${r.notas ? `<small>📝 ${esc(r.notas)}</small>` : ''}
+        <div class="rv-acc"><button class="b b-ok" type="button" data-rv-sentar="${r.id}">Sentar</button><button class="b" type="button" data-rv-noshow="${r.id}">No vino</button>
+          ${r.telefono ? `<a class="b" href="tel:${esc(r.telefono)}" aria-label="Llamar">📞</a>` : ''}</div></div>`; }).join('');
+  }
+  async function sentar(r, mesaId) {
+    try {
+      const abierta = cuentas.find(c => c.mesa_id === mesaId);
+      const c = abierta || await api.abrirCuenta({ local: LOCAL, mesa_id: mesaId, nombre: null, comensales: r.personas });
+      await api.actualizarReserva(r.id, { estado: 'sentada', mesa_id: mesaId });
+      $('#dlg-sentar').close(); aviso(`✓ ${r.nombre} sentados en ${(mesas.find(m => m.id === mesaId) || {}).nombre || 'mesa'}`);
+      abrir(c);
+    } catch (ex) { alert(mensajeError(ex)); recarga(); }
+  }
+  $('#rv-tpv').addEventListener('click', async e => {
+    const s = e.target.closest('[data-rv-sentar]'), n = e.target.closest('[data-rv-noshow]');
+    if (n) { const r = reservasHoy.find(x => x.id === n.dataset.rvNoshow); if (!confirm(`¿Marcar que ${r.nombre} no ha venido?`)) return;
+      try { await api.actualizarReserva(r.id, { estado: 'no_show' }); await recarga(); } catch (ex) { alert(mensajeError(ex)); } return; }
+    if (!s) return;
+    rvSentar = reservasHoy.find(x => x.id === s.dataset.rvSentar);
+    // Con mesa asignada y libre: directo. Si no, elegir mesa.
+    if (rvSentar.mesa_id && !cuentas.some(c => c.mesa_id === rvSentar.mesa_id)) return sentar(rvSentar, rvSentar.mesa_id);
+    $('#st-titulo').textContent = `Sentar a ${rvSentar.nombre}`;
+    $('#st-info').textContent = `${rvSentar.personas} personas · ${hhmm(rvSentar.fecha)}. Elige mesa:`;
+    $('#st-mesas').innerHTML = mesas.filter(m => m.tipo !== 'deco').map(m => { const oc = cuentas.some(c => c.mesa_id === m.id);
+      return `<button class="mesa ${oc ? 'ocupada' : ''}" type="button" data-st="${esc(m.id)}" ${oc ? 'disabled' : ''}><strong>${esc(m.nombre)}</strong><small>${oc ? 'Ocupada' : (m.plazas ? m.plazas + ' pax' : 'Libre')}</small></button>`; }).join('');
+    $('#dlg-sentar').showModal();
+  });
+  $('#st-mesas').addEventListener('click', e => { const b = e.target.closest('[data-st]'); if (b && rvSentar) sentar(rvSentar, b.dataset.st); });
+  $('#rv-nueva-tpv').onclick = () => {
+    const z = new Date(); z.setMinutes(z.getMinutes() - z.getTimezoneOffset());
+    $('#rn-nombre').value = ''; $('#rn-tel').value = ''; $('#rn-notas').value = ''; $('#rn-pers').value = 2; $('#rn-error').hidden = true;
+    $('#rn-dia').value = z.toISOString().slice(0, 10); $('#rn-hora').value = '21:00'; $('#dlg-rv-nueva').showModal();
+  };
+  $('#rn-ok').onclick = async () => {
+    const err = t => { $('#rn-error').textContent = t; $('#rn-error').hidden = false; };
+    const nombre = $('#rn-nombre').value.trim(), tel = $('#rn-tel').value.trim();
+    if (nombre.length < 2) return err('Falta el nombre.');
+    if (tel.replace(/[^0-9]/g, '').length < 9) return err('Revisa el teléfono.');
+    if (!$('#rn-dia').value || !$('#rn-hora').value) return err('Falta el día o la hora.');
+    try {
+      await api.crearReserva({ local: LOCAL, fecha: new Date(`${$('#rn-dia').value}T${$('#rn-hora').value}:00`), personas: +$('#rn-pers').value || 2,
+        nombre, tel, email: '', notas: $('#rn-notas').value.trim(), origen: 'telefono' });
+      $('#dlg-rv-nueva').close(); aviso('✓ Reserva guardada'); await recarga();
+    } catch (ex) { err(mensajeError(ex)); }
+  };
+
   function pintaRecoger() {
     $('#recoger-sec').hidden = !web.length; $('#n-recoger').textContent = web.length || '';
     const EST = { nuevo: 'Nuevo', preparando: 'Preparando', listo: 'Listo' };
@@ -152,7 +215,7 @@
       <span class="pg ${p.pagado ? 'ok' : ''}">${p.pagado ? 'Pagado online' : 'Cobrar al recoger'}</span></button>`).join('');
   }
   function pintaSala() {
-    pintaRecoger();
+    pintaRecoger(); pintaReservas();
     const zonas = [...new Set(mesas.map(m => m.zona))];
     if (!zonas.includes(zona)) zona = zonas[0] || null;
     $('#zonas').innerHTML = zonas.length > 1 ? zonas.map(z => `<button type="button" data-zona="${esc(z)}" class="${z === zona ? 'activa' : ''}">${esc(z)}</button>`).join('') : '';
@@ -165,14 +228,15 @@
       OP.plano.pintar(cont, deZona, { estado: m => {
         if (m.tipo === 'deco') return null;
         const c = cuentas.find(x => x.mesa_id === m.id);
-        if (!c) return { sub: m.plazas ? m.plazas + ' pax' : '' };
+        if (!c) { const rv = reservaDeMesa(m.id); return { sub: rv ? `Reserva ${hhmm(rv.fecha)}` : (m.plazas ? m.plazas + ' pax' : '') }; }
         return { ocupada: true, sub: minutos(c.abierta) + ' min', imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
       } });
     } else {
       cont.className = 'mesas';
       cont.innerHTML = deZona.filter(m => m.tipo !== 'deco').map(m => {
         const c = cuentas.find(x => x.mesa_id === m.id);
-        return c ? tileCuenta(c, m.nombre) : `<button class="mesa" type="button" data-mesa="${esc(m.id)}"><strong>${esc(m.nombre)}</strong><small>Libre</small></button>`;
+        const rv = !c && reservaDeMesa(m.id);
+        return c ? tileCuenta(c, m.nombre) : `<button class="mesa" type="button" data-mesa="${esc(m.id)}"><strong>${esc(m.nombre)}</strong><small>${rv ? `<span class="rv-mesa">Reserva ${hhmm(rv.fecha)} · ${rv.personas}p</span>` : 'Libre'}</small></button>`;
       }).join('') || '<p class="vacio">No hay mesas en esta zona.</p>';
     }
     const sueltas = cuentas.filter(c => !c.mesa_id);

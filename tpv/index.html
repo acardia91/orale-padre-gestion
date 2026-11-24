@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611241735">
+<link rel="stylesheet" href="tpv.css?v=202611241933">
 </head>
 <body>
 
@@ -64,6 +64,11 @@
       <h2 class="sub" style="margin-top:0">Para recoger · pedidos web de hoy <span class="n-recoger" id="n-recoger"></span></h2>
       <div class="mesas" id="recoger"></div>
     </section>
+    <section class="reservas-tpv" id="rv-sec">
+      <h2 class="sub" style="margin-top:0">Reservas de hoy <span class="n-recoger" id="n-rv"></span>
+        <button class="b b-mini" type="button" id="rv-nueva-tpv">+ Reserva</button></h2>
+      <div class="rv-tira" id="rv-tpv"></div>
+    </section>
     <nav class="zonas" id="zonas"></nav>
     <div class="mesas" id="mesas"></div>
     <h2 class="sub" id="sub-barra">Barra y para llevar</h2>
@@ -99,6 +104,31 @@
     </aside>
   </main>
 </div>
+
+<!-- ── Reserva: sentar en mesa / nueva por teléfono ── -->
+<dialog class="dlg" id="dlg-sentar">
+  <form method="dialog">
+    <h2 id="st-titulo">Sentar reserva</h2>
+    <p id="st-info" style="margin:0 0 12px"></p>
+    <div class="mesas mini" id="st-mesas"></div>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button></div>
+  </form>
+</dialog>
+<dialog class="dlg" id="dlg-rv-nueva">
+  <form method="dialog">
+    <h2>Nueva reserva</h2>
+    <label class="campo">Nombre<input id="rn-nombre" maxlength="60" autocomplete="off"></label>
+    <label class="campo">Teléfono<input id="rn-tel" type="tel" inputmode="tel" autocomplete="off"></label>
+    <div class="rn-fila">
+      <label class="campo">Día<input id="rn-dia" type="date"></label>
+      <label class="campo">Hora<input id="rn-hora" type="time" step="900"></label>
+      <label class="campo">Personas<input id="rn-pers" type="number" min="1" max="50" value="2" inputmode="numeric"></label>
+    </div>
+    <label class="campo">Nota<input id="rn-notas" maxlength="300" autocomplete="off" placeholder="Trona, cumpleaños, alergias…"></label>
+    <p class="err" id="rn-error" role="alert" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="rn-ok">Guardar reserva</button></div>
+  </form>
+</dialog>
 
 <p class="aviso-flota" id="t-aviso" role="status" aria-live="polite" hidden></p>
 
@@ -244,10 +274,10 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241735"></script>
+<script src="/pedir/api.js?v=202611241933"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611241735"></script>
-<script src="/pedir/plano.js?v=202611241735"></script>
-<script src="tpv.js?v=202611241735"></script>
+<script src="/pedir/ticket.js?v=202611241933"></script>
+<script src="/pedir/plano.js?v=202611241933"></script>
+<script src="tpv.js?v=202611241933"></script>
 </body>
 </html>
