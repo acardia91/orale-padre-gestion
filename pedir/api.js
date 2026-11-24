@@ -338,12 +338,21 @@
         .forEach(p => { p.estado = 'cancelado'; p.motivo_cancel = 'Cuenta anulada: ' + motivo; });
       guarda(K.pedidos, ps); avisa();
     },
-    async cobrar({ cuenta, pedido, metodo, entregado, promocion, nota }) {
+    async cobrar({ cuenta, pedido, metodo, entregado, promocion, nota, items }) {
       const ps = lee(K.pedidos, []); const cs = lee(K.cuentas, []);
       let lineas, localId;
+      const vivos = () => ps.filter(p => p.cuenta_id === cuenta && p.estado !== 'cancelado').sort((a, b) => a.numero - b.numero);
       if (cuenta) {
         const c = cs.find(x => x.id === cuenta); if (!c || c.estado !== 'abierta') throw new Error('COBRO: la cuenta no está abierta');
-        localId = c.local; lineas = ps.filter(p => p.cuenta_id === cuenta && p.estado !== 'cancelado').sort((a, b) => a.numero - b.numero).flatMap(p => p.lineas);
+        localId = c.local;
+        if (items) {
+          lineas = items.map(it => { const p = ps.find(x => x.id === it.pedido); const l = p.lineas[it.indice];
+            if (it.cantidad > l.cantidad - (l.pagadas || 0)) throw new Error('COBRO: de "' + l.nombre + '" ya no quedan tantos por cobrar');
+            l.pagadas = (l.pagadas || 0) + it.cantidad; const { pagadas, ...resto } = l; return { ...resto, cantidad: it.cantidad }; });
+        } else {
+          lineas = vivos().flatMap(p => p.lineas).filter(l => l.cantidad > (l.pagadas || 0)).map(({ pagadas, ...l }) => ({ ...l, cantidad: l.cantidad - (pagadas || 0) }));
+          vivos().forEach(p => p.lineas.forEach(l => { l.pagadas = l.cantidad; }));
+        }
       } else {
         const p = ps.find(x => x.id === pedido); if (!p || p.pagado) throw new Error('COBRO: el pedido ya está cobrado');
         localId = p.local; lineas = p.lineas;
@@ -372,7 +381,8 @@
         entregado: metodo === 'efectivo' ? (entregado ?? r.total) : null, cambio: metodo === 'efectivo' ? (entregado ?? r.total) - r.total : null,
         hash_anterior: prev ? prev.hash : null, hash, verifactu_estado: 'pendiente' };
       ts.push(t); guarda(K.tickets, ts);
-      if (cuenta) {
+      if (cuenta && vivos().some(p => p.lineas.some(l => l.cantidad > (l.pagadas || 0)))) { /* cobro parcial: la mesa sigue abierta */ }
+      else if (cuenta) {
         const c = cs.find(x => x.id === cuenta); c.estado = 'cobrada'; c.cerrada = fecha.toISOString(); guarda(K.cuentas, cs);
         ps.filter(p => p.cuenta_id === cuenta && p.estado !== 'cancelado').forEach(p => { p.pagado = true; p.pago_metodo = metodo; });
       } else { const p = ps.find(x => x.id === pedido); p.pagado = true; p.pago_metodo = metodo; }
@@ -518,7 +528,10 @@
     async cerrarCaja(local, contado, retirado, notas) { return ok(await cliente().rpc('cerrar_caja', { p_local: local, p_contado: contado, p_retirado: retirado, p_notas: notas || '' })); },
     async auditoria(local, desde, hasta) { return ok(await cliente().rpc('listar_auditoria', { p_local: local, p_desde: desde, p_hasta: hasta })); },
     async cierres(local, desde, hasta) { return ok(await cliente().rpc('listar_cierres', { p_local: local, p_desde: desde, p_hasta: hasta })).map(r => r.c); },
-    async cobrar({ cuenta, pedido, metodo, entregado, promocion, nota }) {
+    // items = [{pedido, indice, cantidad}] → cobra sólo esos productos (dividir la cuenta).
+    async cobrar({ cuenta, pedido, metodo, entregado, promocion, nota, items }) {
+      if (items) return ok(await cliente().rpc('cobrar_parte', { p_cuenta: cuenta, p_items: items, p_metodo: metodo,
+        p_entregado: entregado ?? null, p_promocion: promocion || null, p_nota: nota || null }));
       return ok(await cliente().rpc('cobrar', { p_cuenta: cuenta || null, p_pedido: pedido || null, p_metodo: metodo,
         p_entregado: entregado ?? null, p_promocion: promocion || null, p_nota: nota || null }));
     },
