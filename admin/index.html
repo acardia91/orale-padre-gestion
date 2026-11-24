@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241453">
+<link rel="stylesheet" href="admin.css?v=202611241557">
 </head>
 <body>
 
@@ -33,6 +33,8 @@
       <a href="#panel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg><span>Panel</span></a>
       <a href="#resumen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Ventas y facturas</span></a>
       <a href="#pedidos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/></svg><span>Pedidos</span><em class="cuenta-nuevos" id="a-nuevos" hidden></em></a>
+      <a href="#informes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18M7 15l4-4 3 3 6-6"/></svg><span>Informes</span></a>
+      <a href="#resenas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Reseñas</span><em class="cuenta-nuevos" id="a-resenas" hidden></em></a>
       <a href="#delivery"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7M7 19a2 2 0 100-4 2 2 0 000 4M17 19a2 2 0 100-4 2 2 0 000 4"/></svg><span>Delivery</span></a>
       <a href="#carta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg><span>Carta y productos</span></a>
       <a href="#control"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Control y caja</span></a>
@@ -91,6 +93,70 @@
       <p class="nota">Control antifraude: cuentas anuladas y comandas canceladas, con su motivo.</p>
       <div class="tabla-wrap"><table class="tabla" id="r-anul"></table></div>
     </div>
+  </section>
+
+  <!-- ══ INFORMES ══ -->
+  <section class="sec" data-sec="informes" hidden>
+    <header class="cab">
+      <div><h1>Informes</h1><p>Cómo va el negocio frente al periodo anterior: categorías, productos con su margen, horas fuertes, canales y quién cobra. <span id="in-comp"></span></p></div>
+      <div class="cab-acc periodo" role="group" aria-label="Periodo">
+        <button class="b b-mini" type="button" data-irango="7">7 días</button>
+        <button class="b b-mini" type="button" data-irango="30">30 días</button>
+        <button class="b b-mini" type="button" data-irango="mes">Este mes</button>
+        <button class="b b-mini" type="button" data-irango="mesant">Mes pasado</button>
+        <button class="b b-mini" type="button" data-irango="trim">Trimestre</button>
+        <input type="date" id="in-desde" aria-label="Desde"><input type="date" id="in-hasta" aria-label="Hasta">
+      </div>
+    </header>
+    <div class="kpis" id="in-kpis"></div>
+    <div class="dos-col">
+      <div class="panel"><h2>Por canal</h2><div class="tabla-wrap"><table class="tabla" id="in-canales"></table></div>
+        <p class="nota">Delivery según lo que vuelca cada día el agente desde Uber y Glovo.</p></div>
+      <div class="panel"><h2>Por categoría</h2><div class="tabla-wrap"><table class="tabla" id="in-cats"></table></div></div>
+    </div>
+    <div class="panel"><h2>Cuándo se vende</h2><p class="nota">Venta media por día de la semana y hora (TPV + web). Cuanto más oscuro, más se vende.</p>
+      <div class="tabla-wrap" id="in-calor"></div></div>
+    <div class="panel">
+      <div class="panel-cab"><h2>Productos</h2>
+        <div class="botones"><input type="search" id="in-buscar" placeholder="Buscar producto o categoría" aria-label="Buscar producto">
+          <button class="b b-mini" type="button" id="in-csv">Descargar CSV</button></div></div>
+      <div class="tabla-wrap"><table class="tabla" id="in-prods"></table></div>
+      <p class="nota" id="in-prods-nota"></p>
+    </div>
+    <div class="dos-col">
+      <div class="panel"><h2>Quién cobra</h2><div class="tabla-wrap"><table class="tabla" id="in-emp"></table></div></div>
+      <div class="panel"><h2>Extras más pedidos</h2><div class="tabla-wrap"><table class="tabla" id="in-extras"></table></div></div>
+    </div>
+  </section>
+
+  <!-- ══ RESEÑAS ══ -->
+  <section class="sec" data-sec="resenas" hidden>
+    <header class="cab">
+      <div><h1>Reseñas</h1><p>Lo que opinan los clientes: las opiniones de la web (tras cada pedido, en el ticket y con el QR de mesa) y la nota de Uber y Glovo. Las malas, a resolver aquí.</p></div>
+      <div class="cab-acc periodo" role="group" aria-label="Periodo">
+        <button class="b b-mini" type="button" data-rsrango="7">7 días</button>
+        <button class="b b-mini" type="button" data-rsrango="30">30 días</button>
+        <button class="b b-mini" type="button" data-rsrango="90">90 días</button>
+        <button class="b b-mini" type="button" data-rsrango="todo">Todo</button>
+      </div>
+    </header>
+    <div class="kpis" id="rs-kpis"></div>
+    <div class="dos-col">
+      <div class="panel"><h2>Estrellas</h2><div id="rs-reparto"></div></div>
+      <div class="panel"><h2>Por local</h2><div class="tabla-wrap"><table class="tabla" id="rs-locales"></table></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-cab"><h2>Opiniones</h2>
+        <div class="botones" role="group" aria-label="Filtro">
+          <button class="b b-mini" type="button" data-rsfiltro="todas">Todas</button>
+          <button class="b b-mini" type="button" data-rsfiltro="pendientes">Malas sin resolver</button>
+          <button class="b b-mini" type="button" data-rsfiltro="malas">Malas (1-3 ★)</button>
+          <button class="b b-mini" type="button" data-rsfiltro="comentario">Con comentario</button></div></div>
+      <div id="rs-lista"></div>
+    </div>
+    <div class="panel"><h2>Pedir opiniones</h2>
+      <p class="nota">Después de cada pedido web entregado le llega al cliente un email para valorar. Además, el ticket lleva el enlace, y puedes imprimir un cartel con QR para las mesas. Al terminar, a todos los clientes se les invita a dejar también la reseña en Google (a todos, no sólo a los contentos: así lo exige Google).</p>
+      <div class="rs-enlaces" id="rs-enlaces"></div></div>
   </section>
 
   <!-- ══ ELEGIR LOCAL (secciones que son de un local concreto) ══ -->
@@ -597,21 +663,23 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241453"></script>
-<script src="/pedir/plano.js?v=202611241453"></script>
-<script src="/pedir/ticket.js?v=202611241453"></script>
-<script src="sec-plano.js?v=202611241453"></script>
-<script src="sec-resumen.js?v=202611241453"></script>
-<script src="sec-carta.js?v=202611241453"></script>
-<script src="sec-local.js?v=202611241453"></script>
-<script src="sec-pedidos.js?v=202611241453"></script>
-<script src="sec-reservas.js?v=202611241453"></script>
-<script src="sec-clientes.js?v=202611241453"></script>
-<script src="sec-control.js?v=202611241453"></script>
-<script src="sec-panel.js?v=202611241453"></script>
-<script src="sec-delivery.js?v=202611241453"></script>
-<script src="sec-promos.js?v=202611241453"></script>
-<script src="admin.js?v=202611241453"></script>
+<script src="/pedir/api.js?v=202611241557"></script>
+<script src="/pedir/plano.js?v=202611241557"></script>
+<script src="/pedir/ticket.js?v=202611241557"></script>
+<script src="sec-plano.js?v=202611241557"></script>
+<script src="sec-resumen.js?v=202611241557"></script>
+<script src="sec-carta.js?v=202611241557"></script>
+<script src="sec-local.js?v=202611241557"></script>
+<script src="sec-pedidos.js?v=202611241557"></script>
+<script src="sec-reservas.js?v=202611241557"></script>
+<script src="sec-clientes.js?v=202611241557"></script>
+<script src="sec-control.js?v=202611241557"></script>
+<script src="sec-panel.js?v=202611241557"></script>
+<script src="sec-delivery.js?v=202611241557"></script>
+<script src="sec-promos.js?v=202611241557"></script>
+<script src="sec-informes.js?v=202611241557"></script>
+<script src="sec-resenas.js?v=202611241557"></script>
+<script src="admin.js?v=202611241557"></script>
 </body>
 </html>
 
