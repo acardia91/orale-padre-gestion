@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241215">
+<link rel="stylesheet" href="admin.css?v=202611241313">
 </head>
 <body>
 
@@ -33,6 +33,7 @@
       <a href="#resumen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Ventas y facturas</span></a>
       <a href="#pedidos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/></svg><span>Pedidos</span><em class="cuenta-nuevos" id="a-nuevos" hidden></em></a>
       <a href="#carta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg><span>Carta y productos</span></a>
+      <a href="#control"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Control y caja</span></a>
       <a href="#clientes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8"/></svg><span>Clientes</span></a>
       <a href="#promos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7 7h.01"/></svg><span>Promociones</span></a>
       <p class="lat-grupo">Local</p>
@@ -262,6 +263,27 @@
     <div class="panel"><div class="tabla-wrap"><table class="tabla" id="cl-lista"></table></div></div>
   </section>
 
+  <!-- ══ CONTROL Y CAJA ══ -->
+  <section class="sec" data-sec="control" hidden>
+    <header class="cab">
+      <div><h1>Control y caja</h1><p>Lo que conviene vigilar: productos quitados tras mandarlos a cocina, cuentas anuladas, pre-cuentas, claves fallidas y cierres de caja. Cada cosa con quién la hizo y quién la autorizó.</p></div>
+      <div class="cab-acc periodo" role="group" aria-label="Periodo">
+        <button class="b b-mini" type="button" data-crango="hoy">Hoy</button>
+        <button class="b b-mini" type="button" data-crango="7">7 días</button>
+        <button class="b b-mini" type="button" data-crango="mes">Este mes</button>
+        <button class="b b-mini" type="button" data-crango="30">30 días</button>
+      </div>
+    </header>
+    <div class="kpis" id="ct-kpis"></div>
+    <div class="panel"><h2 style="margin:0 0 10px">Avisos y registro</h2>
+      <div class="filtros"><select id="ct-tipo" aria-label="Tipo">
+        <option value="">Todo</option><option value="linea_anulada">Productos quitados</option><option value="cuenta_anulada">Cuentas anuladas</option>
+        <option value="pedido_cancelado">Pedidos web cancelados</option><option value="precuenta">Pre-cuentas</option><option value="pin_fallido">Claves fallidas</option>
+        <option value="cierre_caja">Cierres de caja</option></select></div>
+      <div class="tabla-wrap"><table class="tabla" id="ct-lista"></table></div></div>
+    <div class="panel"><h2 style="margin:0 0 10px">Cierres de caja</h2><div class="tabla-wrap"><table class="tabla" id="ct-cierres"></table></div></div>
+  </section>
+
   <!-- ══ LOCAL Y HORARIO ══ -->
   <section class="sec" data-sec="local" hidden>
     <header class="cab">
@@ -486,17 +508,18 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241215"></script>
-<script src="/pedir/plano.js?v=202611241215"></script>
-<script src="/pedir/ticket.js?v=202611241215"></script>
-<script src="sec-plano.js?v=202611241215"></script>
-<script src="sec-resumen.js?v=202611241215"></script>
-<script src="sec-carta.js?v=202611241215"></script>
-<script src="sec-local.js?v=202611241215"></script>
-<script src="sec-pedidos.js?v=202611241215"></script>
-<script src="sec-reservas.js?v=202611241215"></script>
-<script src="sec-clientes.js?v=202611241215"></script>
-<script src="sec-promos.js?v=202611241215"></script>
-<script src="admin.js?v=202611241215"></script>
+<script src="/pedir/api.js?v=202611241313"></script>
+<script src="/pedir/plano.js?v=202611241313"></script>
+<script src="/pedir/ticket.js?v=202611241313"></script>
+<script src="sec-plano.js?v=202611241313"></script>
+<script src="sec-resumen.js?v=202611241313"></script>
+<script src="sec-carta.js?v=202611241313"></script>
+<script src="sec-local.js?v=202611241313"></script>
+<script src="sec-pedidos.js?v=202611241313"></script>
+<script src="sec-reservas.js?v=202611241313"></script>
+<script src="sec-clientes.js?v=202611241313"></script>
+<script src="sec-control.js?v=202611241313"></script>
+<script src="sec-promos.js?v=202611241313"></script>
+<script src="admin.js?v=202611241313"></script>
 </body>
 </html>

@@ -15,10 +15,10 @@
     const conPedido = lista.filter(c => c.pedidos > 0);
     $('#cl-kpis').innerHTML = k('Clientes', lista.length) + k('Han pedido', conPedido.length, `${lista.filter(c => c.pedidos > 1).length} repiten`) +
       k('Gasto medio', conPedido.length ? euros(Math.round(conPedido.reduce((s, c) => s + +c.gastado, 0) / conPedido.length)) : '—') +
-      k('Con reservas', lista.filter(c => c.reservas > 0).length, `${lista.reduce((s, c) => s + +c.no_shows, 0)} no vinieron`);
+      k('Con cuenta', lista.filter(c => c.con_cuenta).length, `${lista.filter(c => c.acepta_marketing).length} aceptan ofertas`) + k('Con reservas', lista.filter(c => c.reservas > 0).length, `${lista.reduce((s, c) => s + +c.no_shows, 0)} no vinieron`);
     $('#cl-lista').innerHTML = `<thead><tr><th>Cliente</th><th>Teléfono</th><th class="num">Pedidos</th><th class="num">Gastado</th><th class="num">Reservas</th><th>Último</th><th>Locales</th></tr></thead><tbody>` +
       (lista.map(c => `<tr data-pm="${esc(c.telefono)}">
-        <td><b>${esc(c.nombre || 'Sin nombre')}</b>${c.email ? `<small>${esc(c.email)}</small>` : ''}${c.notas ? `<small>📝 ${esc(c.notas.slice(0, 60))}</small>` : ''}</td>
+        <td><b>${esc(c.nombre || 'Sin nombre')}</b>${c.con_cuenta ? ' <span class="tag verde">Cuenta</span>' : ''}${c.acepta_marketing ? ' <span class="tag">Ofertas</span>' : ''}${c.email ? `<small>${esc(c.email)}</small>` : ''}${c.notas ? `<small>📝 ${esc(c.notas.slice(0, 60))}</small>` : ''}</td>
         <td>${esc(c.telefono)}</td><td class="num">${c.pedidos}</td><td class="num">${euros(+c.gastado)}</td>
         <td class="num">${c.reservas}${+c.no_shows ? ` <span class="tag rojo">${c.no_shows} no vino</span>` : ''}</td>
         <td>${fecha(c.ultimo)}</td><td>${(c.locales || []).map(l => `<span class="tag">${esc(nombreLocal(l))}</span>`).join('')}</td></tr>`).join('')
