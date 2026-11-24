@@ -66,41 +66,56 @@
 
   /* ══ Usuarios ══ */
   const ROLES = { sala: 'Sala (TPV)', cocina: 'Cocina (comandas)', encargado: 'Encargado (todo)' };
+  // Tabla de permisos: una fila por persona, una columna por local (los locales de los que eres encargado).
+  let LOCALES_U = [], usuarios = [];
+  const corto = n => String(n || '').replace(/^Órale Padre\s*/, '');
+  const aviso = (t, ok) => { const e = $('#u-error'); e.textContent = t; e.hidden = false; e.style.background = ok ? '#E4EEDD' : ''; e.style.color = ok ? '#4F7A3A' : ''; };
   async function cargarUsuarios() {
-    const err = $('#u-error'); err.hidden = true;
-    let lista = [];
-    try { lista = await api.staffDelLocal(LOCAL); } catch (ex) { err.textContent = mensajeError(ex); err.hidden = false; }
+    $('#u-error').hidden = true;
+    const ids = LOCALES_U.map(l => l.id);
+    let listas = [];
+    try { listas = await Promise.all(ids.map(id => api.staffDelLocal(id).then(us => us.map(u => ({ ...u, local: id }))))); }
+    catch (ex) { aviso(mensajeError(ex)); }
+    const m = new Map();
+    listas.flat().forEach(u => { const x = m.get(u.email) || { email: u.email, roles: {}, ultimo: null }; x.roles[u.local] = u.rol;
+      if (u.ultimo_acceso && (!x.ultimo || u.ultimo_acceso > x.ultimo)) x.ultimo = u.ultimo_acceso; m.set(u.email, x); });
+    usuarios = [...m.values()].sort((a, b) => a.email.localeCompare(b.email));
     const f = d => d ? new Date(d).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Nunca';
-    $('#u-lista').innerHTML = `<thead><tr><th>Email</th><th>Rol</th><th>Último acceso</th><th></th></tr></thead><tbody>` +
-      lista.map(u => `<tr><td><b>${esc(u.email)}</b></td>
-        <td><select data-rol="${esc(u.email)}">${Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${u.rol === k ? 'selected' : ''}>${v}</option>`).join('')}</select></td>
-        <td>${f(u.ultimo_acceso)}</td>
-        <td><button class="b b-mini b-mal" type="button" data-quitar="${esc(u.email)}">Quitar</button></td></tr>`).join('') + '</tbody>';
+    const opciones = r => `<option value="">Sin acceso</option>` + Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${r === k ? 'selected' : ''}>${v}</option>`).join('');
+    $('#u-lista').innerHTML = `<thead><tr><th>Persona</th>${LOCALES_U.map(l => `<th>${esc(corto(l.nombre))}</th>`).join('')}<th>Último acceso</th></tr></thead><tbody>` +
+      (usuarios.map(u => `<tr><td><b>${esc(u.email)}</b></td>${LOCALES_U.map(l => `<td><select data-email="${esc(u.email)}" data-local="${esc(l.id)}" class="${u.roles[l.id] ? '' : 'sin'}">${opciones(u.roles[l.id])}</select></td>`).join('')}
+        <td>${f(u.ultimo)}</td></tr>`).join('') || `<tr><td colspan="${LOCALES_U.length + 2}" class="nota">Aún no hay nadie.</td></tr>`) + '</tbody>';
+    $('#u-locales').innerHTML = LOCALES_U.map(l => `<label class="chk-local"><input type="checkbox" value="${esc(l.id)}" ${l.id === LOCAL ? 'checked' : ''}> ${esc(corto(l.nombre))}</label>`).join('');
   }
   $('#u-lista').addEventListener('change', async e => {
-    const s = e.target.closest('[data-rol]'); if (!s) return;
-    try { await api.cambiarRol(LOCAL, s.dataset.rol, s.value); } catch (ex) { alert(mensajeError(ex)); }
-    cargarUsuarios();
-  });
-  $('#u-lista').addEventListener('click', async e => {
-    const b = e.target.closest('[data-quitar]'); if (!b) return;
-    if (!confirm(`¿Quitar el acceso de ${b.dataset.quitar} a este local? Su usuario seguirá existiendo en Supabase.`)) return;
-    try { await api.quitarStaff(LOCAL, b.dataset.quitar); } catch (ex) { alert(mensajeError(ex)); }
+    const s = e.target.closest('select[data-email]'); if (!s) return;
+    const email = s.dataset.email, local = s.dataset.local, rol = s.value;
+    const antes = (usuarios.find(u => u.email === email) || { roles: {} }).roles[local];
+    const nombre = corto((LOCALES_U.find(l => l.id === local) || {}).nombre);
+    try {
+      if (!rol) { if (!confirm(`¿Quitar a ${email} el acceso a ${nombre}?`)) { s.value = antes || ''; return; } await api.quitarStaff(local, email); }
+      else if (!antes) await api.anadirStaff(local, email, rol, '');
+      else await api.cambiarRol(local, email, rol);
+      aviso(`Hecho: ${email} · ${nombre}: ${rol ? ROLES[rol] : 'sin acceso'}.`, true);
+    } catch (ex) { aviso(mensajeError(ex)); }
     cargarUsuarios();
   });
   $('#u-anadir').onclick = async () => {
-    const err = $('#u-error'); err.hidden = true; const email = $('#u-email').value.trim();
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = 'Escribe un email válido.'; err.hidden = false; return; }
+    const email = $('#u-email').value.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return aviso('Escribe un email válido.');
     const pw = $('#u-pass').value;
-    if (pw && pw.length < 8) { err.textContent = 'La contraseña inicial tiene que tener al menos 8 caracteres.'; err.hidden = false; return; }
-    const btn = $('#u-anadir'); btn.disabled = true;
+    if (pw && pw.length < 8) return aviso('La contraseña inicial tiene que tener al menos 8 caracteres.');
+    const locs = [...document.querySelectorAll('#u-locales input:checked')].map(i => i.value);
+    if (!locs.length) return aviso('Marca al menos un local.');
+    const rol = $('#u-rol').value; const btn = $('#u-anadir'); btn.disabled = true;
     try {
-      const r = await api.anadirStaff(LOCAL, email, $('#u-rol').value, pw);
+      let creado = false;
+      for (const [i, l] of locs.entries()) { const r = await api.anadirStaff(l, email, rol, i === 0 ? pw : ''); creado = creado || (r && r.creado); }
       $('#u-email').value = ''; $('#u-pass').value = '';
-      err.textContent = r && r.creado ? `Listo: ${email} ya puede entrar con la contraseña que has puesto (que la cambie en Usuarios → Cambiar mi contraseña).`
-                                      : `Listo: ${email} ya tiene acceso a este local (entra con su contraseña de siempre).`;
-      err.style.background = '#E4EEDD'; err.style.color = '#4F7A3A'; err.hidden = false;
-    } catch (ex) { err.textContent = mensajeError(ex); err.style.background = ''; err.style.color = ''; err.hidden = false; }
+      const donde = locs.map(l => corto((LOCALES_U.find(x => x.id === l) || {}).nombre)).join(', ');
+      aviso(creado ? `Listo: ${email} ya puede entrar en ${donde} como ${ROLES[rol]} con la contraseña que has puesto (que la cambie al entrar).`
+                   : `Listo: ${email} ya tiene acceso a ${donde} como ${ROLES[rol]} (entra con su contraseña de siempre).`, true);
+    } catch (ex) { aviso(mensajeError(ex)); }
     finally { btn.disabled = false; }
     cargarUsuarios();
   };
@@ -112,5 +127,5 @@
     try { await api.cambiarPassword(a); $('#pw-1').value = $('#pw-2').value = ''; di('Contraseña guardada. La próxima vez entra con ella.', true); }
     catch (ex) { di('No se ha podido guardar: ' + mensajeError(ex)); }
   };
-  window.ADMIN.usuarios = { async init(l) { LOCAL = l; await cargarUsuarios(); }, mostrar: cargarUsuarios };
+  window.ADMIN.usuarios = { todos: true, async init(l, locales) { LOCAL = l; LOCALES_U = locales || []; await cargarUsuarios(); }, mostrar: cargarUsuarios };
 })();

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241442">
+<link rel="stylesheet" href="admin.css?v=202611241448">
 </head>
 <body>
 
@@ -381,7 +381,7 @@
   <!-- ══ USUARIOS ══ -->
   <section class="sec" data-sec="usuarios" hidden>
     <header class="cab">
-      <div><h1>Usuarios</h1><p>Quién puede entrar en el TPV, en comandas y en este panel.</p></div>
+      <div><h1>Usuarios</h1><p>Quién entra en el TPV, en comandas y en este panel, y en qué locales. Cada persona sólo ve en el TPV los locales a los que tiene acceso.</p></div>
     </header>
     <p class="aviso" id="u-error" role="alert" hidden></p>
     <div class="panel">
@@ -389,13 +389,14 @@
     </div>
     <div class="panel">
       <h2>Añadir a alguien</h2>
-      <p class="nota" style="margin-top:0">Escribe su email, elige su rol y ponle una <b>contraseña inicial</b> (mínimo 8 caracteres). Díselo en persona; al entrar puede cambiarla en Usuarios → Cambiar mi contraseña. Si esa persona ya tiene usuario (por ejemplo, de otro local), deja la contraseña vacía.</p>
+      <p class="nota" style="margin-top:0">Email, <b>contraseña inicial</b> (mínimo 8 caracteres; díselo en persona y que la cambie al entrar), su rol y <b>en qué locales</b> trabaja. Si ya tiene usuario, deja la contraseña vacía. Luego puedes ajustar cada local en la tabla de arriba.</p>
       <form class="fila-form" id="u-form" onsubmit="return false">
         <input id="u-email" type="email" placeholder="email@ejemplo.com" autocomplete="off">
         <input id="u-pass" type="password" placeholder="Contraseña inicial" autocomplete="new-password" minlength="8">
         <select id="u-rol"><option value="sala">Sala (TPV)</option><option value="cocina">Cocina (comandas)</option><option value="encargado">Encargado (todo)</option></select>
         <button class="b b-ok" type="button" id="u-anadir">Añadir</button>
       </form>
+      <div class="u-locales"><span>Acceso a:</span><div id="u-locales"></div></div>
       <p class="nota"><b>Sala</b> y <b>cocina</b> entran en el TPV y en comandas. Solo el <b>encargado</b> entra en este panel.</p>
     </div>
     <div class="panel">
@@ -584,21 +585,21 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241442"></script>
-<script src="/pedir/plano.js?v=202611241442"></script>
-<script src="/pedir/ticket.js?v=202611241442"></script>
-<script src="sec-plano.js?v=202611241442"></script>
-<script src="sec-resumen.js?v=202611241442"></script>
-<script src="sec-carta.js?v=202611241442"></script>
-<script src="sec-local.js?v=202611241442"></script>
-<script src="sec-pedidos.js?v=202611241442"></script>
-<script src="sec-reservas.js?v=202611241442"></script>
-<script src="sec-clientes.js?v=202611241442"></script>
-<script src="sec-control.js?v=202611241442"></script>
-<script src="sec-panel.js?v=202611241442"></script>
-<script src="sec-delivery.js?v=202611241442"></script>
-<script src="sec-promos.js?v=202611241442"></script>
-<script src="admin.js?v=202611241442"></script>
+<script src="/pedir/api.js?v=202611241448"></script>
+<script src="/pedir/plano.js?v=202611241448"></script>
+<script src="/pedir/ticket.js?v=202611241448"></script>
+<script src="sec-plano.js?v=202611241448"></script>
+<script src="sec-resumen.js?v=202611241448"></script>
+<script src="sec-carta.js?v=202611241448"></script>
+<script src="sec-local.js?v=202611241448"></script>
+<script src="sec-pedidos.js?v=202611241448"></script>
+<script src="sec-reservas.js?v=202611241448"></script>
+<script src="sec-clientes.js?v=202611241448"></script>
+<script src="sec-control.js?v=202611241448"></script>
+<script src="sec-panel.js?v=202611241448"></script>
+<script src="sec-delivery.js?v=202611241448"></script>
+<script src="sec-promos.js?v=202611241448"></script>
+<script src="admin.js?v=202611241448"></script>
 </body>
 </html>
 
