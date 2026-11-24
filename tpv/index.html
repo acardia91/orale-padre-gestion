@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>TPV · Órale Padre</title>
+<meta name="theme-color" content="#7C2430">
+<link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="tpv.css">
+</head>
+<body>
+
+<!-- ── Entrar ── -->
+<section class="entrar" id="vista-entrar" hidden>
+  <form id="form-entrar">
+    <img src="/img/logo-tinta.png" alt="Órale Padre" width="160">
+    <h1>TPV</h1>
+    <label>Email<input id="e-email" type="email" autocomplete="username" required></label>
+    <label>Contraseña<input id="e-pass" type="password" autocomplete="current-password" required></label>
+    <button class="b b-ok" type="submit">Entrar</button>
+    <p class="e-error" id="e-error" role="alert" hidden></p>
+  </form>
+</section>
+
+<div id="vista-app" hidden>
+  <header class="barra">
+    <button class="b-atras" id="b-atras" type="button" hidden aria-label="Volver a la sala">‹ Sala</button>
+    <div class="b-local"><strong id="t-local">Tomares</strong><span id="t-reloj"></span></div>
+    <span class="demo" id="t-demo" hidden>DEMO</span>
+    <div class="b-ctrl">
+      <button class="b" id="b-barra" type="button">+ Barra</button>
+      <button class="b" id="b-llevar" type="button">+ Para llevar</button>
+      <button class="b" id="b-caja" type="button">Caja</button>
+      <button class="b b-mini" id="b-salir" type="button">Salir</button>
+    </div>
+  </header>
+
+  <!-- ── Sala ── -->
+  <main class="sala" id="vista-sala">
+    <nav class="zonas" id="zonas"></nav>
+    <div class="mesas" id="mesas"></div>
+    <h2 class="sub" id="sub-barra">Barra y para llevar</h2>
+    <div class="mesas" id="sueltas"></div>
+  </main>
+
+  <!-- ── Cuenta ── -->
+  <main class="cuenta" id="vista-cuenta" hidden>
+    <section class="carta">
+      <nav class="cats" id="cats"></nav>
+      <div class="prods" id="prods"></div>
+    </section>
+    <aside class="tique">
+      <div class="tq-cab">
+        <div><h2 id="c-nombre"></h2><small id="c-info"></small></div>
+        <button class="b b-mini" id="c-menu" type="button" aria-haspopup="menu">⋯</button>
+        <div class="menu" id="menu-cuenta" role="menu" hidden>
+          <button type="button" role="menuitem" data-m="mover">Cambiar de mesa</button>
+          <button type="button" role="menuitem" data-m="precuenta">Imprimir pre-cuenta</button>
+          <button type="button" role="menuitem" data-m="anular" class="peligro">Anular cuenta</button>
+        </div>
+      </div>
+      <div class="tq-lineas" id="c-lineas"></div>
+      <div class="tq-pie">
+        <label class="tq-nota"><span>Nota para cocina</span><input id="c-nota" maxlength="300" autocomplete="off" placeholder="Opcional"></label>
+        <div class="tq-total"><span>Total</span><strong id="c-total">0,00 €</strong></div>
+        <div class="tq-btns">
+          <button class="b b-env" id="c-enviar" type="button">Enviar a cocina</button>
+          <button class="b b-ok" id="c-cobrar" type="button">Cobrar</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- ── Extras del producto ── -->
+<dialog class="dlg dlg-ancho" id="dlg-prod">
+  <form method="dialog" id="f-prod">
+    <h2 id="dp-nombre"></h2>
+    <div id="dp-grupos"></div>
+    <label class="campo">Nota<input id="dp-nota" maxlength="140" autocomplete="off" placeholder="Sin cebolla, poco hecho…"></label>
+    <div class="dlg-pie">
+      <div class="cantidad"><button type="button" id="dp-menos">−</button><output id="dp-cant">1</output><button type="button" id="dp-mas">+</button></div>
+      <button class="b" value="cancel">Cancelar</button>
+      <button class="b b-ok" type="button" id="dp-ok">Añadir · <span id="dp-precio"></span></button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ── Cobrar ── -->
+<dialog class="dlg" id="dlg-cobrar">
+  <form method="dialog" id="f-cobrar">
+    <h2>Cobrar <span id="cb-nombre"></span></h2>
+    <div class="cb-promo">
+      <label class="campo">Promoción<select id="cb-promo"><option value="">Sin promoción</option></select></label>
+      <label class="campo" id="cb-nota-l" hidden>Nota de la promoción<input id="cb-nota" maxlength="80" autocomplete="off" placeholder="Nombre del empleado o del socio"></label>
+    </div>
+    <div class="cb-desc" id="cb-desc" hidden><span>Subtotal <b id="cb-bruto"></b></span><span>Descuento <b id="cb-dto"></b></span></div>
+    <p class="cb-total" id="cb-total"></p>
+    <p class="cb-invita" id="cb-invita" hidden>Invitación: no hay nada que cobrar. Se emite el ticket a 0,00 €.</p>
+    <div class="cb-metodo" id="cb-metodos" role="radiogroup" aria-label="Forma de pago">
+      <label><input type="radio" name="metodo" value="efectivo" checked><span>💶 Efectivo</span></label>
+      <label><input type="radio" name="metodo" value="tarjeta"><span>💳 Tarjeta</span></label>
+    </div>
+    <div id="cb-efectivo">
+      <label class="campo">Entrega el cliente<input id="cb-entregado" inputmode="decimal" autocomplete="off"></label>
+      <div class="rapidos" id="cb-rapidos"></div>
+      <p class="cambio">Cambio: <strong id="cb-cambio">0,00 €</strong></p>
+    </div>
+    <p class="cb-tarjeta" id="cb-tarjeta" hidden>Cobra <b id="cb-tarjeta-imp"></b> en el datáfono del Santander y confirma aquí cuando salga aprobado.</p>
+    <label class="chk"><input type="checkbox" id="cb-imprimir" checked> Imprimir ticket</label>
+    <p class="err" id="cb-error" role="alert" hidden></p>
+    <div class="dlg-pie">
+      <button class="b" value="cancel">Volver</button>
+      <button class="b b-ok" type="button" id="cb-ok">Confirmar cobro</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ── Mover de mesa ── -->
+<dialog class="dlg" id="dlg-mover">
+  <form method="dialog">
+    <h2>Mover a…</h2>
+    <div class="mesas mini" id="mv-mesas"></div>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button></div>
+  </form>
+</dialog>
+
+<!-- ── Caja del día ── -->
+<dialog class="dlg dlg-ancho" id="dlg-caja">
+  <form method="dialog">
+    <h2>Caja de hoy</h2>
+    <div class="caja-res" id="cj-res"></div>
+    <div class="caja-lista" id="cj-lista"></div>
+    <div class="dlg-pie">
+      <button class="b" type="button" id="cj-imprimir">Imprimir resumen</button>
+      <button class="b b-ok" value="ok">Cerrar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="/pedir/api.js"></script>
+<script src="/pedir/ticket.js"></script>
+<script src="/pedir/plano.js"></script>
+<script src="tpv.js"></script>
+</body>
+</html>
