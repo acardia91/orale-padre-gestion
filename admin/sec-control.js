@@ -8,7 +8,7 @@
   const quien = e => e ? esc(e.split('@')[0].replace(/^orale\.padre\.food\+/, '')) : '—';
   const ACC = {
     linea_anulada: ['Producto quitado', 'rojo'], cuenta_anulada: ['Cuenta anulada', 'rojo'], pedido_cancelado: ['Pedido web cancelado', ''],
-    precuenta: ['Pre-cuenta impresa', 'gris'], pin_fallido: ['Clave fallida', 'rojo'], cierre_caja: ['Cierre de caja', 'verde'], pin_cambiado: ['Clave cambiada', 'gris'],
+    precuenta: ['Pre-cuenta impresa', 'gris'], entrada: ['Entrada al TPV (PIN)', 'gris'], pin_fallido: ['Clave fallida', 'rojo'], cierre_caja: ['Cierre de caja', 'verde'], pin_cambiado: ['Clave cambiada', 'gris'],
   };
   let LOCAL, LOCALES = [], rango = '7', lista = [], cierres = [];
   const nombreLocal = id => ((LOCALES.find(l => l.id === id) || {}).nombre || id).replace(/^Órale Padre\s*/, '');

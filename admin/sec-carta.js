@@ -54,7 +54,7 @@
     $('#c-lista').innerHTML = `<thead><tr><th></th><th>Producto</th><th>Categoría</th><th class="num">Precio</th><th class="num">Coste</th><th>Extras</th><th>Etiquetas</th><th>Activo</th></tr></thead><tbody>` +
       (lista.map(p => {
         const c = catDe(p.id);
-        const est = [p.agotado ? '<span class="tag rojo">Agotado</span>' : '', p.alcohol ? '<span class="tag">Alcohol</span>' : '', p.grupos.some(g => (grupo(g) || {}).min) ? '<span class="tag verde">Combo</span>' : ''].join('');
+        const est = [p.solo === 'local' ? '<span class="tag gris">Sólo local</span>' : p.solo === 'recoger' ? '<span class="tag gris">Sólo recoger</span>' : '', p.agotado ? '<span class="tag rojo">Agotado</span>' : '', p.alcohol ? '<span class="tag">Alcohol</span>' : '', p.grupos.some(g => (grupo(g) || {}).min) ? '<span class="tag verde">Combo</span>' : ''].join('');
         return `<tr data-p="${esc(p.id)}" class="${p.oculto ? 'apagado' : ''}">
           <td class="mini">${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : '<span class="sinfoto"></span>'}</td>
           <td><b>${esc(p.nombre)}</b>${p.desc ? `<small>${esc(p.desc.slice(0, 80))}${p.desc.length > 80 ? '…' : ''}</small>` : ''}</td>
@@ -89,7 +89,7 @@
     $('#fp-alerg').innerHTML = ALERGENOS.map(a => `<label><input type="checkbox" value="${a}" ${p.alergenos.includes(a) ? 'checked' : ''}> ${a}</label>`).join('');
     $('#fp-grupos').innerHTML = carta.grupos.length ? carta.grupos.map(g => `<label><input type="checkbox" value="${g.id}" ${p.grupos.includes(g.id) ? 'checked' : ''}> ${esc(g.nombre)} <small>(${g.min ? 'obligatorio' : 'opcional'}, ${g.opciones.length} opciones)</small></label>`).join('')
       : '<p class="nota">Aún no hay grupos de extras. Créalos en la pestaña "Extras y combos".</p>';
-    $('#fp-alcohol').checked = !!p.alcohol; $('#fp-agotado').checked = !!p.agotado; $('#fp-oculto').checked = !!p.oculto;
+    $('#fp-alcohol').checked = !!p.alcohol; $('#fp-agotado').checked = !!p.agotado; $('#fp-oculto').checked = !!p.oculto; $('#fp-solo').value = p.solo || '';
     $('#fp-borrar').hidden = !id; $('#fp-error').hidden = true;
     pintaFoto(); dp.showModal();
   }
@@ -123,7 +123,7 @@
     const datos = { nombre, precio, desc: $('#fp-desc').value.trim(), foto: fotoTmp || null,
       alergenos: [...dp.querySelectorAll('#fp-alerg input:checked')].map(i => i.value),
       grupos: [...dp.querySelectorAll('#fp-grupos input:checked')].map(i => i.value),
-      alcohol: $('#fp-alcohol').checked, agotado: $('#fp-agotado').checked, oculto: $('#fp-oculto').checked };
+      alcohol: $('#fp-alcohol').checked, agotado: $('#fp-agotado').checked, oculto: $('#fp-oculto').checked, solo: $('#fp-solo').value || undefined };
     let id = editando;
     if (id) Object.assign(prod(id), datos);
     else { id = uid(); carta.productos.push({ id, ...datos }); }
@@ -225,6 +225,7 @@
       <input data-kn="${i}" value="${esc(c.nombre)}" maxlength="40" aria-label="Nombre de la categoría">
       <span class="cuenta">${c.productos.length} productos</span>
       <div class="dias" title="Días en que se puede pedir (ninguno marcado = todos)">${DIAS.map((d, j) => `<label><input type="checkbox" data-kd="${i}" value="${j + 1}" ${c.dias && c.dias.includes(j + 1) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
+      <select data-ks="${i}" aria-label="Dónde se vende" title="Dónde se vende esta categoría"><option value="">Todos los canales</option><option value="recoger" ${c.solo === 'recoger' ? 'selected' : ''}>Sólo recoger</option><option value="local" ${c.solo === 'local' ? 'selected' : ''}>Sólo en el local</option></select>
       <label class="chk"><input type="checkbox" data-ko="${i}" ${c.oculta ? 'checked' : ''}> Oculta</label>
       <button type="button" class="b b-mini b-mal" data-kx="${i}">Eliminar</button></div>`).join('');
   }
@@ -238,6 +239,7 @@
       c.dias = dias.length && dias.length < 7 ? dias : null; marca();
     }
     if (t.dataset.ko) { carta.categorias[t.dataset.ko].oculta = t.checked || undefined; pintaCategorias(); marca(); }
+    if (t.dataset.ks) { carta.categorias[t.dataset.ks].solo = t.value || undefined; marca(); }
   });
   $('#k-lista').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return; const cs = carta.categorias;
@@ -268,5 +270,20 @@
   };
 
   window.ADMIN = window.ADMIN || {};
-  window.ADMIN.carta = { async init(local) { LOCAL = local; await cargar(); }, sucio };
+  // Carta digital (QR de mesa): www.oralepadre.com/carta/?local=…
+  const urlDigital = () => `https://www.oralepadre.com/carta/?local=${encodeURIComponent(LOCAL)}`;
+  async function qrMesa() {
+    if (!window.qrcode) await new Promise((ok, ko) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+    const q = window.qrcode(0, 'M'); q.addData(urlDigital()); q.make();
+    const w = window.open('', '_blank'); if (!w) { alert('Permite las ventanas emergentes para imprimir el QR.'); return; }
+    const nom = esc(($('#a-locales') && $('#a-locales').selectedOptions[0] ? $('#a-locales').selectedOptions[0].textContent : '').replace(/^Órale Padre\s*/, ''));
+    w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>QR carta · ${nom}</title>
+      <style>body{font-family:Archivo,Arial,sans-serif;text-align:center;margin:0;padding:36px;color:#241a1c}h1{font-size:46px;margin:0 0 6px;color:#7C2430;letter-spacing:.02em}
+      p{font-size:21px;margin:0 0 22px}.qr svg{width:300px;height:300px}small{display:block;margin-top:16px;font-size:15px;color:#6b5b5e}@page{size:A6;margin:8mm}</style></head><body>
+      <h1>LA CARTA</h1><p>Escanea y mira la carta en tu móvil</p><div class="qr">${q.createSvgTag({ cellSize: 8, margin: 0, scalable: true })}</div>
+      <small>oralepadre.com/carta · Órale Padre ${nom}</small><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+    w.document.close();
+  }
+  $('#c-qr').onclick = () => qrMesa().catch(() => alert('No se ha podido crear el QR. Revisa la conexión.'));
+  window.ADMIN.carta = { async init(local) { LOCAL = local; $('#c-ver-digital').href = urlDigital(); await cargar(); }, sucio };
 })();

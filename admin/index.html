@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241612">
+<link rel="stylesheet" href="admin.css?v=202611241624">
 </head>
 <body>
 
@@ -263,8 +263,10 @@
   <!-- ══ CARTA ══ -->
   <section class="sec" data-sec="carta" hidden>
     <header class="cab">
-      <div><h1>Carta y productos</h1><p>Lo que cambies aquí sale en la web de pedidos y en el TPV en cuanto pulses <b>Publicar</b>.</p></div>
+      <div><h1>Carta y productos</h1><p>Lo que cambies aquí sale en la web de pedidos, en el TPV y en la carta digital del QR en cuanto pulses <b>Publicar</b>. Cada producto o categoría puede venderse en todos los canales, sólo para recoger o sólo en el local.</p></div>
       <div class="cab-acc">
+        <a class="b" id="c-ver-digital" href="#" target="_blank" rel="noopener">Ver carta digital</a>
+        <button class="b" type="button" id="c-qr">QR de mesa</button>
         <span class="sucio" id="c-sucio" hidden>Cambios sin publicar</span>
         <button class="b" type="button" id="c-descartar" disabled>Descartar</button>
         <button class="b b-ok" type="button" id="c-publicar" disabled>Publicar carta</button>
@@ -473,7 +475,15 @@
     </header>
     <p class="aviso" id="u-error" role="alert" hidden></p>
     <div class="panel">
-      <h2>Equipo con acceso</h2>
+      <div class="panel-cab"><h2>Equipo del TPV (entran con PIN)</h2>
+        <div class="botones"><button class="b b-mini" type="button" id="eq-nuevo">+ Persona</button>
+          <button class="b b-mini b-ok" type="button" id="eq-importar">Importar lista</button></div></div>
+      <p class="nota">El TPV de cada local se queda abierto con la cuenta del local y cada persona entra tecleando su PIN: todo lo que hace queda a su nombre. Un empleado necesita el PIN de un encargado para quitar productos o anular cuentas. Los PIN se guardan cifrados: nadie los puede ver, sólo cambiarlos.</p>
+      <p class="aviso-ok" id="eq-ok" hidden></p>
+      <div class="tabla-wrap"><table class="tabla" id="eq-lista"></table></div>
+    </div>
+    <div class="panel">
+      <h2>Cuentas con email y contraseña</h2>
       <p class="nota" style="margin-top:-6px">Cambia el desplegable de cada local para dar, cambiar o quitar el acceso. Se guarda al momento.</p>
       <div class="tabla-wrap"><table class="tabla" id="u-lista"></table></div>
       <h2 id="u-sin-cab" style="margin-top:20px" hidden>Con usuario pero sin acceso a ningún local</h2>
@@ -544,6 +554,8 @@
         <label><input type="checkbox" id="fp-agotado"> Agotado (se ve pero no se puede pedir)</label>
         <label><input type="checkbox" id="fp-oculto"> Oculto (no sale en la web ni en el TPV)</label>
       </div>
+      <label class="fp-solo">Dónde se vende
+        <select id="fp-solo"><option value="">En todos los canales</option><option value="recoger">Sólo para recoger / llevar (web y TPV para llevar)</option><option value="local">Sólo en el local (sala y carta digital QR)</option></select></label>
     </fieldset>
     <p class="aviso" id="fp-error" hidden></p>
     <div class="dlg-pie">
@@ -684,25 +696,54 @@
   </form>
 </dialog>
 
+<dialog class="dlg" id="dlg-eq-imp">
+  <form method="dialog">
+    <h2>Importar equipo</h2>
+    <p class="nota">Pega la lista con este formato (la primera fila son los títulos). Los locales separados por <b>|</b>. Si una fila no trae PIN, se mantiene el que tenga.</p>
+    <pre class="eq-ej">id,nombre,pin,rol,local_base,locales_que_ve
+lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
+    <label class="campo">Lista<textarea id="eq-texto" rows="9" spellcheck="false" autocomplete="off"></textarea></label>
+    <label class="chk"><input type="checkbox" id="eq-emails" checked> Poner a cada uno su email <b>id@oralepadre.com</b> (si no tiene)</label>
+    <p class="aviso" id="eq-imp-err" hidden></p>
+    <div class="eq-previa" id="eq-previa"></div>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b" type="button" id="eq-revisar">Revisar</button><button class="b b-ok" type="button" id="eq-guardar-imp" disabled>Guardar</button></div>
+  </form>
+</dialog>
+<dialog class="dlg" id="dlg-eq">
+  <form method="dialog" id="f-eq">
+    <h2 id="eq-titulo">Persona</h2>
+    <div class="fila-form"><label class="campo">Nombre<input id="eq-nombre" maxlength="60" required></label>
+      <label class="campo">Id (corto, sin espacios)<input id="eq-id" maxlength="30" pattern="[a-z0-9-]{2,30}" required></label></div>
+    <label class="campo">Email<input id="eq-email" type="email" maxlength="120" placeholder="nombre@oralepadre.com"></label>
+    <div class="fila-form"><label class="campo">Rol<select id="eq-rol"><option value="empleado">Empleado</option><option value="encargado">Encargado</option></select></label>
+      <label class="campo">Local base<select id="eq-base"></select></label></div>
+    <fieldset class="fs"><legend>Locales en los que entra</legend><div class="checks" id="eq-locales"></div></fieldset>
+    <label class="campo">Nuevo PIN (4 a 8 cifras; vacío = no cambiarlo)<input id="eq-pin" inputmode="numeric" autocomplete="off" maxlength="8" pattern="[0-9]{4,8}"></label>
+    <label class="chk"><input type="checkbox" id="eq-activo" checked> Activo (si lo quitas, ya no puede entrar)</label>
+    <p class="aviso" id="eq-err" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="eq-guardar">Guardar</button></div>
+  </form>
+</dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241612"></script>
-<script src="/pedir/plano.js?v=202611241612"></script>
+<script src="/pedir/api.js?v=202611241624"></script>
+<script src="/pedir/plano.js?v=202611241624"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611241612"></script>
-<script src="sec-plano.js?v=202611241612"></script>
-<script src="sec-resumen.js?v=202611241612"></script>
-<script src="sec-carta.js?v=202611241612"></script>
-<script src="sec-local.js?v=202611241612"></script>
-<script src="sec-pedidos.js?v=202611241612"></script>
-<script src="sec-reservas.js?v=202611241612"></script>
-<script src="sec-clientes.js?v=202611241612"></script>
-<script src="sec-control.js?v=202611241612"></script>
-<script src="sec-panel.js?v=202611241612"></script>
-<script src="sec-delivery.js?v=202611241612"></script>
-<script src="sec-promos.js?v=202611241612"></script>
-<script src="sec-informes.js?v=202611241612"></script>
-<script src="sec-resenas.js?v=202611241612"></script>
-<script src="admin.js?v=202611241612"></script>
+<script src="/pedir/ticket.js?v=202611241624"></script>
+<script src="sec-plano.js?v=202611241624"></script>
+<script src="sec-resumen.js?v=202611241624"></script>
+<script src="sec-carta.js?v=202611241624"></script>
+<script src="sec-local.js?v=202611241624"></script>
+<script src="sec-pedidos.js?v=202611241624"></script>
+<script src="sec-reservas.js?v=202611241624"></script>
+<script src="sec-clientes.js?v=202611241624"></script>
+<script src="sec-control.js?v=202611241624"></script>
+<script src="sec-panel.js?v=202611241624"></script>
+<script src="sec-delivery.js?v=202611241624"></script>
+<script src="sec-promos.js?v=202611241624"></script>
+<script src="sec-informes.js?v=202611241624"></script>
+<script src="sec-resenas.js?v=202611241624"></script>
+<script src="sec-equipo.js?v=202611241624"></script>
+<script src="admin.js?v=202611241624"></script>
 </body>
 </html>
 

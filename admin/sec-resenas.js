@@ -56,14 +56,14 @@
     const totG = fs.reduce((s, f) => s + (f.total || 0), 0);
     const mediaG = totG ? fs.reduce((s, f) => s + (f.nota || 0) * (f.total || 0), 0) / totG : null;
     const nuevas = gres.filter(r => locales().includes(r.local) && r.fecha && r.fecha >= iso(d));
-    const sinResp = gres.filter(r => locales().includes(r.local) && !r.respondida);
+    const sinResp = gres.filter(r => locales().includes(r.local) && !r.respondida && r.fecha && r.fecha >= iso(d));
     const malasSin = sinResp.filter(r => r.nota <= 3);
     const ult = fs.map(f => f.actualizado).sort().pop();
     const k = (t, v, s, cl) => `<div class="kpi ${cl || ''}"><small>${t}</small><b>${v}</b>${s ? `<span>${s}</span>` : ''}</div>`;
     $('#gg-kpis').innerHTML =
       k('Google (media ponderada)', mediaG == null ? '—' : n1(mediaG) + ' ★', `${totG} reseñas en total`) +
       k('Reseñas nuevas', nuevas.length, 'en el periodo') +
-      k('Sin responder', sinResp.length, malasSin.length ? `${malasSin.length} malas (1-3 ★): responde hoy` : 'ninguna mala pendiente', malasSin.length ? 'alerta' : '') +
+      k('Sin responder (periodo)', sinResp.length, malasSin.length ? `${malasSin.length} malas (1-3 ★): responde hoy` : 'ninguna mala pendiente', malasSin.length ? 'alerta' : '') +
       k('Uber Eats', n1(media(locales().map(l => plat(l, 'uber', 'estrellas')).filter(v => v != null)), 2) + (deliv.some(r => r.plataforma === 'uber' && r.valoracion != null) ? ' ★' : ''), 'media del periodo') +
       k('Glovo', (() => { const v = media(locales().map(l => plat(l, 'glovo', 'porcentaje')).filter(v => v != null)); return v == null ? '—' : Math.round(v) + '%'; })(), 'satisfacción media');
     $('#gg-actualizado').textContent = ult ? 'Google actualizado el ' + fecha(ult) : 'Aún no hay datos de Google: los carga el agente cada mañana.';
@@ -72,7 +72,7 @@
       const f = fichas[l] || {}; const hist = f.historial || [];
       const antes = hist.length > 1 ? hist[Math.max(0, hist.length - 8)] : null;
       const dif = antes && f.total != null ? f.total - antes.total : null;
-      const sr = gres.filter(r => r.local === l && !r.respondida).length;
+      const sr = gres.filter(r => r.local === l && !r.respondida && r.fecha && r.fecha >= iso(d)).length;
       const u = plat(l, 'uber', 'estrellas'), g = plat(l, 'glovo', 'porcentaje');
       return `<article class="gg-card">
         <header><b>${TODOS[l]}</b>${f.url ? `<a class="b b-mini" href="${esc(f.url)}" target="_blank" rel="noopener">Abrir en Google</a>` : ''}</header>

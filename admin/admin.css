@@ -387,3 +387,13 @@ textarea{resize:vertical}
 .gg-plat b.rojo{color:var(--burdeos)}
 .rs-card header .rs-nombre{font-size:15px}
 .rs-ref{margin:2px 0 6px;font-size:13px;color:var(--humo)}
+
+/* ── Equipo con PIN ── */
+.eq-ej{background:var(--fondo);border:1px solid var(--borde);border-radius:8px;padding:8px 10px;font-size:12px;overflow:auto;white-space:pre}
+#eq-texto{width:100%;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;padding:8px;border:1px solid var(--borde);border-radius:10px;box-sizing:border-box}
+.eq-previa table{width:100%;font-size:13px;border-collapse:collapse;margin-top:8px}
+.eq-previa td,.eq-previa th{padding:4px 6px;border-bottom:1px solid var(--borde);text-align:left}
+#dlg-eq .campo,#dlg-eq-imp .campo{display:block;font-size:12.5px;font-weight:600;color:var(--humo);margin:8px 0}
+#dlg-eq .campo input,#dlg-eq .campo select{display:block;width:100%;margin-top:4px;padding:9px 11px;border:1px solid var(--borde);border-radius:10px;font:inherit;font-size:14px;color:var(--tinta);box-sizing:border-box}
+#dlg-eq .fila-form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#dlg-eq-imp .chk,#dlg-eq .chk{display:flex;gap:8px;align-items:center;flex-direction:row;font-size:13.5px;margin:8px 0}
