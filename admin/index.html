@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611241448">
+<link rel="stylesheet" href="admin.css?v=202611241453">
 </head>
 <body>
 
@@ -385,7 +385,19 @@
     </header>
     <p class="aviso" id="u-error" role="alert" hidden></p>
     <div class="panel">
-      <table class="tabla" id="u-lista"></table>
+      <h2>Equipo con acceso</h2>
+      <p class="nota" style="margin-top:-6px">Cambia el desplegable de cada local para dar, cambiar o quitar el acceso. Se guarda al momento.</p>
+      <div class="tabla-wrap"><table class="tabla" id="u-lista"></table></div>
+      <h2 id="u-sin-cab" style="margin-top:20px" hidden>Con usuario pero sin acceso a ningún local</h2>
+      <div class="tabla-wrap"><table class="tabla" id="u-sin"></table></div>
+    </div>
+    <div class="panel">
+      <h2>Qué puede hacer cada rol</h2>
+      <ul class="roles-lista">
+        <li><b>Sala (TPV)</b>: abre mesas, manda a cocina, cobra y cierra caja en el TPV de ese local. Para quitar productos ya enviados o anular cuentas necesita la clave de un encargado.</li>
+        <li><b>Cocina (comandas)</b>: ve y avanza las comandas de ese local en la pantalla de cocina.</li>
+        <li><b>Encargado (todo)</b>: lo anterior y además este panel de ese local (carta, ventas, usuarios, caja…), y autoriza con su clave.</li>
+      </ul>
     </div>
     <div class="panel">
       <h2>Añadir a alguien</h2>
@@ -585,21 +597,21 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611241448"></script>
-<script src="/pedir/plano.js?v=202611241448"></script>
-<script src="/pedir/ticket.js?v=202611241448"></script>
-<script src="sec-plano.js?v=202611241448"></script>
-<script src="sec-resumen.js?v=202611241448"></script>
-<script src="sec-carta.js?v=202611241448"></script>
-<script src="sec-local.js?v=202611241448"></script>
-<script src="sec-pedidos.js?v=202611241448"></script>
-<script src="sec-reservas.js?v=202611241448"></script>
-<script src="sec-clientes.js?v=202611241448"></script>
-<script src="sec-control.js?v=202611241448"></script>
-<script src="sec-panel.js?v=202611241448"></script>
-<script src="sec-delivery.js?v=202611241448"></script>
-<script src="sec-promos.js?v=202611241448"></script>
-<script src="admin.js?v=202611241448"></script>
+<script src="/pedir/api.js?v=202611241453"></script>
+<script src="/pedir/plano.js?v=202611241453"></script>
+<script src="/pedir/ticket.js?v=202611241453"></script>
+<script src="sec-plano.js?v=202611241453"></script>
+<script src="sec-resumen.js?v=202611241453"></script>
+<script src="sec-carta.js?v=202611241453"></script>
+<script src="sec-local.js?v=202611241453"></script>
+<script src="sec-pedidos.js?v=202611241453"></script>
+<script src="sec-reservas.js?v=202611241453"></script>
+<script src="sec-clientes.js?v=202611241453"></script>
+<script src="sec-control.js?v=202611241453"></script>
+<script src="sec-panel.js?v=202611241453"></script>
+<script src="sec-delivery.js?v=202611241453"></script>
+<script src="sec-promos.js?v=202611241453"></script>
+<script src="admin.js?v=202611241453"></script>
 </body>
 </html>
 

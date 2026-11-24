@@ -72,22 +72,21 @@
   const aviso = (t, ok) => { const e = $('#u-error'); e.textContent = t; e.hidden = false; e.style.background = ok ? '#E4EEDD' : ''; e.style.color = ok ? '#4F7A3A' : ''; };
   async function cargarUsuarios() {
     $('#u-error').hidden = true;
-    const ids = LOCALES_U.map(l => l.id);
-    let listas = [];
-    try { listas = await Promise.all(ids.map(id => api.staffDelLocal(id).then(us => us.map(u => ({ ...u, local: id }))))); }
-    catch (ex) { aviso(mensajeError(ex)); }
-    const m = new Map();
-    listas.flat().forEach(u => { const x = m.get(u.email) || { email: u.email, roles: {}, ultimo: null }; x.roles[u.local] = u.rol;
-      if (u.ultimo_acceso && (!x.ultimo || u.ultimo_acceso > x.ultimo)) x.ultimo = u.ultimo_acceso; m.set(u.email, x); });
-    usuarios = [...m.values()].sort((a, b) => a.email.localeCompare(b.email));
+    let lista = [];
+    try { lista = await api.usuariosEquipo(); } catch (ex) { aviso(mensajeError(ex)); }
+    usuarios = lista.map(u => ({ email: u.email, roles: u.accesos || {}, ultimo: u.ultimo_acceso, interna: u.app_interna }))
+      .sort((a, b) => (Object.keys(b.roles).length > 0) - (Object.keys(a.roles).length > 0) || a.email.localeCompare(b.email));
     const f = d => d ? new Date(d).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Nunca';
     const opciones = r => `<option value="">Sin acceso</option>` + Object.entries(ROLES).map(([k, v]) => `<option value="${k}" ${r === k ? 'selected' : ''}>${v}</option>`).join('');
-    $('#u-lista').innerHTML = `<thead><tr><th>Persona</th>${LOCALES_U.map(l => `<th>${esc(corto(l.nombre))}</th>`).join('')}<th>Último acceso</th></tr></thead><tbody>` +
-      (usuarios.map(u => `<tr><td><b>${esc(u.email)}</b></td>${LOCALES_U.map(l => `<td><select data-email="${esc(u.email)}" data-local="${esc(l.id)}" class="${u.roles[l.id] ? '' : 'sin'}">${opciones(u.roles[l.id])}</select></td>`).join('')}
-        <td>${f(u.ultimo)}</td></tr>`).join('') || `<tr><td colspan="${LOCALES_U.length + 2}" class="nota">Aún no hay nadie.</td></tr>`) + '</tbody>';
+    const fila = u => `<tr><td><b>${esc(u.email)}</b>${u.interna ? '<small>También en la app interna</small>' : ''}</td>${LOCALES_U.map(l => `<td><select data-email="${esc(u.email)}" data-local="${esc(l.id)}" class="${u.roles[l.id] ? '' : 'sin'}" aria-label="Acceso de ${esc(u.email)} en ${esc(corto(l.nombre))}">${opciones(u.roles[l.id])}</select></td>`).join('')}<td>${f(u.ultimo)}</td></tr>`;
+    const con = usuarios.filter(u => LOCALES_U.some(l => u.roles[l.id])), sin = usuarios.filter(u => !LOCALES_U.some(l => u.roles[l.id]));
+    const cab = `<thead><tr><th>Persona</th>${LOCALES_U.map(l => `<th>${esc(corto(l.nombre))}</th>`).join('')}<th>Último acceso</th></tr></thead>`;
+    $('#u-lista').innerHTML = cab + '<tbody>' + (con.map(fila).join('') || `<tr><td colspan="${LOCALES_U.length + 2}" class="nota">Nadie tiene acceso todavía.</td></tr>`) + '</tbody>';
+    $('#u-sin-cab').hidden = !sin.length;
+    $('#u-sin').innerHTML = sin.length ? cab + '<tbody>' + sin.map(fila).join('') + '</tbody>' : '';
     $('#u-locales').innerHTML = LOCALES_U.map(l => `<label class="chk-local"><input type="checkbox" value="${esc(l.id)}" ${l.id === LOCAL ? 'checked' : ''}> ${esc(corto(l.nombre))}</label>`).join('');
   }
-  $('#u-lista').addEventListener('change', async e => {
+  const alCambiar = async e => {
     const s = e.target.closest('select[data-email]'); if (!s) return;
     const email = s.dataset.email, local = s.dataset.local, rol = s.value;
     const antes = (usuarios.find(u => u.email === email) || { roles: {} }).roles[local];
@@ -99,7 +98,9 @@
       aviso(`Hecho: ${email} · ${nombre}: ${rol ? ROLES[rol] : 'sin acceso'}.`, true);
     } catch (ex) { aviso(mensajeError(ex)); }
     cargarUsuarios();
-  });
+  };
+  $('#u-lista').addEventListener('change', alCambiar);
+  $('#u-sin').addEventListener('change', alCambiar);
   $('#u-anadir').onclick = async () => {
     const email = $('#u-email').value.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return aviso('Escribe un email válido.');
