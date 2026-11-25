@@ -7,7 +7,7 @@
   const fecha = d => new Date(d).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const quien = e => e ? esc(e.split('@')[0].replace(/^orale\.padre\.food\+/, '')) : '—';
   const ACC = {
-    linea_anulada: ['Producto quitado', 'rojo'], cuenta_anulada: ['Cuenta anulada', 'rojo'], pedido_cancelado: ['Pedido web cancelado', ''],
+    linea_anulada: ['Producto quitado', 'rojo'], cuenta_anulada: ['Cuenta anulada', 'rojo'], pedido_cancelado: ['Pedido web cancelado', ''], lineas_pasadas: ['Productos pasados de cuenta', ''], cuentas_juntadas: ['Mesas juntadas', ''],
     precuenta: ['Pre-cuenta impresa', 'gris'], entrada: ['Entrada al TPV (PIN)', 'gris'], pin_fallido: ['Clave fallida', 'rojo'], cierre_caja: ['Cierre de caja', 'verde'], pin_cambiado: ['Clave cambiada', 'gris'],
   };
   let LOCAL, LOCALES = [], rango = '7', lista = [], cierres = [];
@@ -44,6 +44,7 @@
       (filas.map(x => {
         const [t, c] = ACC[x.accion] || [x.accion, '']; const d = x.detalle || {};
         const det = x.accion === 'linea_anulada' ? `${d.cantidad}× ${esc(d.producto)} · ${esc(d.mesa)} · comanda #${d.comanda}`
+          : ['lineas_pasadas', 'cuentas_juntadas'].includes(x.accion) ? `${esc(d.de)} → ${esc(d.a)} · ${d.unidades} uds.`
           : x.accion === 'cuenta_anulada' ? esc(d.mesa) : x.accion === 'precuenta' ? esc(d.mesa)
           : x.accion === 'pedido_cancelado' ? `#${d.numero} · ${esc(d.cliente || '')}${d.pagado ? ' · pagado online' : ''}`
           : x.accion === 'cierre_caja' ? `Contado ${euros(d.contado || 0)} · esperado ${euros(d.esperado || 0)}` : x.accion === 'pin_fallido' ? esc(x.motivo || '') : '';

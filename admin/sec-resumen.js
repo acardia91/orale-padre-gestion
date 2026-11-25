@@ -114,8 +114,8 @@
   }
 
   function pintaAnul(ps, cs) {
-    const filas = cs.filter(c => c.estado === 'anulada').map(c => ({ f: c.cerrada || c.abierta, l: c.local, que: 'Cuenta anulada · ' + c.nombre, imp: null, motivo: c.motivo_anulacion }))
-      .concat(ps.filter(p => p.estado === 'cancelado').map(p => ({ f: p.creado, l: p.local, que: `Comanda #${p.numero} · ${p.canal === 'sala' ? p.mesa : 'Web · ' + p.cliente_nombre}`, imp: p.total, motivo: p.motivo_cancel })))
+    const filas = cs.filter(c => c.estado === 'anulada' && !/^Juntada con /.test(c.motivo_anulacion || '')).map(c => ({ f: c.cerrada || c.abierta, l: c.local, que: 'Cuenta anulada · ' + c.nombre, imp: null, motivo: c.motivo_anulacion }))
+      .concat(ps.filter(p => p.estado === 'cancelado' && !/^Pasado a otra cuenta/.test(p.motivo_cancel || '')).map(p => ({ f: p.creado, l: p.local, que: `Comanda #${p.numero} · ${p.canal === 'sala' ? p.mesa : 'Web · ' + p.cliente_nombre}`, imp: p.total, motivo: p.motivo_cancel })))
       .sort((a, b) => new Date(b.f) - new Date(a.f));
     $('#r-anul').innerHTML = filas.length ? `<thead><tr><th>Fecha</th>${LOCAL === '*' ? '<th>Local</th>' : ''}<th>Qué</th><th class="num">Importe</th><th>Motivo</th></tr></thead><tbody>` +
       filas.map(x => `<tr><td>${fecha(x.f)}</td>${LOCAL === '*' ? `<td>${esc(nombreLocal(x.l))}</td>` : ''}<td>${esc(x.que)}</td><td class="num">${x.imp != null ? euros(x.imp) : '—'}</td><td>${esc(x.motivo || '')}</td></tr>`).join('') + '</tbody>'
