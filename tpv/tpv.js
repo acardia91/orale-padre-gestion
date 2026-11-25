@@ -136,6 +136,7 @@
     }
     catch (e) { console.warn(e); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
+    $('#b-agotados').textContent = 'Agotados' + (agotados.size ? ` (${agotados.size})` : '');
     if (cuenta) {
       const c = cuentas.find(x => x.id === cuenta.id);
       if (!c) { cuenta = null; verSala(); return; }      // la cobraron o anularon desde otro TPV
@@ -549,6 +550,31 @@
     const b = e.target.closest('button.mesa'); if (!b) return;
     try { await api.moverCuenta(cuenta.id, b.value); $('#dlg-mover').close(); await recarga(); }
     catch (ex) { alert(mensajeError(ex)); }
+  });
+
+  /* ── Agotados: se marcan desde el TPV (lo mismo que en comandas y en el admin) ── */
+  function pintaAgotados() {
+    const q = quitaAcentos($('#ag-buscar').value.trim());
+    const n = agotados.size + carta.productos.filter(p => p.agotado).length;
+    $('#b-agotados').textContent = 'Agotados' + (agotados.size ? ` (${agotados.size})` : '');
+    $('#ag-lista').innerHTML = carta.categorias.filter(c => !c.oculta).map(c => {
+      const ps = c.productos.map(id => idx.prod.get(id)).filter(p => p && !p.oculto && quitaAcentos(p.nombre).includes(q));
+      return ps.length ? `<h3>${esc(c.nombre)}</h3>` + ps.map(p => p.agotado
+        ? `<label class="fijo"><input type="checkbox" checked disabled> ${esc(p.nombre)} <small>(agotado desde el admin)</small></label>`
+        : `<label><input type="checkbox" data-ag="${p.id}" ${agotados.has(p.id) ? 'checked' : ''}> ${esc(p.nombre)}</label>`).join('') : '';
+    }).join('') || '<p class="vacio">Nada con ese nombre.</p>';
+    return n;
+  }
+  $('#b-agotados').onclick = () => { if (!carta) return; $('#ag-buscar').value = ''; pintaAgotados(); $('#dlg-agotados').showModal(); };
+  $('#ag-buscar').oninput = pintaAgotados;
+  $('#ag-lista').addEventListener('change', async e => {
+    const id = e.target.dataset.ag; if (!id) return; const p = idx.prod.get(id);
+    try {
+      await api.marcarAgotado(LOCAL, id, e.target.checked);
+      e.target.checked ? agotados.add(id) : agotados.delete(id);
+      aviso(e.target.checked ? `${p.nombre}: agotado` : `${p.nombre}: vuelve a haber`);
+      pintaAgotados(); if (cuenta) pintaProductos();
+    } catch (ex) { e.target.checked = !e.target.checked; aviso('No se ha podido guardar: ' + mensajeError(ex), true); }
   });
 
   /* ── Cobrar ── */

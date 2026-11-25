@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611250737">
+<link rel="stylesheet" href="tpv.css?v=202611250813">
 </head>
 <body>
 
@@ -52,7 +52,8 @@
     <span class="demo" id="t-demo" hidden>DEMO</span>
     <div class="b-ctrl">
       <button class="b" id="b-barra" type="button">+ Barra</button>
-      <button class="b" id="b-llevar" type="button">+ Para llevar</button>
+      <button class="b" id="b-llevar" type="button">+ <span class="solo-ancho">Para </span>llevar</button>
+      <button class="b" id="b-agotados" type="button">Agotados</button>
       <button class="b" id="b-caja" type="button">Caja</button>
       <button class="b b-mini" id="b-salir" type="button" title="Cerrar sesión (cambiar de persona)">Salir</button>
     </div>
@@ -107,6 +108,16 @@
 </div>
 
 <!-- ── Reserva: sentar en mesa / nueva por teléfono ── -->
+<dialog class="dlg" id="dlg-agotados">
+  <form method="dialog">
+    <h2>Productos agotados</h2>
+    <p class="nota">Lo que marques deja de salir al momento en este TPV, en la web de pedidos y en la carta del QR. Desmárcalo cuando vuelva a haber.</p>
+    <input id="ag-buscar" type="search" placeholder="Buscar producto…" autocomplete="off">
+    <div class="ag-lista" id="ag-lista"></div>
+    <button class="b b-ok" value="ok">Hecho</button>
+  </form>
+</dialog>
+
 <dialog class="dlg" id="dlg-sentar">
   <form method="dialog">
     <h2 id="st-titulo">Sentar reserva</h2>
@@ -275,10 +286,10 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611250737"></script>
+<script src="/pedir/api.js?v=202611250813"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611250737"></script>
-<script src="/pedir/plano.js?v=202611250737"></script>
-<script src="tpv.js?v=202611250737"></script>
+<script src="/pedir/ticket.js?v=202611250813"></script>
+<script src="/pedir/plano.js?v=202611250813"></script>
+<script src="tpv.js?v=202611250813"></script>
 </body>
 </html>

@@ -342,3 +342,22 @@ button.t-quien:hover{border-color:var(--burdeos,#7C2430)}
 /* Mesas según el tiempo: ámbar a los 45 min, rojo a la hora */
 .mesa.ocupada.t-ambar{background:#B7791F;border-color:#B7791F;box-shadow:0 4px 12px rgba(183,121,31,.3)}
 .mesa.ocupada.t-rojo{background:#B3261E;border-color:#B3261E;box-shadow:0 4px 12px rgba(179,38,30,.3)}
+
+/* Agotados */
+.ag-lista{max-height:52dvh;overflow:auto;margin:12px 0}
+.ag-lista label{display:flex;flex-direction:row;align-items:center;gap:12px;margin:0;padding:12px 4px;border-bottom:1px solid var(--borde);font-weight:600;color:var(--tinta);cursor:pointer}
+.ag-lista label.fijo{color:var(--humo);cursor:default}
+.ag-lista label small{font-weight:500;color:var(--humo)}
+.ag-lista input{width:24px;height:24px;accent-color:var(--mal);flex:none}
+.ag-lista h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--humo);margin:16px 0 4px}
+#ag-buscar{width:100%;height:44px;border:1px solid var(--borde-2);border-radius:10px;padding:0 12px;font:inherit}
+/* Móvil: los botones de la cabecera bajan a una segunda fila que se ve entera (antes se salían por la derecha) */
+@media (max-width:760px){
+  .barra{flex-wrap:wrap;overflow:visible;row-gap:8px}
+  .b-ctrl{order:10;width:100%;margin-left:0;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .b-ctrl::-webkit-scrollbar{display:none}
+  .b-ctrl .b{flex:none}
+  .t-quien{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
+@media (max-width:760px){ .b-ctrl{gap:6px} .b-ctrl .b{padding:9px 10px;font-size:13.5px} }
+@media (max-width:760px){ .solo-ancho{display:none} }
