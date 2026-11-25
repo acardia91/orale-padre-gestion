@@ -25,6 +25,8 @@
   .pl-el.f-planta{background:#E4EEDD;border-color:#4F7A3A;color:#4F7A3A;border-radius:50%}
   .pl-el.ocupada{background:#7C2430;border-color:#5E1A24;color:#fff}
   .pl-el.pendiente::after{content:"";position:absolute;top:8%;right:8%;width:1.6cqw;height:1.6cqw;min-width:8px;min-height:8px;border-radius:50%;background:#C98A12}
+  .pl-el.ocupada.t-ambar{background:#B7791F;border-color:#8a5a12}
+  .pl-el.ocupada.t-rojo{background:#B3261E;border-color:#8c1d17}
   .pl-el.sel{outline:3px solid #2F6A9E;outline-offset:2px;z-index:3}
   .pl-asa{position:absolute;right:-2px;bottom:-2px;width:max(16px,2cqw);height:max(16px,2cqw);background:#2F6A9E;border-radius:3px;cursor:nwse-resize}
   `;
@@ -46,7 +48,7 @@
         : `<b>${esc(e.nombre.replace(/^(Mesa|Terraza|Taburete)\s+/i, m => opciones.editor ? m : (/taburete/i.test(m) ? 'T' : '')))}</b>` +
           (st.sub ? `<small>${esc(st.sub)}</small>` : (e.plazas && opciones.editor ? `<small>${e.plazas} pax</small>` : '')) +
           (st.imp ? `<span class="pl-imp">${esc(st.imp)}</span>` : '');
-      const cls = ['pl-el', 'f-' + e.forma, deco ? 'deco' : '', st.ocupada ? 'ocupada' : '', st.pendiente ? 'pendiente' : '',
+      const cls = ['pl-el', 'f-' + e.forma, deco ? 'deco' : '', st.ocupada ? 'ocupada' : '', st.pendiente ? 'pendiente' : '', st.clase || '',
         opciones.sel === e.id ? 'sel' : ''].join(' ');
       return `<button type="button" class="${cls}" data-el="${esc(e.id)}" style="${estilo}" ${deco && !opciones.editor ? 'tabindex="-1" aria-hidden="true"' : `aria-label="${esc(e.nombre)}"`}>
         ${txt}${opciones.editor && opciones.sel === e.id ? '<span class="pl-asa" data-asa></span>' : ''}</button>`;
