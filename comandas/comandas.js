@@ -135,18 +135,35 @@
     $('#l-hechos').innerHTML = hechos.map(p => `<div class="hecho ${p.estado}">
       <b>#${p.numero}</b><span>${esc(p.cliente_nombre)}</span><span>${euros(p.total)}</span>
       <span>${p.estado === 'cancelado' ? 'Cancelado' : esc(PAGO[p.pago_metodo] || '')}</span>
-      <button class="b b-mini x" data-acc="reimprimir" data-id="${p.id}">Ticket</button></div>`).join('') || '<p class="vacio">Aún nada</p>';
+      ${p.estado === 'entregado' ? `<button class="b b-mini x" data-acc="recuperar" data-id="${p.id}" title="Devolver a «Listos» (si se marcó servido por error)">↩ Volver</button>` : ''}
+      <button class="b b-mini ${p.estado === 'entregado' ? '' : 'x'}" data-acc="reimprimir" data-id="${p.id}">Ticket</button></div>`).join('') || '<p class="vacio">Aún nada</p>';
     const parpadea = pedidos.some(p => p.estado === 'nuevo') && (!audio || silencio);
     $('#p-sonido').classList.toggle('parpadea', parpadea);
     document.title = (pedidos.filter(p => p.estado === 'nuevo').length ? `(${pedidos.filter(p => p.estado === 'nuevo').length}) ` : '') + 'Comandas · Órale Padre';
+  }
+
+  /* Color por tiempo: cuánto lleva en cada paso, frente al tiempo de preparación del local.
+     Nuevo sin aceptar: ámbar a los 3 min, rojo a los 6. Preparando: ámbar 5 min antes del tiempo
+     de preparación, rojo al pasarlo. Listo sin entregar: ámbar a los 5 min, rojo a los 10.
+     Un pedido web programado para más tarde no se colorea hasta que le toca empezar. */
+  function tiempoCocina(p) {
+    const prep = (local && local.minutos_prep) || 20, ya = Date.now(), m = d => Math.max(0, Math.floor((ya - new Date(d)) / 60000));
+    if (p.canal !== 'sala' && p.estado !== 'listo' && new Date(p.recogida) - ya > prep * 60000) return { clase: '', txt: '' };
+    let n, amb, roj, txt;
+    if (p.estado === 'nuevo') { n = m(p.creado); amb = 3; roj = 6; txt = `sin aceptar · ${n} min`; }
+    else if (p.estado === 'preparando') { n = m(p.aceptado || p.creado); amb = Math.max(1, prep - 5); roj = prep; txt = `preparando · ${n} min`; }
+    else if (p.estado === 'listo') { n = m(p.listo_at || p.aceptado || p.creado); amb = 5; roj = 10; txt = `listo hace ${n} min`; }
+    else return { clase: '', txt: '' };
+    return { clase: n >= roj ? 't-rojo' : n >= amb ? 't-ambar' : '', txt };
   }
 
   function tarjeta(p) {
     const rec = new Date(p.canal === 'sala' ? p.creado : p.recogida); const min = Math.round((rec - Date.now()) / 60000);
     const cuando = p.canal === 'sala' ? `<small class="${-min >= 20 ? 'tarde' : ''}">hace ${-min} min</small>`
       : min < 0 ? `<small class="tarde">hace ${-min} min</small>` : `<small>en ${min} min</small>`;
+    const t = tiempoCocina(p);
     const boton = { nuevo: ['preparar', 'Aceptar y preparar'], preparando: ['listo', '¡Listo!'], listo: ['entregar', p.canal === 'sala' ? 'Servido' : 'Entregar'] }[p.estado];
-    return `<article class="ped ${p.estado}" data-id="${p.id}">
+    return `<article class="ped ${p.estado} ${t.clase}" data-id="${p.id}">
       <div class="ped-cab">
         <div class="ped-num">${p.numero}</div>
         <div class="ped-quien">${p.canal === 'sala'
@@ -158,6 +175,7 @@
         ${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}
         ${l.nota ? `<small class="nota">⚠ ${esc(l.nota)}</small>` : ''}</li>`).join('')}
         ${(p.anuladas || []).map(l => `<li class="quitada"><b>${l.cantidad}×</b>${esc(l.nombre)}<small class="nota">✕ QUITADO · ${esc(l.motivo || '')}</small></li>`).join('')}</ul>
+      ${t.txt ? `<p class="ped-tiempo">⏱ ${t.txt}</p>` : ''}
       ${p.notas ? `<p class="ped-notas">📝 ${esc(p.notas)}</p>` : ''}
       <div class="ped-pie">
         <span class="imp">${euros(p.total)}<small>${p.canal === 'sala' ? 'Se cobra en el TPV' : p.pagado ? esc(PAGO[p.pago_metodo]) : 'Paga al recoger'}</small></span>
@@ -184,6 +202,9 @@
         case 'listo': await api.actualizarPedido(p.id, { estado: 'listo', listo_at: ahora() }); break;
         case 'entregar': await entregar(p); break;
         case 'atras': await api.actualizarPedido(p.id, { estado: { preparando: 'nuevo', listo: 'preparando' }[p.estado] }); break;
+        case 'recuperar':
+          if (!confirm(`¿Devolver el #${p.numero} (${p.canal === 'sala' ? p.mesa : p.cliente_nombre}) a «Listos para recoger»?`)) break;
+          await api.actualizarPedido(p.id, { estado: 'listo', entregado_at: null }); break;
         case 'cancelar': await cancelar(p); break;
         case 'imprimir': case 'reimprimir': imprime(p); break;
       }

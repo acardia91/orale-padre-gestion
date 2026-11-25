@@ -131,3 +131,9 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 /* Productos quitados desde el TPV después de enviarlos */
 .ped-lineas li.quitada{color:#B3261E;text-decoration:line-through}
 .ped-lineas li.quitada small{text-decoration:none}
+/* Tiempo en cocina: la tarjeta entera cambia de color */
+.ped-tiempo{margin:0 14px 10px;font-weight:700;font-size:14px;color:var(--humo,#6b6b6b)}
+.ped.t-ambar{box-shadow:0 0 0 4px #E0A33A}
+.ped.t-ambar .ped-tiempo{color:#9A5B00}
+.ped.t-rojo{box-shadow:0 0 0 4px #B3261E;background:#FFF5F4}
+.ped.t-rojo .ped-tiempo{color:#B3261E}
