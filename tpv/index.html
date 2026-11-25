@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611251003">
+<link rel="stylesheet" href="tpv.css?v=202611251021">
 </head>
 <body>
 
@@ -186,6 +186,22 @@
   </form>
 </dialog>
 
+<!-- ── Meter / sacar dinero de la caja ── -->
+<dialog class="dlg" id="dlg-mov">
+  <form method="dialog">
+    <h2 id="mv-titulo">Sacar dinero</h2>
+    <label class="campo">Importe (€)<input id="mv-importe" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
+    <div class="dn-rapidas" id="mv-rapidas"></div>
+    <label class="campo">Motivo<input id="mv-motivo" maxlength="200" autocomplete="off" placeholder="Pago al proveedor de hielo…"></label>
+    <label class="campo" id="mv-pin-l">Clave del encargado<input id="mv-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
+    <p class="err" id="mv-error" role="alert" hidden></p>
+    <div class="dlg-pie">
+      <button class="b" value="cancel">Cancelar</button>
+      <button class="b b-ok" type="button" id="mv-ok">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- ── Nota de una línea sin enviar ── -->
 <dialog class="dlg" id="dlg-nota">
   <form method="dialog">
@@ -285,7 +301,15 @@
         <div><small>Tarjeta</small><b id="cz-tarjeta"></b></div>
         <div><small>Online</small><b id="cz-online"></b></div>
         <div><small>Anulaciones</small><b id="cz-anul"></b></div>
+        <div><small>Metido en caja</small><b id="cz-entradas"></b></div>
+        <div><small>Sacado de caja</small><b id="cz-salidas"></b></div>
         <div class="cz-dest"><small>Debe haber en el cajón</small><b id="cz-esperado"></b></div>
+      </div>
+      <div class="mv-bloque">
+        <div class="mv-cab"><b>Movimientos de caja</b>
+          <span><button class="b b-mini" type="button" data-mv="entrada">+ Meter dinero</button>
+          <button class="b b-mini" type="button" data-mv="salida">− Sacar dinero</button></span></div>
+        <div class="mv-lista" id="mv-lista"></div>
       </div>
       <div class="cz-campos">
         <label class="campo">Efectivo contado<input id="cz-contado" inputmode="decimal" autocomplete="off" placeholder="0,00"></label>
@@ -311,10 +335,10 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611251003"></script>
+<script src="/pedir/api.js?v=202611251021"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611251003"></script>
-<script src="/pedir/plano.js?v=202611251003"></script>
-<script src="tpv.js?v=202611251003"></script>
+<script src="/pedir/ticket.js?v=202611251021"></script>
+<script src="/pedir/plano.js?v=202611251021"></script>
+<script src="tpv.js?v=202611251021"></script>
 </body>
 </html>

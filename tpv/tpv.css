@@ -388,3 +388,14 @@ body.sin-red .aviso-flota{top:120px}
 .dn-rapidas button:active{background:var(--oro-cl,#FBF1DC)}
 .dn-una{display:flex;gap:8px;align-items:center;margin:10px 0 0;font-size:15px}
 .dn-una input{width:20px;height:20px}
+
+/* ── Movimientos de caja ── */
+.mv-bloque{margin:12px 0;padding:10px 12px;border:1px solid var(--borde,#DDD0C2);border-radius:12px;background:#fff}
+.mv-cab{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.mv-cab span{display:flex;gap:6px}
+.mv-lista{margin-top:6px;max-height:160px;overflow:auto}
+.mv-lista .vacio{margin:6px 0;color:var(--humo);font-size:14px}
+.mv-fila{display:grid;grid-template-columns:auto 1fr auto;gap:10px;padding:6px 0;border-top:1px solid var(--borde,#EEE);font-size:14px}
+.mv-fila small{color:var(--humo)}
+.mv-fila.salida b{color:#B3261E}
+.mv-fila.entrada b{color:#2E6B2A}

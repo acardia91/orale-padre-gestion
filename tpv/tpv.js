@@ -801,10 +801,12 @@
 
   /* ══ Caja: resumen desde el último cierre y cierre de caja ══ */
   let resumen = null;
-  const cent = v => { const n = Math.round(parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')) * 100); return isNaN(n) ? null : n; };
+  // "12,50", "1.234,50" o "12.50" (teclado con punto) → céntimos
+  const cent = v => { let t = String(v || '').trim(); t = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : (/^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, '') : t); const n = Math.round(parseFloat(t) * 100); return isNaN(n) ? null : n; };
+  const esperadoCaja = r => r.fondo_inicial + r.efectivo + (r.entradas || 0) - (r.salidas || 0);
   function pintaCierre() {
     if (!resumen) return;
-    const esperado = resumen.fondo_inicial + resumen.efectivo;
+    const esperado = esperadoCaja(resumen);
     const contado = cent($('#cz-contado').value);
     $('#cz-esperado').textContent = euros(esperado);
     if (contado == null) { $('#cz-descuadre').textContent = '—'; $('#cz-descuadre').className = ''; }
@@ -817,14 +819,55 @@
   $('#cz-retirado').addEventListener('input', () => { $('#cz-retirado').dataset.tocado = '1'; pintaCierre(); });
 
 
-  let tickets = [];
+  let tickets = [], movimientos = [];
+  /* ── Movimientos de caja: meter cambio, pagar a un proveedor… ── */
+  function pintaMovimientos() {
+    $('#cz-entradas').textContent = euros(resumen.entradas || 0); $('#cz-salidas').textContent = euros(resumen.salidas || 0);
+    $('#mv-lista').innerHTML = movimientos.length ? movimientos.map(m => `<div class="mv-fila ${m.tipo}">
+      <span>${new Date(m.cuando).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span>
+      <span>${esc(m.motivo)}${m.persona ? ` <small>· ${esc(m.persona)}${m.autorizado_persona && m.autorizado_persona !== m.persona ? ', autoriza ' + esc(m.autorizado_persona) : ''}</small>` : ''}</span>
+      <b>${m.tipo === 'salida' ? '−' : '+'}${euros(m.importe)}</b></div>`).join('') : '<p class="vacio">Ninguno desde el último cierre.</p>';
+    pintaCierre();
+  }
+  const MV_RAPIDOS = { entrada: ['Cambio', 'Fondo de caja', 'Devolución de proveedor'], salida: ['Pago a proveedor', 'Compra urgente', 'Ingreso al banco', 'Adelanto de sueldo'] };
+  let mvTipo = 'salida';
+  $('#dlg-caja').addEventListener('click', e => {
+    const b = e.target.closest('[data-mv]'); if (!b) return;
+    mvTipo = b.dataset.mv;
+    $('#mv-titulo').textContent = mvTipo === 'salida' ? 'Sacar dinero de la caja' : 'Meter dinero en la caja';
+    $('#mv-rapidas').innerHTML = MV_RAPIDOS[mvTipo].map(t => `<button type="button" data-r="${t}">${t}</button>`).join('');
+    $('#mv-importe').value = ''; $('#mv-motivo').value = ''; $('#mv-pin').value = ''; $('#mv-error').hidden = true;
+    $('#mv-pin-l').hidden = mvTipo !== 'salida' || esEncargado();
+    $('#dlg-mov').showModal(); $('#mv-importe').focus();
+  });
+  $('#mv-rapidas').onclick = e => { const b = e.target.closest('[data-r]'); if (b) { $('#mv-motivo').value = b.dataset.r + ': '; $('#mv-motivo').focus(); } };
+  $('#mv-ok').onclick = async () => {
+    const fallo = t => { $('#mv-error').textContent = t; $('#mv-error').hidden = false; };
+    const imp = cent($('#mv-importe').value); const motivo = $('#mv-motivo').value.trim().replace(/:$/, ''); const pin = $('#mv-pin').value.trim();
+    if (!imp || imp <= 0) return fallo('Escribe el importe.');
+    if (imp > 500000) return fallo('Importe demasiado alto.');
+    if (motivo.length < 3) return fallo('Explica el motivo (por ejemplo: "Pago a proveedor: hielo").');
+    if (mvTipo === 'salida' && !esEncargado() && !/^[0-9]{4,8}$/.test(pin)) return fallo('Falta la clave del encargado.');
+    if (mvTipo === 'salida' && imp > esperadoCaja(resumen) && !confirm(`Vas a sacar ${euros(imp)} y en el cajón debería haber ${euros(esperadoCaja(resumen))}. ¿Seguro?`)) return;
+    const btn = $('#mv-ok'); btn.disabled = true;
+    try {
+      await api.movimientoCaja(LOCAL, mvTipo, imp, motivo, pin);
+      $('#dlg-mov').close(); aviso(`✓ ${mvTipo === 'salida' ? 'Sacados' : 'Metidos'} ${euros(imp)} · ${motivo}`);
+      [resumen, movimientos] = await Promise.all([api.resumenCaja(LOCAL), api.movimientosCaja(LOCAL)]);
+      pintaMovimientos();
+    } catch (ex) {
+      const m = mensajeError(ex); fallo(esDeRed(ex) ? 'Sin conexión: no se ha guardado. Inténtalo cuando vuelva.' : m);
+      if (/clave de encargado incorrecta/i.test(m)) { api.apuntarPinFallido(LOCAL, 'sacar dinero de la caja'); $('#mv-pin').value = ''; $('#mv-pin').focus(); }
+    } finally { btn.disabled = false; }
+  };
   $('#b-caja').onclick = async () => {
-    try { [tickets, resumen] = await Promise.all([api.ticketsDelDia(LOCAL), api.resumenCaja(LOCAL)]); }
+    try { [tickets, resumen, movimientos] = await Promise.all([api.ticketsDelDia(LOCAL), api.resumenCaja(LOCAL), api.movimientosCaja ? api.movimientosCaja(LOCAL).catch(() => []) : []]); }
     catch (ex) { aviso('No se ha podido cargar la caja: ' + mensajeError(ex), true); return; }
     const desde = new Date(resumen.desde).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     $('#cz-desde').textContent = desde;
     $('#cz-fondo').textContent = euros(resumen.fondo_inicial); $('#cz-efectivo').textContent = euros(resumen.efectivo);
     $('#cz-tarjeta').textContent = euros(resumen.tarjeta); $('#cz-online').textContent = euros(resumen.online);
+    pintaMovimientos();
     $('#cz-anul').textContent = resumen.anulaciones ? `${resumen.anulaciones} (${euros(resumen.importe_anulado)})` : '0';
     $('#cz-abiertas').hidden = !resumen.cuentas_abiertas;
     $('#cz-abiertas').textContent = `Ojo: hay ${resumen.cuentas_abiertas} ${resumen.cuentas_abiertas === 1 ? 'cuenta abierta' : 'cuentas abiertas'} sin cobrar.`;
@@ -852,7 +895,7 @@
     const fallo = t => { $('#cz-error').textContent = t; $('#cz-error').hidden = false; };
     if (contado == null) return fallo('Cuenta el efectivo del cajón y escríbelo.');
     if (ret > contado) return fallo('No puedes retirar más de lo que hay.');
-    const d = contado - (resumen.fondo_inicial + resumen.efectivo);
+    const d = contado - esperadoCaja(resumen);
     if (d !== 0 && $('#cz-notas').value.trim().length < 3) return fallo('La caja no cuadra: explica el descuadre en las notas.');
     if (!confirm(`¿Cerrar la caja?\n\nEfectivo contado: ${euros(contado)}\nDescuadre: ${euros(d)}\nRetiras: ${euros(ret)}\nSe queda en el cajón: ${euros(contado - ret)}`)) return;
     const btn = $('#cz-ok'); btn.disabled = true;
@@ -871,7 +914,9 @@
         <div class="l"><span>Anulaciones</span><span>${z.anulaciones} · ${euros(z.importe_anulado)}</span></div><hr>
         <div class="l tot"><span>VENTAS</span><span>${euros(z.efectivo + z.tarjeta + z.online)}</span></div><hr>
         <div class="l"><span>Fondo inicial</span><span>${euros(z.fondo_inicial)}</span></div>
-        <div class="l"><span>Esperado en cajón</span><span>${euros(z.fondo_inicial + z.efectivo)}</span></div>
+        ${z.entradas ? `<div class="l"><span>Metido en caja</span><span>+${euros(z.entradas)}</span></div>` : ''}
+        ${z.salidas ? `<div class="l"><span>Sacado de caja</span><span>−${euros(z.salidas)}</span></div>` : ''}
+        <div class="l"><span>Esperado en cajón</span><span>${euros(esperadoCaja(z))}</span></div>
         <div class="l"><span>Contado</span><span>${euros(z.efectivo_contado)}</span></div>
         <div class="l g"><span>DESCUADRE</span><span>${euros(z.descuadre)}</span></div>
         <div class="l"><span>Retirado</span><span>${euros(z.retirado)}</span></div>
