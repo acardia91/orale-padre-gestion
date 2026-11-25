@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611250846">
+<link rel="stylesheet" href="tpv.css?v=202611251003">
 </head>
 <body>
 
@@ -45,6 +45,10 @@
 </div>
 
 <div id="vista-app" hidden>
+<div class="sin-red-franja" id="t-sinred" role="alert" hidden>
+  <span><b id="sr-txt">Sin conexión con el servidor.</b> Reintentando… Lo que no hayas enviado a cocina se queda guardado en este TPV.</span>
+  <button type="button" id="sr-reintentar">Reintentar</button>
+</div>
   <header class="barra">
     <button class="b-atras" id="b-atras" type="button" hidden aria-label="Volver a la sala">‹ Sala</button>
     <div class="b-local"><span class="org-ico">ÓP</span><div><strong id="t-local">Tomares</strong><span id="t-reloj"></span></div></div>
@@ -182,6 +186,26 @@
   </form>
 </dialog>
 
+<!-- ── Nota de una línea sin enviar ── -->
+<dialog class="dlg" id="dlg-nota">
+  <form method="dialog">
+    <h2>Nota para cocina</h2>
+    <p class="dn-prod" id="dn-prod"></p>
+    <div class="dn-rapidas" id="dn-rapidas">
+      <button type="button" data-r="Sin cebolla">Sin cebolla</button><button type="button" data-r="Sin picante">Sin picante</button>
+      <button type="button" data-r="Sin cilantro">Sin cilantro</button><button type="button" data-r="Salsa aparte">Salsa aparte</button>
+      <button type="button" data-r="Sin queso">Sin queso</button><button type="button" data-r="Alergia">Alergia</button>
+    </div>
+    <label class="campo">Nota<input id="dn-texto" maxlength="140" autocomplete="off" placeholder="Sin cebolla, poco hecho…"></label>
+    <label class="dn-una" id="dn-una-l" hidden><input type="checkbox" id="dn-una"> Solo para una (de <span id="dn-cant"></span>)</label>
+    <div class="dlg-pie">
+      <button class="b" value="cancel">Cancelar</button>
+      <button class="b" type="button" id="dn-quitar">Quitar nota</button>
+      <button class="b b-ok" type="button" id="dn-ok">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
 <!-- ── Cobrar ── -->
 <dialog class="dlg" id="dlg-cobrar">
   <form method="dialog" id="f-cobrar">
@@ -287,10 +311,10 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611250846"></script>
+<script src="/pedir/api.js?v=202611251003"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611250846"></script>
-<script src="/pedir/plano.js?v=202611250846"></script>
-<script src="tpv.js?v=202611250846"></script>
+<script src="/pedir/ticket.js?v=202611251003"></script>
+<script src="/pedir/plano.js?v=202611251003"></script>
+<script src="tpv.js?v=202611251003"></script>
 </body>
 </html>

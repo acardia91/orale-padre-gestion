@@ -372,3 +372,19 @@ button.t-quien:hover{border-color:var(--burdeos,#7C2430)}
 .ag-cab h3{margin:0}
 .ag-cab .b{padding:8px 12px;font-size:13px}
 .ag-cab .ag-todo{color:var(--mal);border-color:var(--mal)}
+
+/* ── Sin conexión ── */
+.sin-red-franja{flex-shrink:0;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;
+  padding:10px 16px;background:#B3261E;color:#fff;font-size:15px;line-height:1.35;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.sin-red-franja button{background:#fff;color:#B3261E;border:0;border-radius:99px;padding:8px 16px;font-weight:800;font-size:14px;cursor:pointer}
+body.sin-red .aviso-flota{top:120px}
+/* ── Nota por línea ── */
+.ln.pendiente .ln-txt{cursor:pointer}
+.ln small.add-nota{color:var(--oro,#B7791F);font-weight:700}
+.ln small.nota{color:var(--tinta,#2B1D1F);font-weight:700}
+.dn-prod{margin:0 0 10px;font-weight:700}
+.dn-rapidas{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.dn-rapidas button{border:1px solid var(--borde,#DDD0C2);background:#fff;border-radius:99px;padding:9px 14px;font-size:15px;cursor:pointer}
+.dn-rapidas button:active{background:var(--oro-cl,#FBF1DC)}
+.dn-una{display:flex;gap:8px;align-items:center;margin:10px 0 0;font-size:15px}
+.dn-una input{width:20px;height:20px}

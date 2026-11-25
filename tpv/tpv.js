@@ -123,18 +123,37 @@
 
   function reloj() { $('#t-reloj').textContent = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', hour: '2-digit', minute: '2-digit' }); }
 
-  async function recarga() {
+  /* ══ Conexión: si no llega el servidor, franja roja y reintento cada 8 s. Lo no enviado sigue guardado en este TPV. ══ */
+  let sinRed = false, tReintento = null, recargando = null;
+  const conTiempo = (pr, ms) => Promise.race([pr, new Promise((_, no) => setTimeout(() => no(new TypeError('Tiempo de espera agotado')), ms))]);
+  const esDeRed = ex => sinRed || !navigator.onLine || ex instanceof TypeError || /fetch|network|red|tiempo de espera|timeout|failed/i.test(String(ex && (ex.message || ex)));
+  function ponConexion(ok) {
+    if (ok === !sinRed) return;
+    sinRed = !ok; $('#t-sinred').hidden = ok; document.body.classList.toggle('sin-red', !ok);
+    clearInterval(tReintento); tReintento = ok ? null : setInterval(recarga, 8000);
+    if (ok) {
+      const n = Object.values(pendientes).filter(l => l.length).length;
+      aviso(n ? `✓ Conexión recuperada. Hay ${n} ${n === 1 ? 'cuenta' : 'cuentas'} con productos sin enviar a cocina.` : '✓ Conexión recuperada');
+    } else $('#sr-txt').textContent = navigator.onLine ? 'Sin conexión con el servidor.' : 'Este TPV no tiene internet.';
+  }
+  window.addEventListener('offline', () => ponConexion(false));
+  window.addEventListener('online', () => recarga());
+  $('#sr-reintentar').onclick = () => { $('#sr-reintentar').textContent = 'Probando…'; recarga().finally(() => { $('#sr-reintentar').textContent = 'Reintentar'; }); };
+
+  function recarga() { return recargando || (recargando = recargaYa().finally(() => { recargando = null; })); }
+  async function recargaYa() {
     try {
       let hoy;
       const d0 = new Date(); d0.setHours(0, 0, 0, 0); const d1 = new Date(d0); d1.setDate(d1.getDate() + 1);
       let rvs;
-      [local, cuentas, agotados, mesas, hoy, rvs] = await Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL), api.pedidosDelDia(LOCAL),
-        api.reservasEntre ? api.reservasEntre(LOCAL, d0.toISOString(), d1.toISOString()).catch(() => []) : []]);
+      [local, cuentas, agotados, mesas, hoy, rvs] = await conTiempo(Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL), api.pedidosDelDia(LOCAL),
+        api.reservasEntre ? api.reservasEntre(LOCAL, d0.toISOString(), d1.toISOString()).catch(() => []) : []]), 15000);
+      ponConexion(true);
       reservasHoy = (rvs || []).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
       avisaWebNuevos();
     }
-    catch (e) { console.warn(e); return; }
+    catch (e) { console.warn(e); if (esDeRed(e)) ponConexion(false); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
     $('#b-agotados').textContent = 'Agotados' + (agotados.size ? ` (${agotados.size})` : '');
     if (cuenta) {
@@ -450,7 +469,7 @@
       const p = idx.prod.get(l.producto); const ops = nombreOps(l);
       return `<div class="ln pendiente">
         <div class="ctl"><button type="button" data-menos="${i}" aria-label="Uno menos">−</button><output>${l.cantidad}</output><button type="button" data-mas="${i}" aria-label="Uno más">+</button></div>
-        <div>${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}</div>
+        <div class="ln-txt" data-nota="${i}" role="button" title="Tocar para añadir una nota">${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : '<small class="add-nota">📝 Nota</small>'}</div>
         <span class="imp">${p ? euros(precioLinea(idx, l, enSala()) * l.cantidad) : ''}</span></div>`;
     }).join('') : '';
     $('#c-lineas').innerHTML = (enviados + pendHTML) || '<p class="vacio">Toca los productos de la carta para añadirlos.</p>';
@@ -471,6 +490,7 @@
     const env = e.target.closest('.ln.enviada[data-pid]');
     if (env) { abreQuitar(env.dataset.pid, +env.dataset.idx); return; }
     const t = e.target; const pend = pendientes[cuenta.id]; if (!pend) return;
+    const nt = t.closest('[data-nota]'); if (nt) { abreNota(+nt.dataset.nota); return; }
     if (t.dataset.mas) pend[t.dataset.mas].cantidad = Math.min(20, pend[t.dataset.mas].cantidad + 1);
     else if (t.dataset.menos) { pend[t.dataset.menos].cantidad--; if (pend[t.dataset.menos].cantidad < 1) pend.splice(t.dataset.menos, 1); }
     else return;
@@ -489,10 +509,45 @@
       aviso(`✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
       if (cuenta && cuenta.id === c.id) pedidosCuenta = await api.pedidosDeCuenta(c.id);
       return true;
-    } catch (ex) { aviso('✗ No se ha enviado: ' + mensajeError(ex) + '. Vuelve a intentarlo.', true); return false; }
+    } catch (ex) {
+      if (esDeRed(ex)) { ponConexion(false); aviso('✗ Sin conexión: no ha llegado a cocina. Queda guardado aquí; envíalo cuando vuelva la conexión.', true); }
+      else aviso('✗ No se ha enviado: ' + mensajeError(ex) + '. Vuelve a intentarlo.', true);
+      return false;
+    }
     finally { delete enviando[c.id]; if (cuenta && cuenta.id === c.id) pintaCuenta(); }
   }
   $('#c-enviar').onclick = enviar;
+
+  /* ── Nota en una línea sin enviar (sin cebolla, salsa aparte…) ── */
+  const dn = $('#dlg-nota'); let notaIdx = -1;
+  const mismaLinea = (a, b) => a.producto === b.producto && (a.nota || '') === (b.nota || '') && a.opciones.slice().sort().join() === b.opciones.slice().sort().join();
+  function abreNota(i) {
+    const l = (pendientes[cuenta.id] || [])[i]; if (!l) return;
+    notaIdx = i; const p = idx.prod.get(l.producto);
+    $('#dn-prod').textContent = `${l.cantidad}× ${p ? p.nombre : ''}`;
+    $('#dn-texto').value = l.nota || ''; $('#dn-cant').textContent = l.cantidad;
+    $('#dn-una-l').hidden = l.cantidad < 2; $('#dn-una').checked = false; $('#dn-quitar').hidden = !l.nota;
+    dn.showModal();
+  }
+  $('#dn-rapidas').onclick = e => {
+    const b = e.target.closest('button[data-r]'); if (!b) return;
+    const inp = $('#dn-texto'); const v = inp.value.trim();
+    if (quitaAcentos(v).includes(quitaAcentos(b.dataset.r))) return;
+    inp.value = v ? v + ', ' + b.dataset.r.toLowerCase() : b.dataset.r;
+  };
+  function guardaNota(texto) {
+    const lista = pendientes[cuenta.id] || []; const l = lista[notaIdx]; dn.close(); if (!l) return;
+    texto = texto.trim().slice(0, 140);
+    if ($('#dn-una').checked && l.cantidad > 1 && texto !== (l.nota || '')) {
+      l.cantidad--; lista.splice(notaIdx + 1, 0, { ...l, opciones: l.opciones.slice(), cantidad: 1, nota: texto });
+    } else l.nota = texto;
+    for (let i = 0; i < lista.length; i++) for (let j = lista.length - 1; j > i; j--)   // junta líneas que han quedado iguales
+      if (mismaLinea(lista[i], lista[j])) { lista[i].cantidad = Math.min(20, lista[i].cantidad + lista[j].cantidad); lista.splice(j, 1); }
+    guardaPend(); pintaCuenta();
+  }
+  $('#dn-ok').onclick = () => guardaNota($('#dn-texto').value);
+  $('#dn-quitar').onclick = () => { $('#dn-una').checked = false; guardaNota(''); };
+  $('#dn-texto').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); guardaNota($('#dn-texto').value); } });
 
   /* ── Extras ── */
   const dp = $('#dlg-prod'); let enCurso = null;
@@ -697,7 +752,7 @@
         delete pendientes[cuenta.id]; guardaPend();
         await recarga(); verSala();
       }
-    } catch (ex) { fallo(mensajeError(ex)); }
+    } catch (ex) { if (esDeRed(ex)) { ponConexion(false); fallo('Sin conexión: el cobro NO se ha guardado. Espera a que vuelva la conexión y cóbralo otra vez.'); } else fallo(mensajeError(ex)); }
     finally { btn.disabled = false; }
   };
 
