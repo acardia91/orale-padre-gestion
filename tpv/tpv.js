@@ -132,6 +132,7 @@
         api.reservasEntre ? api.reservasEntre(LOCAL, d0.toISOString(), d1.toISOString()).catch(() => []) : []]);
       reservasHoy = (rvs || []).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
+      avisaWebNuevos();
     }
     catch (e) { console.warn(e); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
@@ -142,8 +143,33 @@
     } else pintaSala();
   }
 
+  /* ══ Aviso de pedido web nuevo: suena y sale un aviso (la primera carga no suena) ══ */
+  let webVistos = null;
+  function avisaWebNuevos() {
+    const nuevos = web.filter(p => p.estado === 'nuevo');
+    if (webVistos) {
+      const recien = nuevos.filter(p => !webVistos.has(p.id));
+      if (recien.length) { timbre(); aviso(`🛎 Pedido web nuevo · #${recien.map(p => p.numero).join(', #')} · ${recien[0].cliente_nombre || ''}`); }
+    }
+    webVistos = new Set([...(webVistos || []), ...nuevos.map(p => p.id)]);
+  }
+  let audio = null;
+  function timbre() {
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      [0, 0.18].forEach((t, i) => { const o = audio.createOscillator(), g = audio.createGain();
+        o.frequency.value = i ? 1320 : 880; o.connect(g); g.connect(audio.destination);
+        g.gain.setValueAtTime(0.0001, audio.currentTime + t); g.gain.exponentialRampToValueAtTime(0.3, audio.currentTime + t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + t + 0.16); o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.17); });
+    } catch (e) { /* sin sonido */ }
+  }
+  // Los navegadores sólo dejan sonar tras tocar la pantalla: se "despierta" el audio con el primer toque.
+  document.addEventListener('pointerdown', () => { try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); if (audio.state === 'suspended') audio.resume(); } catch (e) {} }, { once: true });
+
   /* ══ Sala ══ */
   const minutos = d => Math.round((Date.now() - new Date(d)) / 60000);
+  // Color de la mesa según el tiempo que lleva abierta: normal, ámbar a los 45 min y rojo a la hora.
+  const claseTiempo = c => { const m = minutos(c.abierta); return c.para_llevar || !c.mesa_id ? '' : m >= 60 ? 't-rojo' : m >= 45 ? 't-ambar' : ''; };
   const totales = {};                     // total enviado de cada cuenta abierta
   /* ══ Reservas de hoy ══ */
   let reservasHoy = [], rvSentar = null;
@@ -229,7 +255,7 @@
         if (m.tipo === 'deco') return null;
         const c = cuentas.find(x => x.mesa_id === m.id);
         if (!c) { const rv = reservaDeMesa(m.id); return { sub: rv ? `Reserva ${hhmm(rv.fecha)}` : (m.plazas ? m.plazas + ' pax' : '') }; }
-        return { ocupada: true, sub: minutos(c.abierta) + ' min', imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
+        return { ocupada: true, clase: claseTiempo(c), sub: minutos(c.abierta) + ' min', imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
       } });
     } else {
       cont.className = 'mesas';
@@ -250,7 +276,7 @@
   $('#c-hoja').onclick = () => $('#vista-cuenta').classList.toggle('hoja-abierta');
   function tileCuenta(c, nombre) {
     const pend = (pendientes[c.id] || []).length;
-    return `<button class="mesa ocupada" type="button" data-cuenta="${c.id}">
+    return `<button class="mesa ocupada ${claseTiempo(c)}" type="button" data-cuenta="${c.id}">
       <strong>${esc(nombre)}</strong><small>${minutos(c.abierta)} min${c.para_llevar ? ' · llevar' : ''}</small>
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
       <span class="imp" data-total="${c.id}">${totales[c.id] != null ? euros(totales[c.id]) : '…'}</span></button>`;
@@ -335,7 +361,7 @@
     cuenta = c; pedidosCuenta = await api.pedidosDeCuenta(c.id);
     $('#vista-sala').hidden = true; $('#vista-cuenta').hidden = false; $('#b-atras').hidden = false;
     $('#b-barra').hidden = $('#b-llevar').hidden = true;
-    $('#c-nota').value = '';
+    $('#c-nota').value = ''; $('#buscar').value = ''; $('#buscar-x').hidden = true;
     if (!catActiva) catActiva = visibles()[0]?.clave;
     pintaProductos(); pintaCuenta();
   }
@@ -370,18 +396,29 @@
     if (!cats.some(c => c.clave === catActiva)) catActiva = cats[0]?.clave;
     $('#cats').innerHTML = cats.map(c => `<button type="button" data-cat="${c.clave}" class="${c.clave === catActiva ? 'activa' : ''}">${esc(c.nombre)}</button>`).join('');
     const cat = cats.find(c => c.clave === catActiva);
-    $('#prods').innerHTML = (cat ? cat.productos : []).map(id => idx.prod.get(id)).filter(vale).map(p => {
+    // Con algo escrito en el buscador se buscan en toda la carta (sin repetir); si no, la categoría elegida.
+    const q = quitaAcentos($('#buscar').value.trim());
+    const ids = q ? [...new Set(cats.flatMap(c => c.productos))].filter(id => { const p = idx.prod.get(id); return p && quitaAcentos(p.nombre).includes(q); })
+      : (cat ? cat.productos : []);
+    $('#cats').classList.toggle('buscando', !!q);
+    const lista = ids.map(id => idx.prod.get(id)).filter(vale);
+    if (q && !lista.length) { $('#prods').innerHTML = `<p class="vacio">Nada con “${esc($('#buscar').value.trim())}”.</p>`; return; }
+    $('#prods').innerHTML = lista.map(p => {
        const ag = p.agotado || agotados.has(p.id);
       return `<button class="prod ${p.grupos.length ? 'extras' : ''} ${p.foto ? 'con-foto' : ''}" type="button" data-prod="${p.id}" ${ag ? 'disabled' : ''}>
         ${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : `<i class="ini">${esc(p.nombre.replace(/^(Burro|Nude|Taco|Quesadilla|Combo)\s+/i, '').slice(0, 2))}</i>`}
         <b>${esc(p.nombre)}</b><span>${ag ? 'Agotado' : euros(enSala() && Number.isInteger(p.precio_local) ? p.precio_local : p.precio)}</span></button>`;
     }).join('');
   }
-  $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { catActiva = b.dataset.cat; pintaProductos(); } });
+  const quitaAcentos = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { catActiva = b.dataset.cat; $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); } });
+  $('#buscar').addEventListener('input', () => { $('#buscar-x').hidden = !$('#buscar').value; pintaProductos(); });
+  $('#buscar-x').onclick = () => { $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); $('#buscar').focus(); };
   $('#prods').addEventListener('click', e => {
     const b = e.target.closest('[data-prod]'); if (!b || b.disabled) return;
     const p = idx.prod.get(b.dataset.prod);
     if (p.grupos.length) abreExtras(p); else anade({ producto: p.id, cantidad: 1, opciones: [], nota: '' });
+    if ($('#buscar').value) { $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); }
   });
 
   function anade(l) {
