@@ -11,6 +11,18 @@
 
   if (DEMO) $('#p-demo').hidden = false;
 
+  /* ── App instalable: service worker, botón "Instalar app" y pantalla siempre encendida ── */
+  const enApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
+  if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('/comandas/sw.js', { scope: '/comandas/' }).catch(() => {});
+  let pideInstalar = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pideInstalar = e; if (!enApp) $('#p-instalar').hidden = false; });
+  window.addEventListener('appinstalled', () => { $('#p-instalar').hidden = true; pideInstalar = null; });
+  $('#p-instalar').onclick = async () => { if (!pideInstalar) return; pideInstalar.prompt(); await pideInstalar.userChoice.catch(() => {}); pideInstalar = null; $('#p-instalar').hidden = true; };
+  // La pantalla de cocina no se apaga nunca mientras está abierta (en app o en el navegador).
+  let candado = null;
+  const pantallaEncendida = async () => { try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !candado) { candado = await navigator.wakeLock.request('screen'); candado.addEventListener('release', () => { candado = null; }); } } catch (e) { candado = null; } };
+  pantallaEncendida(); document.addEventListener('visibilitychange', pantallaEncendida);
+
   /* ── Sesión ── */
   (async function arranque() {
     let s = null; try { s = await api.sesion(); } catch (e) { s = null; }
