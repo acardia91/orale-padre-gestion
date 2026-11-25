@@ -353,6 +353,40 @@
       const ps = lee(K.pedidos, []); ps.filter(p => p.cuenta_id === cuentaId).forEach(p => { p.mesa = m.nombre; p.cliente_nombre = m.nombre; });
       guarda(K.pedidos, ps); avisa();
     },
+    async pasarLineas(origen, destino, items) {
+      const cs = lee(K.cuentas, []); const o = cs.find(c => c.id === origen), d = cs.find(c => c.id === destino);
+      if (!o || !d || o.id === d.id) throw new Error('CUENTA: elige otra cuenta');
+      if (o.estado !== 'abierta' || d.estado !== 'abierta') throw new Error('CUENTA: las dos cuentas tienen que estar abiertas');
+      if (!!o.para_llevar !== !!d.para_llevar) throw new Error('CUENTA: no se pueden mezclar productos de sala y para llevar');
+      const ps = lee(K.pedidos, []); const mov = new Map(); let n = 0, imp = 0;
+      items.slice().sort((a, b) => b.indice - a.indice).forEach(it => {
+        const p = ps.find(x => x.id === it.pedido && x.cuenta_id === origen && x.estado !== 'cancelado'); const l = p && p.lineas[it.indice];
+        if (!l) throw new Error('CUENTA: producto no encontrado en esta cuenta');
+        const pend = l.cantidad - (l.pagadas || 0); if (it.cantidad < 1 || it.cantidad > pend) throw new Error(`CUENTA: de "${l.nombre}" sólo quedan ${pend} sin cobrar`);
+        if (!mov.has(p.id)) mov.set(p.id, { estado: p.estado, lineas: [] });
+        const { pagadas, ...limpia } = l; mov.get(p.id).lineas.unshift({ ...limpia, cantidad: it.cantidad });
+        if (it.cantidad === l.cantidad) p.lineas.splice(it.indice, 1); else l.cantidad -= it.cantidad;
+        p.total = p.lineas.reduce((s2, x) => s2 + x.unitario * x.cantidad, 0);
+        if (!p.lineas.length) { p.estado = 'cancelado'; p.motivo_cancel = 'Pasado a otra cuenta: ' + d.nombre; }
+        n += it.cantidad; imp += l.unitario * it.cantidad;
+      });
+      const dia = partesMadrid(new Date()).fecha;
+      mov.forEach((m, pid) => { const src = ps.find(x => x.id === pid);
+        const numero = ps.filter(p => p.local === d.local && p.dia === dia).reduce((mx, p) => Math.max(mx, p.numero), 0) + 1;
+        ps.push({ ...src, id: uuid(), token: uuid(), numero, dia, cuenta_id: d.id, mesa: d.nombre, cliente_nombre: d.nombre, estado: m.estado, anuladas: [],
+          motivo_cancel: null, lineas: m.lineas, total: m.lineas.reduce((s2, x) => s2 + x.unitario * x.cantidad, 0),
+          notas: `Viene de ${o.nombre} (comanda #${src.numero})` + (src.notas ? ' · ' + src.notas : '') }); });
+      guarda(K.pedidos, ps); avisa(); return { unidades: n, importe: imp };
+    },
+    async juntarCuentas(origen, destino) {
+      const items = lee(K.pedidos, []).filter(p => p.cuenta_id === origen && p.estado !== 'cancelado')
+        .flatMap(p => p.lineas.map((l, i) => ({ pedido: p.id, indice: i, cantidad: l.cantidad - (l.pagadas || 0) }))).filter(x => x.cantidad > 0);
+      const r = items.length ? await this.pasarLineas(origen, destino, items) : { unidades: 0, importe: 0 };
+      const cs = lee(K.cuentas, []); const o = cs.find(c => c.id === origen), d = cs.find(c => c.id === destino);
+      const cobrado = lee(K.tickets, []).some(t => t.cuenta_id === origen);
+      o.estado = cobrado ? 'cobrada' : 'anulada'; o.cerrada = new Date().toISOString(); if (!cobrado) o.motivo_anulacion = 'Juntada con ' + d.nombre;
+      guarda(K.cuentas, cs); avisa(); return r;
+    },
     async anularLinea(pedidoId, indice, cantidad, motivo) {
       const ps = lee(K.pedidos, []); const p = ps.find(x => x.id === pedidoId); const l = p.lineas[indice];
       const q = Math.min(cantidad || 1, l.cantidad); p.anuladas = [...(p.anuladas || []), { ...l, cantidad: q, motivo }];
@@ -625,6 +659,8 @@
     async enviarComanda(cuenta, lineas, notas) { return ok(await cliente().rpc('enviar_comanda', { p_cuenta: cuenta, p_lineas: lineas, p_notas: notas || '' })); },
     async pedidosDeCuenta(cuenta) { return ok(await cliente().from('pedidos').select('*').eq('cuenta_id', cuenta).order('numero')); },
     async moverCuenta(cuenta, mesa) { ok(await cliente().rpc('mover_cuenta', { p_cuenta: cuenta, p_mesa_id: mesa })); },
+    async pasarLineas(origen, destino, items) { return ok(await cliente().rpc('pasar_lineas', { p_origen: origen, p_destino: destino, p_items: items })); },
+    async juntarCuentas(origen, destino) { return ok(await cliente().rpc('juntar_cuentas', { p_origen: origen, p_destino: destino })); },
     async anularCuenta(cuenta, motivo, pin) { ok(await cliente().rpc('anular_cuenta', { p_cuenta: cuenta, p_motivo: motivo, p_pin: pin || null })); },
     // ── Control: productos quitados, clave de encargado, pre-cuentas, cierre de caja ──
     async anularLinea(pedido, indice, cantidad, motivo, pin) {
