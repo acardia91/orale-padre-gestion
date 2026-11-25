@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611251021">
+<link rel="stylesheet" href="tpv.css?v=202611251319">
 </head>
 <body>
 
@@ -94,6 +94,8 @@
         <button class="b b-mini" id="c-menu" type="button" aria-haspopup="menu">⋯</button>
         <div class="menu" id="menu-cuenta" role="menu" hidden>
           <button type="button" role="menuitem" data-m="mover">Cambiar de mesa</button>
+          <button type="button" role="menuitem" data-m="pasar">Pasar productos a otra cuenta</button>
+          <button type="button" role="menuitem" data-m="juntar">Juntar con otra mesa</button>
           <button type="button" role="menuitem" data-m="precuenta">Imprimir pre-cuenta</button>
           <button type="button" role="menuitem" data-m="anular" class="peligro">Anular cuenta</button>
         </div>
@@ -288,6 +290,22 @@
   </form>
 </dialog>
 
+<!-- ── Pasar productos / juntar cuentas ── -->
+<dialog class="dlg dlg-ancho" id="dlg-pasar">
+  <form method="dialog">
+    <h2 id="ps-titulo">Pasar productos</h2>
+    <section id="ps-paso-lineas">
+      <div class="ps-cab"><strong>1 · ¿Qué productos?</strong><button class="b b-mini" type="button" id="ps-todo">Todo</button></div>
+      <div class="ps-lineas" id="ps-lineas"></div>
+    </section>
+    <p class="ps-info" id="ps-info"></p>
+    <div class="ps-cab"><strong id="ps-dest-tit">2 · ¿A qué cuenta?</strong></div>
+    <div class="mesas mini" id="ps-destinos"></div>
+    <p class="err" id="ps-error" role="alert" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="ps-ok" disabled>Pasar</button></div>
+  </form>
+</dialog>
+
 <!-- ── Caja del día ── -->
 <dialog class="dlg dlg-ancho" id="dlg-caja">
   <form method="dialog">
@@ -335,10 +353,10 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611251021"></script>
+<script src="/pedir/api.js?v=202611251319"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611251021"></script>
-<script src="/pedir/plano.js?v=202611251021"></script>
-<script src="tpv.js?v=202611251021"></script>
+<script src="/pedir/ticket.js?v=202611251319"></script>
+<script src="/pedir/plano.js?v=202611251319"></script>
+<script src="tpv.js?v=202611251319"></script>
 </body>
 </html>

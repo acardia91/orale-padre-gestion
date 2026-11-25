@@ -457,7 +457,7 @@
     $('#c-nombre').textContent = cuenta.nombre;
     $('#c-info').textContent = `Abierta hace ${minutos(cuenta.abierta)} min${cuenta.para_llevar ? ' · para llevar' : ''}`;
     const ESTADO = { nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
-    const enviados = pedidosCuenta.slice().sort((a, b) => a.numero - b.numero).map(p => `
+    const enviados = pedidosCuenta.filter(p => !(p.estado === 'cancelado' && !p.lineas.length && !(p.anuladas || []).length)).sort((a, b) => a.numero - b.numero).map(p => `
       <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span><span class="estado ${p.estado}">${ESTADO[p.estado]}</span></div>
       ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''} ${porCobrar(l) < 1 ? 'cobrada' : ''}" ${p.estado !== 'cancelado' && porCobrar(l) > 0 ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
@@ -600,12 +600,92 @@
       $('#dlg-mover').showModal();
     }
     if (m === 'anular') abreAnular();
+    if (m === 'pasar' || m === 'juntar') abrePasar(m);
   });
   $('#mv-mesas').addEventListener('click', async e => {
     const b = e.target.closest('button.mesa'); if (!b) return;
     try { await api.moverCuenta(cuenta.id, b.value); $('#dlg-mover').close(); await recarga(); }
     catch (ex) { alert(mensajeError(ex)); }
   });
+
+  /* ── Pasar productos a otra cuenta / juntar mesas ──
+     Se eligen unidades (de lo enviado sin cobrar y de lo aún sin enviar) y la cuenta de destino:
+     una cuenta abierta o, al pasar, una mesa libre (se abre su cuenta). Juntar pasa todo y cierra esta. */
+  let psModo = 'pasar', psSel = new Map(), psDest = null, psLineas = [];
+  function abrePasar(modo) {
+    psModo = modo; psSel = new Map(); psDest = null;
+    const pend = pendientes[cuenta.id] || [];
+    psLineas = lineasPendientes().map(l => ({ k: `e:${l._pedido}:${l._indice}`, nombre: l.nombre, extra: l.opciones.map(o => o.nombre), nota: l.nota, max: l.cantidad, unitario: l.unitario, pedido: l._pedido, indice: l._indice }))
+      .concat(pend.map((l, i) => { const p = idx.prod.get(l.producto); return { k: `p:${i}`, nombre: p ? p.nombre : '¿?', extra: nombreOps(l), nota: l.nota, max: l.cantidad, unitario: p ? precioLinea(idx, l, enSala()) : 0, sinEnviar: true, i }; }));
+    const juntar = modo === 'juntar';
+    $('#ps-titulo').textContent = juntar ? `Juntar ${cuenta.nombre} con otra mesa` : `Pasar productos de ${cuenta.nombre}`;
+    $('#ps-paso-lineas').hidden = juntar;
+    $('#ps-dest-tit').textContent = juntar ? '¿Con qué cuenta la juntas?' : '2 · ¿A qué cuenta?';
+    $('#ps-info').textContent = juntar ? `Todo lo que falta por cobrar (${psLineas.reduce((s, l) => s + l.max, 0)} uds.) pasa a la cuenta que elijas y ${cuenta.mesa_id ? 'esta mesa queda libre' : 'esta cuenta se cierra'}.` : '';
+    $('#ps-info').hidden = !juntar;
+    const otras = cuentas.filter(c => c.id !== cuenta.id && !!c.para_llevar === !!cuenta.para_llevar);
+    const libres = juntar || cuenta.para_llevar ? [] : mesas.filter(x => x.tipo !== 'deco' && !cuentas.some(c => c.mesa_id === x.id));
+    $('#ps-destinos').innerHTML = otras.map(c => `<button class="mesa ocupada" type="button" value="c:${esc(c.id)}"><strong>${esc(c.nombre)}</strong><small>Abierta · ${minutos(c.abierta)} min</small></button>`).join('')
+      + libres.map(x => `<button class="mesa" type="button" value="m:${esc(x.id)}"><strong>${esc(x.nombre)}</strong><small>Libre · ${esc(x.zona)}</small></button>`).join('')
+      || `<p class="vacio">No hay otra cuenta abierta${cuenta.para_llevar ? ' para llevar' : ''}.</p>`;
+    $('#ps-error').hidden = true;
+    if (!psLineas.length && !juntar) { alert('No hay productos sin cobrar en esta cuenta.'); return; }
+    pintaPasar(); $('#dlg-pasar').showModal();
+  }
+  function pintaPasar() {
+    $('#ps-lineas').innerHTML = psLineas.map(l => { const q = psSel.get(l.k) || 0;
+      return `<div class="ln ps-ln ${q ? 'on' : ''}" data-k="${l.k}">
+        <div class="ctl"><button type="button" data-ps="-1" aria-label="Uno menos">−</button><output>${q}</output><button type="button" data-ps="1" aria-label="Uno más">+</button></div>
+        <div class="ps-txt" data-ps="todo">${esc(l.nombre)} <small>de ${l.max}</small>${l.extra.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : ''}${l.sinEnviar ? '<small class="ps-sin">Sin enviar</small>' : ''}</div>
+        <span class="imp">${q ? euros(l.unitario * q) : ''}</span></div>`; }).join('');
+    $('#ps-destinos').querySelectorAll('button.mesa').forEach(b => b.classList.toggle('sel', b.value === psDest));
+    const n = [...psSel.values()].reduce((s, q) => s + q, 0);
+    const dest = psDest && $('#ps-destinos').querySelector(`button[value="${CSS.escape(psDest)}"] strong`);
+    const ok = $('#ps-ok');
+    if (psModo === 'juntar') { ok.textContent = dest ? `Juntar con ${dest.textContent}` : 'Juntar'; ok.disabled = !psDest; }
+    else { ok.textContent = n ? `Pasar ${n} ${n === 1 ? 'producto' : 'productos'}${dest ? ' a ' + dest.textContent : ''}` : 'Pasar'; ok.disabled = !n || !psDest; }
+  }
+  $('#ps-lineas').addEventListener('click', e => {
+    const b = e.target.closest('[data-ps]'); const row = e.target.closest('[data-k]'); if (!b || !row) return;
+    const l = psLineas.find(x => x.k === row.dataset.k); const q = psSel.get(l.k) || 0;
+    const nq = b.dataset.ps === 'todo' ? (q ? 0 : l.max) : Math.max(0, Math.min(l.max, q + Number(b.dataset.ps)));
+    nq ? psSel.set(l.k, nq) : psSel.delete(l.k); pintaPasar();
+  });
+  $('#ps-todo').onclick = () => { const todo = psLineas.every(l => psSel.get(l.k) === l.max); psSel = new Map(todo ? [] : psLineas.map(l => [l.k, l.max])); pintaPasar(); };
+  $('#ps-destinos').addEventListener('click', e => { const b = e.target.closest('button.mesa'); if (!b) return; psDest = b.value; $('#ps-error').hidden = true; pintaPasar(); });
+  // Lo que aún no se ha enviado a cocina se pasa aquí mismo (está guardado en este TPV).
+  function pasaSinEnviar(origen, destino, sel) {
+    const de = pendientes[origen] || []; const a = pendientes[destino] || (pendientes[destino] = []);
+    sel.sort((x, y) => y.i - x.i).forEach(({ i, q }) => { const l = de[i]; if (!l) return;
+      const mov = { ...l, opciones: l.opciones.slice(), cantidad: q }; if (q >= l.cantidad) de.splice(i, 1); else l.cantidad -= q;
+      const igual = a.find(x => mismaLinea(x, mov)); igual ? igual.cantidad += mov.cantidad : a.push(mov); });
+    if (!de.length) delete pendientes[origen]; guardaPend();
+  }
+  $('#ps-ok').onclick = async () => {
+    const ok = $('#ps-ok'); ok.disabled = true; $('#ps-error').hidden = true;
+    const origen = cuenta.id, nombreDest = $('#ps-destinos').querySelector(`button[value="${CSS.escape(psDest)}"] strong`).textContent;
+    try {
+      let destId = psDest.slice(2);
+      if (psModo === 'juntar') {
+        const r = await api.juntarCuentas(origen, destId);
+        pasaSinEnviar(origen, destId, (pendientes[origen] || []).map((l, i) => ({ i, q: l.cantidad })));
+        delete pendientes[origen]; guardaPend();
+        $('#dlg-pasar').close(); await recarga();
+        const d = cuentas.find(c => c.id === destId); if (d) await abrir(d); else verSala();
+        aviso(`✓ Juntada con ${nombreDest}${r && r.unidades ? ` · ${r.unidades} ${r.unidades === 1 ? 'producto pasado' : 'productos pasados'}` : ''}`);
+        return;
+      }
+      if (psDest.startsWith('m:')) destId = (await api.abrirCuenta({ local: LOCAL, mesa_id: destId })).id;
+      const elegidas = psLineas.filter(l => psSel.get(l.k));
+      const items = elegidas.filter(l => !l.sinEnviar).map(l => ({ pedido: l.pedido, indice: l.indice, cantidad: psSel.get(l.k) }));
+      if (items.length) await api.pasarLineas(origen, destId, items);
+      pasaSinEnviar(origen, destId, elegidas.filter(l => l.sinEnviar).map(l => ({ i: l.i, q: psSel.get(l.k) })));
+      const n = elegidas.reduce((s, l) => s + psSel.get(l.k), 0);
+      $('#dlg-pasar').close(); await recarga();
+      pedidosCuenta = await api.pedidosDeCuenta(origen); pintaCuenta();
+      aviso(`✓ ${n} ${n === 1 ? 'producto pasado' : 'productos pasados'} a ${nombreDest}`);
+    } catch (ex) { $('#ps-error').textContent = mensajeError(ex); $('#ps-error').hidden = false; ok.disabled = false; }
+  };
 
   /* ── Agotados: se marcan desde el TPV (lo mismo que en comandas y en el admin) ──
      Pestañas por categoría para ir rápido y un botón por categoría para agotarla o activarla entera. */

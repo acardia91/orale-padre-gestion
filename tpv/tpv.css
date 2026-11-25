@@ -399,3 +399,14 @@ body.sin-red .aviso-flota{top:120px}
 .mv-fila small{color:var(--humo)}
 .mv-fila.salida b{color:#B3261E}
 .mv-fila.entrada b{color:#2E6B2A}
+/* Pasar productos / juntar mesas */
+#dlg-pasar .ps-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0 8px}
+#dlg-pasar .ps-lineas{max-height:34vh;overflow:auto;border:1px solid var(--borde);border-radius:var(--r)}
+#dlg-pasar .ps-ln{cursor:pointer;padding:9px 10px}
+#dlg-pasar .ps-ln.on{background:#FFF7E6}
+#dlg-pasar .ps-txt{flex:1;min-width:0}
+#dlg-pasar .ps-txt small{display:block;color:var(--humo)}
+#dlg-pasar .ps-txt small.ps-sin{color:#B7791F;font-weight:600}
+#dlg-pasar .ps-info{margin:8px 0;padding:10px 12px;background:var(--fondo);border-radius:var(--r)}
+#dlg-pasar .mesas.mini{max-height:30vh}
+.mesa.sel{outline:4px solid #1F7A4D;outline-offset:2px}
