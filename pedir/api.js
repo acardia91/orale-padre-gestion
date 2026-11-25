@@ -365,9 +365,12 @@
       const ts = lee(K.tickets, []).filter(t => t.local === local); const s = m => ts.filter(t => t.metodo === m).reduce((a, t) => a + t.total, 0);
       return { desde: new Date(new Date().setHours(0, 0, 0, 0)).toISOString(), fondo_inicial: 0, efectivo: s('efectivo'), tarjeta: s('tarjeta'), online: s('stripe'),
         invitaciones: ts.filter(t => t.metodo === 'invitacion').length, descuentos: ts.reduce((a, t) => a + (t.descuento || 0), 0), tickets: ts.length,
-        anulaciones: 0, importe_anulado: 0, cuentas_abiertas: lee(K.cuentas, []).filter(c => c.local === local && c.estado === 'abierta').length };
+        anulaciones: 0, importe_anulado: 0, cuentas_abiertas: lee(K.cuentas, []).filter(c => c.local === local && c.estado === 'abierta').length,
+        ...(() => { const ms = lee('op-demo-movcaja', []).filter(m => m.local === local); const s2 = t => ms.filter(m => m.tipo === t).reduce((a, m) => a + m.importe, 0); return { entradas: s2('entrada'), salidas: s2('salida') }; })() };
     },
-    async cerrarCaja(local, contado, retirado, notas) { const r = await this.resumenCaja(local); return { ...r, efectivo_contado: contado, retirado, notas, hasta: new Date().toISOString(), descuadre: contado - r.fondo_inicial - r.efectivo, fondo_siguiente: contado - retirado }; },
+    async cerrarCaja(local, contado, retirado, notas) { const r = await this.resumenCaja(local); guarda('op-demo-movcaja', lee('op-demo-movcaja', []).filter(m => m.local !== local)); return { ...r, efectivo_contado: contado, retirado, notas, hasta: new Date().toISOString(), descuadre: contado - r.fondo_inicial - r.efectivo - r.entradas + r.salidas, fondo_siguiente: contado - retirado }; },
+    async movimientosCaja(local) { return lee('op-demo-movcaja', []).filter(m => m.local === local); },
+    async movimientoCaja(local, tipo, importe, motivo) { const m = { id: String(Date.now()), local, tipo, importe, motivo, cuando: new Date().toISOString(), persona: 'demo' }; guarda('op-demo-movcaja', [...lee('op-demo-movcaja', []), m]); return m; },
     async auditoria() { return []; }, async cierres() { return []; },
     // Reseñas e informes (demo: en este navegador)
     async ticketParaValorar(id) { const t = lee(K.tickets, []).find(x => x.id === id); if (!t) return null;
@@ -632,6 +635,8 @@
     async registrarPrecuenta(cuenta, total) { try { await cliente().rpc('registrar_precuenta', { p_cuenta: cuenta, p_total: total }); } catch (e) {} },
     async resumenCaja(local) { return ok(await cliente().rpc('resumen_caja', { p_local: local })); },
     async cerrarCaja(local, contado, retirado, notas) { return ok(await cliente().rpc('cerrar_caja', { p_local: local, p_contado: contado, p_retirado: retirado, p_notas: notas || '' })); },
+    async movimientosCaja(local) { return ok(await cliente().rpc('movimientos_caja', { p_local: local })) || []; },
+    async movimientoCaja(local, tipo, importe, motivo, pin) { return ok(await cliente().rpc('movimiento_caja', { p_local: local, p_tipo: tipo, p_importe: importe, p_motivo: motivo, p_pin: pin || null })); },
     async auditoria(local, desde, hasta) { return ok(await cliente().rpc('listar_auditoria', { p_local: local, p_desde: desde, p_hasta: hasta })); },
     async cierres(local, desde, hasta) { return ok(await cliente().rpc('listar_cierres', { p_local: local, p_desde: desde, p_hasta: hasta })).map(r => r.c); },
     async dejarResena({ local, nota, comentario, nombre, contacto, pedido, ticket, origen }) {
