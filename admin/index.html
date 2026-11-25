@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611251450">
+<link rel="stylesheet" href="admin.css?v=202611251500">
 </head>
 <body>
 
@@ -596,6 +596,8 @@
         <label><input type="checkbox" id="fp-agotado"> Agotado (se ve pero no se puede pedir)</label>
         <label><input type="checkbox" id="fp-oculto"> Oculto (no sale en la web ni en el TPV)</label>
       </div>
+      <label class="fp-solo">Quién lo prepara
+        <select id="fp-puesto"><option value="">Como su categoría</option><option value="cocina">Cocina</option><option value="barra">Barra</option></select></label>
       <label class="fp-solo">Dónde se vende
         <select id="fp-solo"><option value="">En todos los canales</option><option value="recoger">Sólo para recoger / llevar (web y TPV para llevar)</option><option value="local">Sólo en el local (sala y carta digital QR)</option></select></label>
     </fieldset>
@@ -767,25 +769,25 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611251450"></script>
-<script src="/pedir/plano.js?v=202611251450"></script>
+<script src="/pedir/api.js?v=202611251500"></script>
+<script src="/pedir/plano.js?v=202611251500"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611251450"></script>
-<script src="sec-plano.js?v=202611251450"></script>
-<script src="sec-resumen.js?v=202611251450"></script>
-<script src="sec-carta.js?v=202611251450"></script>
-<script src="sec-local.js?v=202611251450"></script>
-<script src="sec-pedidos.js?v=202611251450"></script>
-<script src="sec-reservas.js?v=202611251450"></script>
-<script src="sec-clientes.js?v=202611251450"></script>
-<script src="sec-control.js?v=202611251450"></script>
-<script src="sec-panel.js?v=202611251450"></script>
-<script src="sec-delivery.js?v=202611251450"></script>
-<script src="sec-promos.js?v=202611251450"></script>
-<script src="sec-informes.js?v=202611251450"></script>
-<script src="sec-resenas.js?v=202611251450"></script>
-<script src="sec-equipo.js?v=202611251450"></script>
-<script src="admin.js?v=202611251450"></script>
+<script src="/pedir/ticket.js?v=202611251500"></script>
+<script src="sec-plano.js?v=202611251500"></script>
+<script src="sec-resumen.js?v=202611251500"></script>
+<script src="sec-carta.js?v=202611251500"></script>
+<script src="sec-local.js?v=202611251500"></script>
+<script src="sec-pedidos.js?v=202611251500"></script>
+<script src="sec-reservas.js?v=202611251500"></script>
+<script src="sec-clientes.js?v=202611251500"></script>
+<script src="sec-control.js?v=202611251500"></script>
+<script src="sec-panel.js?v=202611251500"></script>
+<script src="sec-delivery.js?v=202611251500"></script>
+<script src="sec-promos.js?v=202611251500"></script>
+<script src="sec-informes.js?v=202611251500"></script>
+<script src="sec-resenas.js?v=202611251500"></script>
+<script src="sec-equipo.js?v=202611251500"></script>
+<script src="admin.js?v=202611251500"></script>
 </body>
 </html>
 

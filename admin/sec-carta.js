@@ -89,7 +89,7 @@
     $('#fp-alerg').innerHTML = ALERGENOS.map(a => `<label><input type="checkbox" value="${a}" ${p.alergenos.includes(a) ? 'checked' : ''}> ${a}</label>`).join('');
     $('#fp-grupos').innerHTML = carta.grupos.length ? carta.grupos.map(g => `<label><input type="checkbox" value="${g.id}" ${p.grupos.includes(g.id) ? 'checked' : ''}> ${esc(g.nombre)} <small>(${g.min ? 'obligatorio' : 'opcional'}, ${g.opciones.length} opciones)</small></label>`).join('')
       : '<p class="nota">Aún no hay grupos de extras. Créalos en la pestaña "Extras y combos".</p>';
-    $('#fp-alcohol').checked = !!p.alcohol; $('#fp-agotado').checked = !!p.agotado; $('#fp-oculto').checked = !!p.oculto; $('#fp-solo').value = p.solo || '';
+    $('#fp-alcohol').checked = !!p.alcohol; $('#fp-agotado').checked = !!p.agotado; $('#fp-oculto').checked = !!p.oculto; $('#fp-solo').value = p.solo || ''; $('#fp-puesto').value = p.puesto || '';
     $('#fp-borrar').hidden = !id; $('#fp-error').hidden = true;
     pintaFoto(); dp.showModal();
   }
@@ -125,7 +125,7 @@
     const datos = { nombre, precio, precio_local: pl === precio ? undefined : pl, desc: $('#fp-desc').value.trim(), foto: fotoTmp || null,
       alergenos: [...dp.querySelectorAll('#fp-alerg input:checked')].map(i => i.value),
       grupos: [...dp.querySelectorAll('#fp-grupos input:checked')].map(i => i.value),
-      alcohol: $('#fp-alcohol').checked, agotado: $('#fp-agotado').checked, oculto: $('#fp-oculto').checked, solo: $('#fp-solo').value || undefined };
+      alcohol: $('#fp-alcohol').checked, agotado: $('#fp-agotado').checked, oculto: $('#fp-oculto').checked, solo: $('#fp-solo').value || undefined, puesto: $('#fp-puesto').value || undefined };
     let id = editando;
     if (id) Object.assign(prod(id), datos);
     else { id = uid(); carta.productos.push({ id, ...datos }); }
@@ -228,6 +228,7 @@
       <span class="cuenta">${c.productos.length} productos</span>
       <div class="dias" title="Días en que se puede pedir (ninguno marcado = todos)">${DIAS.map((d, j) => `<label><input type="checkbox" data-kd="${i}" value="${j + 1}" ${c.dias && c.dias.includes(j + 1) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
       <select data-ks="${i}" aria-label="Dónde se vende" title="Dónde se vende esta categoría"><option value="">Todos los canales</option><option value="recoger" ${c.solo === 'recoger' ? 'selected' : ''}>Sólo recoger</option><option value="local" ${c.solo === 'local' ? 'selected' : ''}>Sólo en el local</option></select>
+      <select data-kp="${i}" aria-label="Quién lo prepara" title="Quién prepara esta categoría (pantalla de Comandas)"><option value="">${/bebida/i.test(c.nombre + ' ' + c.clave) ? 'Barra (por defecto)' : 'Cocina (por defecto)'}</option><option value="cocina" ${c.puesto === 'cocina' ? 'selected' : ''}>Cocina</option><option value="barra" ${c.puesto === 'barra' ? 'selected' : ''}>Barra</option></select>
       <label class="chk"><input type="checkbox" data-ko="${i}" ${c.oculta ? 'checked' : ''}> Oculta</label>
       <button type="button" class="b b-mini b-mal" data-kx="${i}">Eliminar</button></div>`).join('');
   }
@@ -242,6 +243,7 @@
     }
     if (t.dataset.ko) { carta.categorias[t.dataset.ko].oculta = t.checked || undefined; pintaCategorias(); marca(); }
     if (t.dataset.ks) { carta.categorias[t.dataset.ks].solo = t.value || undefined; marca(); }
+    if (t.dataset.kp) { carta.categorias[t.dataset.kp].puesto = t.value || undefined; marca(); }
   });
   $('#k-lista').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return; const cs = carta.categorias;
