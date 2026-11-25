@@ -7,7 +7,7 @@
   const fecha = d => new Date(d).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const quien = e => e ? esc(e.split('@')[0].replace(/^orale\.padre\.food\+/, '')) : '—';
   const ACC = {
-    linea_anulada: ['Producto quitado', 'rojo'], cuenta_anulada: ['Cuenta anulada', 'rojo'], pedido_cancelado: ['Pedido web cancelado', ''], lineas_pasadas: ['Productos pasados de cuenta', ''], cuentas_juntadas: ['Mesas juntadas', ''],
+    linea_anulada: ['Producto quitado', 'rojo'], cuenta_anulada: ['Cuenta anulada', 'rojo'], pedido_cancelado: ['Pedido web cancelado', ''], lineas_pasadas: ['Productos pasados de cuenta', ''], cuentas_juntadas: ['Mesas juntadas', ''], movimiento_caja: ['Movimiento de caja', ''],
     precuenta: ['Pre-cuenta impresa', 'gris'], entrada: ['Entrada al TPV (PIN)', 'gris'], pin_fallido: ['Clave fallida', 'rojo'], cierre_caja: ['Cierre de caja', 'verde'], pin_cambiado: ['Clave cambiada', 'gris'],
   };
   let LOCAL, LOCALES = [], rango = '7', lista = [], cierres = [];
@@ -44,6 +44,7 @@
       (filas.map(x => {
         const [t, c] = ACC[x.accion] || [x.accion, '']; const d = x.detalle || {};
         const det = x.accion === 'linea_anulada' ? `${d.cantidad}× ${esc(d.producto)} · ${esc(d.mesa)} · comanda #${d.comanda}`
+          : x.accion === 'movimiento_caja' ? (d.tipo === 'salida' ? 'Sacado de la caja' : 'Metido en la caja')
           : ['lineas_pasadas', 'cuentas_juntadas'].includes(x.accion) ? `${esc(d.de)} → ${esc(d.a)} · ${d.unidades} uds.`
           : x.accion === 'cuenta_anulada' ? esc(d.mesa) : x.accion === 'precuenta' ? esc(d.mesa)
           : x.accion === 'pedido_cancelado' ? `#${d.numero} · ${esc(d.cliente || '')}${d.pagado ? ' · pagado online' : ''}`
@@ -53,12 +54,15 @@
           <td>${det}</td><td class="num">${x.importe != null ? (x.accion === 'cierre_caja' ? 'descuadre ' : '') + euros(x.importe) : ''}</td>
           <td>${quien(x.usuario)}</td><td>${x.autorizado && x.autorizado !== x.usuario ? quien(x.autorizado) : x.autorizado ? 'él mismo' : '—'}</td><td>${x.accion === 'pin_fallido' ? '' : esc(x.motivo || '')}</td></tr>`;
       }).join('') || `<tr><td colspan="8" class="nota">Nada que registrar en este periodo.</td></tr>`) + '</tbody>';
-    $('#ct-cierres').innerHTML = `<thead><tr><th>Cierre</th>${varios ? '<th>Local</th>' : ''}<th>Quién</th><th class="num">Tickets</th><th class="num">Efectivo</th><th class="num">Tarjeta</th><th class="num">Online</th><th class="num">Contado</th><th class="num">Descuadre</th><th class="num">Retirado</th><th>Notas</th></tr></thead><tbody>` +
+    $('#ct-cierres').innerHTML = `<thead><tr><th>Cierre</th>${varios ? '<th>Local</th>' : ''}<th>Quién</th><th class="num">Tickets</th><th class="num">Efectivo</th><th class="num">Tarjeta</th><th class="num">Online</th><th class="num">Fondo</th><th class="num" title="Dinero metido (+) y sacado (−) de la caja durante el turno">Metido / sacado</th><th class="num" title="Fondo + efectivo + metido − sacado">Debía haber</th><th class="num">Contado</th><th class="num">Descuadre</th><th class="num">Retirado</th><th>Notas</th></tr></thead><tbody>` +
       (cierres.map(c => `<tr><td>${fecha(c.hasta)}<small>desde ${fecha(c.desde)}</small></td>${varios ? `<td>${esc(nombreLocal(c.local))}</td>` : ''}<td>${quien(c.usuario_email)}</td>
         <td class="num">${c.tickets}</td><td class="num">${euros(c.efectivo)}</td><td class="num">${euros(c.tarjeta)}</td><td class="num">${euros(c.online)}</td>
+        <td class="num">${euros(c.fondo_inicial || 0)}</td>
+        <td class="num">${c.entradas || c.salidas ? `${c.entradas ? '+' + euros(c.entradas) : ''}${c.entradas && c.salidas ? '<br>' : ''}${c.salidas ? '−' + euros(c.salidas) : ''}` : '—'}</td>
+        <td class="num">${euros(c.efectivo_contado - c.descuadre)}</td>
         <td class="num">${euros(c.efectivo_contado)}</td><td class="num"><span class="tag ${c.descuadre ? 'rojo' : 'verde'}">${euros(c.descuadre)}</span></td>
         <td class="num">${euros(c.retirado)}</td><td>${esc(c.notas || '')}</td></tr>`).join('')
-       || `<tr><td colspan="11" class="nota">Aún no hay cierres en este periodo. Se hacen desde el TPV, botón "Caja".</td></tr>`) + '</tbody>';
+       || `<tr><td colspan="14" class="nota">Aún no hay cierres en este periodo. Se hacen desde el TPV, botón "Caja".</td></tr>`) + '</tbody>';
   }
   $('#ct-tipo').onchange = pinta;
   document.querySelectorAll('[data-crango]').forEach(b => b.onclick = () => { rango = b.dataset.crango; cargar(); });
