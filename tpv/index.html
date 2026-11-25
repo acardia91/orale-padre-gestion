@@ -7,10 +7,15 @@
 <title>TPV · Órale Padre</title>
 <meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="/img/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TPV Órale">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611251319">
+<link rel="stylesheet" href="tpv.css?v=202611251339">
 </head>
 <body>
 
@@ -59,6 +64,7 @@
       <button class="b" id="b-llevar" type="button">+ <span class="solo-ancho">Para </span>llevar</button>
       <button class="b" id="b-agotados" type="button">Agotados</button>
       <button class="b" id="b-caja" type="button">Caja</button>
+      <button class="b b-mini" id="b-instalar" type="button" hidden title="Instalar el TPV como app en este dispositivo">⬇ Instalar app</button>
       <button class="b b-mini" id="b-salir" type="button" title="Cerrar sesión (cambiar de persona)">Salir</button>
     </div>
   </header>
@@ -353,10 +359,10 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611251319"></script>
+<script src="/pedir/api.js?v=202611251339"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611251319"></script>
-<script src="/pedir/plano.js?v=202611251319"></script>
-<script src="tpv.js?v=202611251319"></script>
+<script src="/pedir/ticket.js?v=202611251339"></script>
+<script src="/pedir/plano.js?v=202611251339"></script>
+<script src="tpv.js?v=202611251339"></script>
 </body>
 </html>

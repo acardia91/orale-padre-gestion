@@ -25,6 +25,17 @@
 
   if (DEMO) $('#t-demo').hidden = false;
 
+  /* ── App instalable: service worker, botón "Instalar app" y pantalla siempre encendida ── */
+  const enApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
+  if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('/tpv/sw.js', { scope: '/tpv/' }).catch(() => {});
+  let pideInstalar = null;
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pideInstalar = e; if (!enApp) $('#b-instalar').hidden = false; });
+  window.addEventListener('appinstalled', () => { $('#b-instalar').hidden = true; pideInstalar = null; aviso('✓ TPV instalado: ya lo tienes como app en la pantalla de inicio.'); });
+  $('#b-instalar').onclick = async () => { if (!pideInstalar) return; pideInstalar.prompt(); await pideInstalar.userChoice.catch(() => {}); pideInstalar = null; $('#b-instalar').hidden = true; };
+  let candado = null;
+  const pantallaEncendida = async () => { try { if ('wakeLock' in navigator && document.visibilityState === 'visible' && !candado) { candado = await navigator.wakeLock.request('screen'); candado.addEventListener('release', () => { candado = null; }); } } catch (e) { candado = null; } };
+  if (enApp) { pantallaEncendida(); document.addEventListener('visibilitychange', pantallaEncendida); }
+
   /* ── Sesión ── */
   (async () => {
     let s = null; try { s = await api.sesion(); } catch (e) { s = null; }
