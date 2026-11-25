@@ -137,3 +137,11 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .ped.t-ambar .ped-tiempo{color:#9A5B00}
 .ped.t-rojo{box-shadow:0 0 0 4px #B3261E;background:#FFF5F4}
 .ped.t-rojo .ped-tiempo{color:#B3261E}
+/* Cocina / barra */
+.puesto-sel{display:flex;align-items:center;gap:6px;font-weight:800}
+.puesto-sel select{font:inherit;font-weight:700;padding:8px 10px;border-radius:10px;border:1px solid var(--borde);background:var(--blanco)}
+.ped-lineas li.de-barra{color:#1F5A7A}
+.ped-otro{margin:0 14px 8px;font-size:13px;font-weight:700;color:var(--humo)}
+.ped-sirve{font-size:12.5px;color:var(--humo);font-weight:700;align-self:center}
+.col[hidden]{display:none}
+@media (min-width:901px){body[data-vista="barra"] .columnas{grid-template-columns:repeat(2,minmax(0,1fr))}}

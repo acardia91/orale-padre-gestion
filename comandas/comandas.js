@@ -1,7 +1,7 @@
 /* ÓRALE PADRE · pantalla de comandas (cocina / barra) */
 (function () {
   'use strict';
-  const { api, DEMO, hhmm, euros } = window.OP;
+  const { api, DEMO, hhmm, euros, puestoDe } = window.OP;
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem('op-cocina-' + k); localStorage.setItem('op-cocina-' + k, v); } catch (e) { return null; } };
@@ -10,6 +10,35 @@
   let local, carta, pedidos = [], agotados = new Set(), vistos = new Set(), primeraCarga = true;
 
   if (DEMO) $('#p-demo').hidden = false;
+
+  /* ── Puesto de esta pantalla: Todo, Cocina o Barra (se recuerda en este dispositivo) ──
+     · Cocina: sólo ve lo que prepara cocina; lleva el estado del pedido (aceptar, listo, servido).
+     · Barra: sólo ve las bebidas; las marca "listas" sin tocar lo de cocina. Si el pedido es
+       sólo de barra, la barra lo lleva entero (listo y servido).
+     · Todo: como siempre, con las bebidas marcadas 🍹. */
+  let vista = ['cocina', 'barra'].includes(pref('puesto')) ? pref('puesto') : '';
+  const puesto = l => puestoDe(carta, l.producto);
+  const lineasDe = (p, v = vista) => v ? p.lineas.filter(l => puesto(l) === v) : p.lineas;
+  const tiene = (p, v) => p.lineas.some(l => puesto(l) === v);
+  const barraLista = p => !!(p.puestos && p.puestos.barra);
+  // Columna en la que sale cada pedido en esta pantalla (null = no sale).
+  function columna(p) {
+    if (!['nuevo', 'preparando', 'listo'].includes(p.estado)) return null;
+    if (vista === 'cocina') return tiene(p, 'cocina') ? p.estado : null;
+    if (vista === 'barra') return tiene(p, 'barra') ? (barraLista(p) || (!tiene(p, 'cocina') && p.estado === 'listo') ? 'listo' : 'nuevo') : null;
+    return p.estado;
+  }
+  const visibles = () => pedidos.filter(p => columna(p));
+  const porAceptar = () => pedidos.filter(p => columna(p) === 'nuevo');
+  function pintaVista() {
+    $('#p-puesto').value = vista;
+    document.body.dataset.vista = vista || 'todo';
+    $('#col-preparando').hidden = vista === 'barra';
+    const h = { '': 'Comandas', cocina: 'Cocina', barra: 'Barra' }[vista];
+    $('#p-vista-txt').textContent = h;
+  }
+  $('#p-puesto').onchange = e => { vista = e.target.value; pref('puesto', vista); vistos = new Set(visibles().filter(p => columna(p) === 'nuevo').map(p => p.id)); pintaVista(); pinta(); };
+  pintaVista();
 
   /* ── App instalable: service worker, botón "Instalar app" y pantalla siempre encendida ── */
   const enApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || navigator.standalone;
@@ -54,7 +83,7 @@
     try {
       [local, pedidos, agotados] = await Promise.all([api.local(LOCAL), api.pedidosDelDia(LOCAL), api.agotados(LOCAL)]);
     } catch (e) { console.warn('recarga', e); return; }
-    const nuevos = pedidos.filter(p => p.estado === 'nuevo' && !vistos.has(p.id));
+    const nuevos = porAceptar().filter(p => !vistos.has(p.id));
     nuevos.forEach(p => vistos.add(p.id));
     if (nuevos.length && !primeraCarga) { timbre(); if ('vibrate' in navigator) navigator.vibrate(300); }
     primeraCarga = false;
@@ -100,7 +129,7 @@
     } else silencio = !silencio;
     try { localStorage.setItem('op-comandas-silencio', silencio ? '1' : '0'); } catch (e) {}
     pintaSonido(); if (!silencio) timbre();
-    $('#p-sonido').classList.toggle('parpadea', silencio && pedidos.some(p => p.estado === 'nuevo'));
+    $('#p-sonido').classList.toggle('parpadea', silencio && porAceptar().length > 0);
   };
   pintaSonido();
   function timbre() {
@@ -114,7 +143,7 @@
     });
   }
   // Mientras haya pedidos sin aceptar, recuerda cada 20 s.
-  setInterval(() => { if (pedidos.some(p => p.estado === 'nuevo')) timbre(); }, 20000);
+  setInterval(() => { if (porAceptar().length) timbre(); }, 20000);
 
   /* ── Columnas ── */
   const PAGO = { local: 'Paga al recoger', efectivo: 'Pagado · efectivo', tarjeta: 'Pagado · tarjeta', stripe: 'Pagado online' };
@@ -122,9 +151,9 @@
     if (!local) return;
     const ord = (a, b) => new Date(a.recogida) - new Date(b.recogida) || a.numero - b.numero;
     ['nuevo', 'preparando', 'listo'].forEach(est => {
-      const l = pedidos.filter(p => p.estado === est).sort(ord);
+      const l = pedidos.filter(p => columna(p) === est).sort(ord);
       $('#n-' + est).textContent = l.length;
-      $('#l-' + est).innerHTML = l.length ? l.map(tarjeta).join('') : `<p class="vacio">${est === 'nuevo' ? 'Sin pedidos nuevos' : 'Nada por aquí'}</p>`;
+      $('#l-' + est).innerHTML = l.length ? l.map(tarjeta).join('') : `<p class="vacio">${est === 'nuevo' ? (vista === 'barra' ? 'Sin bebidas pendientes' : 'Sin pedidos nuevos') : 'Nada por aquí'}</p>`;
     });
     const hechos = pedidos.filter(p => p.estado === 'entregado' || p.estado === 'cancelado').sort((a, b) => b.numero - a.numero);
     const ent = hechos.filter(p => p.estado === 'entregado' && p.canal !== 'sala');   // la sala se cuadra en el TPV
@@ -137,9 +166,10 @@
       <span>${p.estado === 'cancelado' ? 'Cancelado' : esc(PAGO[p.pago_metodo] || '')}</span>
       ${p.estado === 'entregado' ? `<button class="b b-mini x" data-acc="recuperar" data-id="${p.id}" title="Devolver a «Listos» (si se marcó servido por error)">↩ Volver</button>` : ''}
       <button class="b b-mini ${p.estado === 'entregado' ? '' : 'x'}" data-acc="reimprimir" data-id="${p.id}">Ticket</button></div>`).join('') || '<p class="vacio">Aún nada</p>';
-    const parpadea = pedidos.some(p => p.estado === 'nuevo') && (!audio || silencio);
+    const parpadea = porAceptar().length > 0 && (!audio || silencio);
     $('#p-sonido').classList.toggle('parpadea', parpadea);
-    document.title = (pedidos.filter(p => p.estado === 'nuevo').length ? `(${pedidos.filter(p => p.estado === 'nuevo').length}) ` : '') + 'Comandas · Órale Padre';
+    const nN = porAceptar().length;
+    document.title = (nN ? `(${nN}) ` : '') + ({ '': 'Comandas', cocina: 'Cocina', barra: 'Barra' }[vista]) + ' · Órale Padre';
   }
 
   /* Color por tiempo: cuánto lleva en cada paso, frente al tiempo de preparación del local.
@@ -147,6 +177,11 @@
      de preparación, rojo al pasarlo. Listo sin entregar: ámbar a los 5 min, rojo a los 10.
      Un pedido web programado para más tarde no se colorea hasta que le toca empezar. */
   function tiempoCocina(p) {
+    if (vista === 'barra') {          // en barra: esperando bebidas (ámbar 3, rojo 6) o bebidas listas sin servir
+      const mm = d => Math.max(0, Math.floor((Date.now() - new Date(d)) / 60000));
+      if (columna(p) === 'nuevo') { const n = mm(p.creado); return { clase: n >= 6 ? 't-rojo' : n >= 3 ? 't-ambar' : '', txt: `esperando · ${n} min` }; }
+      const n = mm((p.puestos && p.puestos.barra) || p.listo_at || p.creado); return { clase: n >= 10 ? 't-rojo' : n >= 5 ? 't-ambar' : '', txt: `listas hace ${n} min` };
+    }
     const prep = (local && local.minutos_prep) || 20, ya = Date.now(), m = d => Math.max(0, Math.floor((ya - new Date(d)) / 60000));
     if (p.canal !== 'sala' && p.estado !== 'listo' && new Date(p.recogida) - ya > prep * 60000) return { clase: '', txt: '' };
     let n, amb, roj, txt;
@@ -162,7 +197,15 @@
     const cuando = p.canal === 'sala' ? `<small class="${-min >= 20 ? 'tarde' : ''}">hace ${-min} min</small>`
       : min < 0 ? `<small class="tarde">hace ${-min} min</small>` : `<small>en ${min} min</small>`;
     const t = tiempoCocina(p);
-    const boton = { nuevo: ['preparar', 'Aceptar y preparar'], preparando: ['listo', '¡Listo!'], listo: ['entregar', p.canal === 'sala' ? 'Servido' : 'Entregar'] }[p.estado];
+    const col = columna(p), soloBarra = !tiene(p, 'cocina');
+    let boton = { nuevo: ['preparar', 'Aceptar y preparar'], preparando: ['listo', '¡Listo!'], listo: ['entregar', p.canal === 'sala' ? 'Servido' : 'Entregar'] }[p.estado];
+    let atras = p.estado !== 'nuevo' ? 'atras' : '';
+    if (vista === 'barra') {
+      boton = col === 'nuevo' ? ['barra-lista', '🍹 Bebidas listas'] : soloBarra ? ['entregar', p.canal === 'sala' ? 'Servido' : 'Entregar'] : null;
+      atras = col === 'listo' && (barraLista(p) || soloBarra) ? 'barra-atras' : '';
+    }
+    const otro = vista ? p.lineas.filter(l => puesto(l) !== vista).reduce((s2, l) => s2 + l.cantidad, 0) : 0;
+    const lineas = lineasDe(p);
     return `<article class="ped ${p.estado} ${t.clase}" data-id="${p.id}">
       <div class="ped-cab">
         <div class="ped-num">${p.numero}</div>
@@ -171,18 +214,20 @@
           : `<strong>${esc(p.cliente_nombre)}</strong>${p.cliente_tel ? `<a href="tel:${esc(p.cliente_tel)}">${esc(p.cliente_tel)}</a>` : ''} · Web, para recoger`}</div>
         <div class="ped-hora"><b>${hhmm(rec)}</b>${cuando}</div>
       </div>
-      <ul class="ped-lineas">${p.lineas.map(l => `<li><b>${l.cantidad}×</b>${esc(l.nombre)}
+      <ul class="ped-lineas">${lineas.map(l => `<li class="${!vista && puesto(l) === 'barra' ? 'de-barra' : ''}"><b>${l.cantidad}×</b>${!vista && puesto(l) === 'barra' ? '🍹 ' : ''}${esc(l.nombre)}
         ${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}
         ${l.nota ? `<small class="nota">⚠ ${esc(l.nota)}</small>` : ''}</li>`).join('')}
-        ${(p.anuladas || []).map(l => `<li class="quitada"><b>${l.cantidad}×</b>${esc(l.nombre)}<small class="nota">✕ QUITADO · ${esc(l.motivo || '')}</small></li>`).join('')}</ul>
+        ${(p.anuladas || []).filter(l => !vista || puesto(l) === vista).map(l => `<li class="quitada"><b>${l.cantidad}×</b>${esc(l.nombre)}<small class="nota">✕ QUITADO · ${esc(l.motivo || '')}</small></li>`).join('')}</ul>
+      ${otro ? `<p class="ped-otro">+ ${otro} ${vista === 'barra' ? 'en cocina' : 'en barra'}${vista === 'cocina' && tiene(p, 'barra') ? (barraLista(p) ? ' · ✓ listas' : ' · pendientes') : ''}</p>` : ''}
+      ${!vista && tiene(p, 'barra') && barraLista(p) && tiene(p, 'cocina') ? '<p class="ped-otro">🍹 Bebidas listas ✓</p>' : ''}
       ${t.txt ? `<p class="ped-tiempo">⏱ ${t.txt}</p>` : ''}
       ${p.notas ? `<p class="ped-notas">📝 ${esc(p.notas)}</p>` : ''}
       <div class="ped-pie">
         <span class="imp">${euros(p.total)}<small>${p.canal === 'sala' ? 'Se cobra en el TPV' : p.pagado ? esc(PAGO[p.pago_metodo]) : 'Paga al recoger'}</small></span>
-        ${p.canal === 'sala' ? '' : `<button class="lnk" data-acc="cancelar" data-id="${p.id}">Cancelar</button>`}
+        ${p.canal === 'sala' || vista === 'barra' ? '' : `<button class="lnk" data-acc="cancelar" data-id="${p.id}">Cancelar</button>`}
         <button class="b" data-acc="imprimir" data-id="${p.id}">Ticket</button>
-        ${p.estado !== 'nuevo' ? `<button class="b" data-acc="atras" data-id="${p.id}" title="Volver al paso anterior">↩</button>` : ''}
-        <button class="b b-ok" data-acc="${boton[0]}" data-id="${p.id}">${boton[1]}</button>
+        ${atras ? `<button class="b" data-acc="${atras}" data-id="${p.id}" title="Volver al paso anterior">↩</button>` : ''}
+        ${boton ? `<button class="b b-ok" data-acc="${boton[0]}" data-id="${p.id}">${boton[1]}</button>` : '<span class="ped-sirve">Lo sirve cocina</span>'}
       </div>
     </article>`;
   }
@@ -205,6 +250,16 @@
         case 'recuperar':
           if (!confirm(`¿Devolver el #${p.numero} (${p.canal === 'sala' ? p.mesa : p.cliente_nombre}) a «Listos para recoger»?`)) break;
           await api.actualizarPedido(p.id, { estado: 'listo', entregado_at: null }); break;
+        case 'barra-lista': {
+          const cambios = { puestos: { ...(p.puestos || {}), barra: ahora() } };
+          if (!tiene(p, 'cocina') && p.estado !== 'listo') Object.assign(cambios, { estado: 'listo', aceptado: p.aceptado || ahora(), listo_at: ahora() });
+          await api.actualizarPedido(p.id, cambios); break;
+        }
+        case 'barra-atras': {
+          const pu = { ...(p.puestos || {}) }; delete pu.barra; const cambios = { puestos: pu };
+          if (!tiene(p, 'cocina')) Object.assign(cambios, { estado: 'nuevo', listo_at: null });
+          await api.actualizarPedido(p.id, cambios); break;
+        }
         case 'cancelar': await cancelar(p); break;
         case 'imprimir': case 'reimprimir': imprime(p); break;
       }
@@ -235,7 +290,10 @@
   }
 
   /* ── Ticket de cocina (no es factura) ── */
-  function imprime(p) { OP.imprimir(OP.ticketComanda(p, local.nombre)); }
+  function imprime(p) {
+    const ls = lineasDe(p);
+    OP.imprimir(OP.ticketComanda(vista ? { ...p, lineas: ls.length ? ls : p.lineas, notas: [vista === 'barra' ? 'BARRA' : 'COCINA', p.notas].filter(Boolean).join(' · ') } : p, local.nombre));
+  }
 
   /* ── Agotados ── */
   $('#p-agotados').onclick = () => { pintaAgotados(); $('#ag-buscar').value = ''; $('#dlg-agotados').showModal(); };
