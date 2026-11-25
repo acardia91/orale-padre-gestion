@@ -361,3 +361,14 @@ button.t-quien:hover{border-color:var(--burdeos,#7C2430)}
 }
 @media (max-width:760px){ .b-ctrl{gap:6px} .b-ctrl .b{padding:9px 10px;font-size:13.5px} }
 @media (max-width:760px){ .solo-ancho{display:none} }
+
+/* Agotados por categoría */
+.ag-cats{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:10px 0 0;padding-bottom:2px}
+.ag-cats::-webkit-scrollbar{display:none}
+.ag-cats button{flex:none;border:1px solid var(--borde-2);background:var(--blanco);border-radius:99px;padding:8px 14px;font-weight:700;color:var(--tinta-2);font:inherit;font-weight:700;cursor:pointer}
+.ag-cats button.activa{background:var(--burdeos);border-color:var(--burdeos);color:#fff}
+.ag-cats button b{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--mal);color:#fff;font-size:12px;line-height:20px;text-align:center}
+.ag-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 4px}
+.ag-cab h3{margin:0}
+.ag-cab .b{padding:8px 12px;font-size:13px}
+.ag-cab .ag-todo{color:var(--mal);border-color:var(--mal)}

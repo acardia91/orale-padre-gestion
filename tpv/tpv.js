@@ -552,29 +552,57 @@
     catch (ex) { alert(mensajeError(ex)); }
   });
 
-  /* ── Agotados: se marcan desde el TPV (lo mismo que en comandas y en el admin) ── */
+  /* ── Agotados: se marcan desde el TPV (lo mismo que en comandas y en el admin) ──
+     Pestañas por categoría para ir rápido y un botón por categoría para agotarla o activarla entera. */
+  let agCat = '';
+  const agCats = () => carta.categorias.filter(c => !c.oculta && c.productos.some(id => { const p = idx.prod.get(id); return p && !p.oculto; }));
+  const prodsCat = c => c.productos.map(id => idx.prod.get(id)).filter(p => p && !p.oculto);
+  const estaAgotado = p => p.agotado || agotados.has(p.id);
   function pintaAgotados() {
     const q = quitaAcentos($('#ag-buscar').value.trim());
-    const n = agotados.size + carta.productos.filter(p => p.agotado).length;
     $('#b-agotados').textContent = 'Agotados' + (agotados.size ? ` (${agotados.size})` : '');
-    $('#ag-lista').innerHTML = carta.categorias.filter(c => !c.oculta).map(c => {
-      const ps = c.productos.map(id => idx.prod.get(id)).filter(p => p && !p.oculto && quitaAcentos(p.nombre).includes(q));
-      return ps.length ? `<h3>${esc(c.nombre)}</h3>` + ps.map(p => p.agotado
-        ? `<label class="fijo"><input type="checkbox" checked disabled> ${esc(p.nombre)} <small>(agotado desde el admin)</small></label>`
-        : `<label><input type="checkbox" data-ag="${p.id}" ${agotados.has(p.id) ? 'checked' : ''}> ${esc(p.nombre)}</label>`).join('') : '';
+    const cats = agCats();
+    if (agCat && !cats.some(c => c.clave === agCat)) agCat = '';
+    $('#ag-cats').innerHTML = `<button type="button" data-agc="" class="${agCat ? '' : 'activa'}">Todas</button>` + cats.map(c => {
+      const n = prodsCat(c).filter(estaAgotado).length;
+      return `<button type="button" data-agc="${esc(c.clave)}" class="${c.clave === agCat ? 'activa' : ''}">${esc(c.nombre)}${n ? ` <b>${n}</b>` : ''}</button>`;
+    }).join('');
+    $('#ag-lista').innerHTML = cats.filter(c => !agCat || c.clave === agCat || q).map(c => {
+      const todos = prodsCat(c); const ps = todos.filter(p => quitaAcentos(p.nombre).includes(q));
+      if (!ps.length) return '';
+      const libres = todos.filter(p => !p.agotado);                 // los agotados desde el admin no se tocan aquí
+      const todosAg = libres.length && libres.every(p => agotados.has(p.id));
+      return `<div class="ag-cab"><h3>${esc(c.nombre)}</h3>${libres.length ? `<button type="button" class="b b-mini ${todosAg ? 'b-ok' : 'ag-todo'}" data-agtodo="${esc(c.clave)}" data-poner="${todosAg ? '0' : '1'}">${todosAg ? 'Activar todos' : 'Agotar todos'}</button>` : ''}</div>` +
+        ps.map(p => p.agotado
+          ? `<label class="fijo"><input type="checkbox" checked disabled> ${esc(p.nombre)} <small>(agotado desde el admin)</small></label>`
+          : `<label><input type="checkbox" data-ag="${p.id}" ${agotados.has(p.id) ? 'checked' : ''}> ${esc(p.nombre)}</label>`).join('');
     }).join('') || '<p class="vacio">Nada con ese nombre.</p>';
-    return n;
   }
-  $('#b-agotados').onclick = () => { if (!carta) return; $('#ag-buscar').value = ''; pintaAgotados(); $('#dlg-agotados').showModal(); };
+  const trasCambio = () => { pintaAgotados(); if (cuenta) pintaProductos(); };
+  $('#b-agotados').onclick = () => { if (!carta) return; $('#ag-buscar').value = ''; agCat = ''; pintaAgotados(); $('#dlg-agotados').showModal(); };
   $('#ag-buscar').oninput = pintaAgotados;
+  $('#ag-cats').addEventListener('click', e => { const b = e.target.closest('[data-agc]'); if (!b) return; agCat = b.dataset.agc; $('#ag-buscar').value = ''; pintaAgotados(); $('#ag-lista').scrollTop = 0; });
   $('#ag-lista').addEventListener('change', async e => {
     const id = e.target.dataset.ag; if (!id) return; const p = idx.prod.get(id);
     try {
       await api.marcarAgotado(LOCAL, id, e.target.checked);
       e.target.checked ? agotados.add(id) : agotados.delete(id);
       aviso(e.target.checked ? `${p.nombre}: agotado` : `${p.nombre}: vuelve a haber`);
-      pintaAgotados(); if (cuenta) pintaProductos();
+      trasCambio();
     } catch (ex) { e.target.checked = !e.target.checked; aviso('No se ha podido guardar: ' + mensajeError(ex), true); }
+  });
+  // Toda la categoría de golpe.
+  $('#ag-lista').addEventListener('click', async e => {
+    const b = e.target.closest('[data-agtodo]'); if (!b) return;
+    const c = carta.categorias.find(x => x.clave === b.dataset.agtodo); const poner = b.dataset.poner === '1';
+    const cambiar = prodsCat(c).filter(p => !p.agotado && agotados.has(p.id) !== poner);
+    if (!cambiar.length) return;
+    if (poner && !confirm(`¿Marcar como agotados los ${cambiar.length} productos de "${c.nombre}"?`)) return;
+    b.disabled = true;
+    const r = await Promise.allSettled(cambiar.map(p => api.marcarAgotado(LOCAL, p.id, poner).then(() => { poner ? agotados.add(p.id) : agotados.delete(p.id); })));
+    const mal = r.filter(x => x.status === 'rejected').length;
+    aviso(mal ? `No se han podido cambiar ${mal} de ${cambiar.length}. Vuelve a intentarlo.` : `${c.nombre}: ${poner ? 'todo agotado' : 'todo activo otra vez'}`, !!mal);
+    trasCambio();
   });
 
   /* ── Cobrar ── */
