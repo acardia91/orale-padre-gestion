@@ -84,14 +84,27 @@
   $('#p-autoprint').onchange = e => pref('autoprint', e.target.checked ? '1' : '0');
 
   /* ── Sonido: el navegador exige un toque antes de poder sonar ── */
+  // Se puede silenciar: la elección se guarda en esta tablet. Silenciado, el botón parpadea si entra algo.
   let audio = null;
+  let silencio = (() => { try { return localStorage.getItem('op-comandas-silencio') === '1'; } catch (e) { return false; } })();
+  function pintaSonido() {
+    const b = $('#p-sonido');
+    b.textContent = silencio ? '🔕 Silenciado' : audio ? '🔔 Sonido activado' : '🔇 Activar sonido';
+    b.classList.toggle('on', !!audio && !silencio);
+    b.title = silencio ? 'Tocar para volver a activar el sonido' : audio ? 'Tocar para silenciar' : 'Tocar para que suenen las comandas nuevas';
+  }
   $('#p-sonido').onclick = () => {
-    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
-    audio.resume(); timbre();
-    $('#p-sonido').textContent = '🔔 Sonido activado'; $('#p-sonido').classList.add('on');
+    if (!audio || audio.state === 'suspended') {          // primer toque (o tras bloquear la tablet): activa
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      audio.resume(); silencio = false;
+    } else silencio = !silencio;
+    try { localStorage.setItem('op-comandas-silencio', silencio ? '1' : '0'); } catch (e) {}
+    pintaSonido(); if (!silencio) timbre();
+    $('#p-sonido').classList.toggle('parpadea', silencio && pedidos.some(p => p.estado === 'nuevo'));
   };
+  pintaSonido();
   function timbre() {
-    if (!audio) { $('#p-sonido').classList.add('parpadea'); return; }
+    if (!audio || silencio) { $('#p-sonido').classList.add('parpadea'); return; }
     const t = audio.currentTime;
     [0, .18, .36].forEach((d, i) => {
       const o = audio.createOscillator(), g = audio.createGain();
@@ -123,7 +136,7 @@
       <b>#${p.numero}</b><span>${esc(p.cliente_nombre)}</span><span>${euros(p.total)}</span>
       <span>${p.estado === 'cancelado' ? 'Cancelado' : esc(PAGO[p.pago_metodo] || '')}</span>
       <button class="b b-mini x" data-acc="reimprimir" data-id="${p.id}">Ticket</button></div>`).join('') || '<p class="vacio">Aún nada</p>';
-    const parpadea = pedidos.some(p => p.estado === 'nuevo') && !audio;
+    const parpadea = pedidos.some(p => p.estado === 'nuevo') && (!audio || silencio);
     $('#p-sonido').classList.toggle('parpadea', parpadea);
     document.title = (pedidos.filter(p => p.estado === 'nuevo').length ? `(${pedidos.filter(p => p.estado === 'nuevo').length}) ` : '') + 'Comandas · Órale Padre';
   }
