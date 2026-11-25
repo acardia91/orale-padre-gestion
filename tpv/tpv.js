@@ -185,7 +185,18 @@
     webVistos = new Set([...(webVistos || []), ...nuevos.map(p => p.id)]);
   }
   let audio = null;
+  // Botón 🔔/🔕: silencia el aviso sonoro de pedidos web en este TPV (se recuerda). El aviso escrito sigue saliendo.
+  let silencio = ls('op-tpv-silencio') === true;
+  function pintaSonido() {
+    const b = $('#b-sonido'); b.textContent = silencio ? '🔕' : '🔔'; b.setAttribute('aria-pressed', String(silencio));
+    b.classList.toggle('silenciado', silencio);
+    b.title = silencio ? 'Sonido de pedidos web silenciado: tocar para activarlo' : 'Sonido de pedidos web: tocar para silenciar';
+  }
+  $('#b-sonido').onclick = () => { silencio = !silencio; ls('op-tpv-silencio', silencio); pintaSonido();
+    if (!silencio) timbre(); aviso(silencio ? '🔕 Sonido silenciado en este TPV' : '🔔 Sonido activado'); };
+  pintaSonido();
   function timbre() {
+    if (silencio) return;
     try {
       audio = audio || new (window.AudioContext || window.webkitAudioContext)();
       [0, 0.18].forEach((t, i) => { const o = audio.createOscillator(), g = audio.createGain();
