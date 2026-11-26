@@ -441,3 +441,4 @@ body.sin-red .aviso-flota{top:120px}
 #b-porimprimir.parpadea{animation:parpadea 1s steps(2) infinite}
 .pl-el.llama:not(.ocupada),.mesa:not(.ocupada):has(.llama){background:#F1EAF8;color:#4B2A78}
 .pl-el.llama-pagado:not(.ocupada),.mesa.llama-pagado:not(.ocupada){background:var(--nopal-cl);color:var(--nopal)}
+a.b{text-decoration:none}

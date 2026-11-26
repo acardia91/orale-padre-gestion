@@ -54,6 +54,7 @@
     if (!s.locales.length) { $('#e-error').textContent = 'Tu usuario no tiene ningún local asignado.'; $('#e-error').hidden = false; $('#vista-entrar').hidden = false; return; }
     if (!s.locales.includes(LOCAL)) LOCAL = s.locales[0];
     ls('op-tpv-local', LOCAL);
+    $('#b-ir-comandas').href = '/comandas/?local=' + encodeURIComponent(LOCAL);
     OP.selectorLocal($('#t-local'), s.locales, LOCAL, id => {
       if (Object.values(pendientes).some(l => l.length) && !confirm('Hay productos sin enviar a cocina en este local. ¿Cambiar de local igualmente?')) { location.reload(); return; }
       ls('op-tpv-local', id); location.search = '?local=' + encodeURIComponent(id);
