@@ -362,7 +362,7 @@
       }).join('') || '<p class="vacio">No hay mesas en esta zona.</p>';
     }
     const sueltas = cuentas.filter(c => !c.mesa_id);
-    $('#sueltas').innerHTML = sueltas.map(c => tileCuenta(c, c.nombre)).join('') || '<p class="vacio">Ninguna abierta. Usa “+ Barra” o “+ Para llevar”.</p>';
+    $('#sueltas').innerHTML = sueltas.map(c => tileCuenta(c, c.nombre)).join('') || '<p class="vacio">Ninguna abierta. Usa “+ Terraza”, “+ Barra” o “+ Para llevar”.</p>';
     sumasSala();
   }
   // Al girar la tablet o cambiar de tamaño, se repinta la sala (plano ↔ botones).
@@ -421,6 +421,15 @@
     catch (ex) { alert(mensajeError(ex)); }
   }
   $('#b-barra').onclick = () => nuevaSuelta(false);
+  // Terraza: el cliente pide y paga en barra; se le llama por su nombre (o por número) cuando está listo.
+  $('#b-terraza').onclick = async () => {
+    const nombre = prompt('Terraza · nombre del cliente para llamarle cuando esté listo (o déjalo vacío y se le da número):', '');
+    if (nombre === null) return;
+    let ref = nombre.trim();
+    if (!ref) { const hoy = partesMadrid(new Date()).fecha; const c = ls('op-tpv-terraza') || {}; const n = c.dia === hoy ? c.n + 1 : 1; ls('op-tpv-terraza', { dia: hoy, n }); ref = 'nº ' + n; }
+    try { abrir(await api.abrirCuenta({ local: LOCAL, nombre: 'Terraza · ' + ref.slice(0, 30), para_llevar: false })); aviso(`Terraza · ${ref}: apunta, cobra y se le llama cuando esté listo`); }
+    catch (ex) { alert(mensajeError(ex)); }
+  };
   $('#b-llevar').onclick = () => nuevaSuelta(true);
 
   /* ══ Para recoger: cobrar y entregar pedidos web ══ */
@@ -472,7 +481,7 @@
   async function abrir(c) {
     cuenta = c; if (c.mesa_id) atiende(c.mesa_id); pedidosCuenta = await api.pedidosDeCuenta(c.id);
     $('#vista-sala').hidden = true; $('#vista-cuenta').hidden = false; $('#b-atras').hidden = false;
-    $('#b-barra').hidden = $('#b-llevar').hidden = true;
+    $('#b-barra').hidden = $('#b-llevar').hidden = $('#b-terraza').hidden = true;
     $('#c-nota').value = ''; $('#buscar').value = ''; $('#buscar-x').hidden = true;
     if (!catActiva) catActiva = visibles()[0]?.clave;
     pintaProductos(); pintaCuenta();
@@ -481,7 +490,7 @@
     $('#vista-cuenta').classList.remove('hoja-abierta');
     cuenta = null; $('#menu-cuenta').hidden = true;
     $('#vista-sala').hidden = false; $('#vista-cuenta').hidden = true; $('#b-atras').hidden = true;
-    $('#b-barra').hidden = $('#b-llevar').hidden = false;
+    $('#b-barra').hidden = $('#b-llevar').hidden = $('#b-terraza').hidden = false;
     pintaSala();
   }
   $('#b-atras').onclick = async () => {
