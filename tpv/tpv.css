@@ -536,3 +536,13 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
 /* La pre-cuenta no es una alerta: botón neutro, grande y con borde fuerte (el ámbar queda para avisos). */
 .tq-btns .b-precuenta{background:var(--blanco);border:2px solid var(--tinta);color:var(--tinta)}
 .tq-btns .b-precuenta:hover{background:var(--crema-3);filter:none}
+
+/* Mesa esperando sus platos (ámbar 20 min, rojo 30) y qué ha salido / qué falta en la cuenta */
+.mesa .tarda-chip{display:inline-block;align-self:flex-start;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:99px;background:var(--oro);color:#241A1C}
+.mesa .tarda-chip.rojo{background:var(--mal);color:#fff;animation:parpadea 1s steps(2) 6}
+.pl-el.tarda-ambar{box-shadow:0 0 0 4px var(--oro)!important}
+.pl-el.tarda-rojo{box-shadow:0 0 0 5px var(--mal)!important}
+.ln-hecho{color:var(--nopal)!important;font-weight:800}
+.ln-falta{color:#8a5f0c!important;font-weight:700}
+.grupo-env b.g-ambar{color:#8a5f0c}
+.grupo-env b.g-rojo{color:var(--mal)}

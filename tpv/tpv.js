@@ -280,6 +280,20 @@
   const minutos = d => Math.round((Date.now() - new Date(d)) / 60000);
   // Color de la mesa: azul mientras todo va normal; ámbar a la hora (pásate: ¿algo más, postre, la cuenta?).
   // El rojo se reserva para lo urgente (comanda que va tarde, error), así no se pierde su fuerza.
+  /* Mesa esperando sus platos: comanda marchada (no en espera) que cocina aún no ha terminado.
+     Ámbar desde 20 min, rojo desde 30. Devuelve la que más lleva, con lo que falta. */
+  const ESPERA_AMBAR = 20, ESPERA_ROJO = 30;
+  function tardaDe(c) {
+    let peor = null; const ya = Date.now();
+    (pedidosHoy || []).filter(p => p.cuenta_id === c.id && p.canal === 'sala' && !p.en_espera && ['nuevo', 'preparando'].includes(p.estado)).forEach(p => {
+      const min = Math.floor((ya - new Date(p.marchado || p.creado)) / 60000);
+      if (!peor || min > peor.min) {
+        const hechas = new Set(p.hechas || []); const faltan = p.lineas.filter((l, i) => !hechas.has(i));
+        peor = { p, min, faltan, total: p.lineas.length, nivel: min >= ESPERA_ROJO ? 'rojo' : min >= ESPERA_AMBAR ? 'ambar' : null };
+      }
+    });
+    return peor && peor.nivel ? peor : null;
+  }
   const claseTiempo = c => { const m = minutos(c.abierta); return c.para_llevar || !c.mesa_id ? '' : m >= 60 ? 't-ambar' : ''; };
   const totales = {};                     // total enviado de cada cuenta abierta
   /* ══ Reservas de hoy ══ */
@@ -367,7 +381,8 @@
         const c = cuentas.find(x => x.mesa_id === m.id);
         const av = m.aviso ? ' llama' + (m.aviso.tipo === 'pagado' ? ' llama-pagado' : '') : '';
         if (!c) { const rv = reservaDeMesa(m.id); return { clase: av, sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : rv ? `Reserva ${hhmm(rv.fecha)}` : (m.plazas ? m.plazas + ' pax' : '') }; }
-        return { ocupada: true, clase: claseTiempo(c) + av, sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : minutos(c.abierta) + ' min' + (c.comensales ? ` · ${c.comensales}p` : ''), imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
+        const tt = tardaDe(c);
+        return { ocupada: true, clase: claseTiempo(c) + av + (tt ? ' tarda-' + tt.nivel : ''), sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : tt ? `⏱ ${tt.min}' esperando` : minutos(c.abierta) + ' min' + (c.comensales ? ` · ${c.comensales}p` : ''), imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
       } });
     } else {
       cont.className = 'mesas';
@@ -410,10 +425,14 @@
     pedidosHoy.filter(p => p.canal === 'sala' && p.estado === 'listo' && cuentas.some(c => c.id === p.cuenta_id)).forEach(p => L.push({ id: 'listo-' + p.id, nivel: 'verde',
       txt: `🍽 ${p.mesa}: comanda #${p.numero} lista para servir${p.listo_at ? ` (hace ${Math.max(0, Math.round((ahora - new Date(p.listo_at)) / 60000))} min)` : ''}.`, btn: 'Servida', fn: async () => {
         try { await api.actualizarPedido(p.id, { estado: 'entregado', entregado_at: new Date().toISOString() }); p.estado = 'entregado'; pintaAvisos(true); recarga(); } catch (ex) { alert(mensajeError(ex)); } } }));
+    // Mesas que llevan mucho esperando sus platos (marchados y sin terminar en cocina).
+    cuentas.map(c => ({ c, t: tardaDe(c) })).filter(x => x.t).sort((a, b) => b.t.min - a.t.min).forEach(({ c, t }) => L.push({ id: `tarda-${t.p.id}-${t.nivel}`, nivel: t.nivel,
+      txt: `⏱ ${c.nombre} lleva ${t.min} min esperando (comanda #${t.p.numero}): faltan ${t.faltan.length} de ${t.total}${t.faltan.length ? ' · ' + t.faltan.slice(0, 3).map(l => (l.cantidad > 1 ? l.cantidad + '× ' : '') + l.nombre).join(', ') + (t.faltan.length > 3 ? '…' : '') : ''}. Pregunta en cocina.`,
+      btn: 'Ver mesa', fn: () => abrir(c) }));
     // Segundos en espera desde hace más de 20 min: recordatorio de marcharlos.
     pedidosHoy.filter(p => p.canal === 'sala' && p.en_espera && p.estado === 'nuevo' && ahora - new Date(p.creado) > 20 * 60000).forEach(p => L.push({ id: 'espera-' + p.id, nivel: 'azul',
       txt: `⏸ ${p.mesa}: comanda #${p.numero} en espera desde hace ${Math.round((ahora - new Date(p.creado)) / 60000)} min. ¿La marchamos?`, btn: '▶ Marchar', fn: () => marchar(p) }));
-    const quietas = cuentas.filter(c => !(pendientes[c.id] || []).length && (totales[c.id] || 0) > 0)
+    const quietas = cuentas.filter(c => !(pendientes[c.id] || []).length && (totales[c.id] || 0) > 0 && !(pedidosHoy || []).some(p => p.cuenta_id === c.id && ['nuevo', 'preparando', 'listo'].includes(p.estado)))
       .map(c => ({ c, u: ultimoPedido(c) })).filter(x => x.u && ahora - x.u > 40 * 60000).sort((a, b) => a.u - b.u);
     quietas.slice(0, 3).forEach(({ c, u }) => L.push({ id: 'quieta-' + c.id + '-' + u, nivel: 'ambar', txt: `${c.nombre}: ${Math.round((ahora - u) / 60000)} min sin pedir. ¿Postre, café o la cuenta?`, btn: 'Abrir', fn: () => abrir(c) }));
     if (quietas.length > 3) L.push({ id: 'quietas-mas', nivel: 'ambar', txt: `Y ${quietas.length - 3} mesas más llevan un rato sin pedir.`, btn: 'Ver sala', fn: () => scrollTo({ top: $('#mesas').offsetTop - 80, behavior: 'smooth' }) });
@@ -440,6 +459,7 @@
       <strong>${esc(nombre)}</strong><small>${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}</small>
       ${m && m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : ''}
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
+      ${(() => { const t = tardaDe(c); return t ? `<span class="tarda-chip ${t.nivel}">⏱ ${t.min} min esperando</span>` : ''; })()}
       ${pedidosHoy.some(p => p.cuenta_id === c.id && p.estado === 'listo') ? '<span class="listo-chip">🍽 Listo</span>' : pedidosHoy.some(p => p.cuenta_id === c.id && p.en_espera && p.estado === 'nuevo') ? '<span class="espera-chip">⏸ En espera</span>' : ''}
       <span class="imp" data-total="${c.id}">${totales[c.id] != null ? euros(totales[c.id]) : '…'}</span></button>`;
   }
@@ -638,10 +658,10 @@
     $('#c-info').textContent = `Abierta hace ${minutos(cuenta.abierta)} min${cuenta.comensales ? ` · ${cuenta.comensales} ${cuenta.comensales === 1 ? 'persona' : 'personas'}` : ''}${cuenta.para_llevar ? ' · para llevar' : ''}`;
     const ESTADO = { espera: '⏸ En espera', nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
     const enviados = pedidosCuenta.filter(p => !(p.estado === 'cancelado' && !p.lineas.length && !(p.anuladas || []).length)).sort((a, b) => a.numero - b.numero).map(p => `
-      <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span>${p.en_espera && p.estado === 'nuevo' ? `<button type="button" class="b b-mini b-marchar" data-marchar="${p.id}">▶ Marchar</button>` : `<span class="estado ${p.estado}">${ESTADO[p.estado]}</span>`}</div>
+      <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}${['nuevo', 'preparando'].includes(p.estado) && !p.en_espera ? ` · <b class="${(Date.now() - new Date(p.marchado || p.creado)) / 60000 >= ESPERA_ROJO ? 'g-rojo' : (Date.now() - new Date(p.marchado || p.creado)) / 60000 >= ESPERA_AMBAR ? 'g-ambar' : ''}">${(p.hechas || []).length}/${p.lineas.length} hechos · ${Math.floor((Date.now() - new Date(p.marchado || p.creado)) / 60000)} min</b>` : ''}</span>${p.en_espera && p.estado === 'nuevo' ? `<button type="button" class="b b-mini b-marchar" data-marchar="${p.id}">▶ Marchar</button>` : `<span class="estado ${p.estado}">${ESTADO[p.estado]}</span>`}</div>
       ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''} ${porCobrar(l) < 1 ? 'cobrada' : ''}" ${p.estado !== 'cancelado' && porCobrar(l) > 0 ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
-        <div>${esc(l.nombre)}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.dto ? `<small class="dto">${l.dto === 100 ? 'Invitado' : '−' + l.dto + ' %'} · antes ${euros(l.unitario_original * l.cantidad)}</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
+        <div>${esc(l.nombre)}${['nuevo', 'preparando', 'listo', 'entregado'].includes(p.estado) && !p.en_espera ? ((p.hechas || []).includes(i) || ['listo', 'entregado'].includes(p.estado) ? `<small class="ln-hecho">✓ ${p.estado === 'entregado' ? 'Servido' : 'Hecho en cocina'}</small>` : '<small class="ln-falta">⏳ En cocina</small>') : ''}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.dto ? `<small class="dto">${l.dto === 100 ? 'Invitado' : '−' + l.dto + ' %'} · antes ${euros(l.unitario_original * l.cantidad)}</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
         <span class="imp">${euros(l.unitario * l.cantidad)}</span></div>`).join('')}
       ${(p.anuladas || []).map(l => `<div class="ln quitada"><span class="cant-fija">${l.cantidad}×</span><div>${esc(l.nombre)}<small>Quitado: ${esc(l.motivo || '')}</small></div><span class="imp">−${euros(l.unitario * l.cantidad)}</span></div>`).join('')}`).join('');
     const pend = pendientes[cuenta.id] || [];
