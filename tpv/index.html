@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611260858">
+<link rel="stylesheet" href="tpv.css?v=202611260904">
 </head>
 <body>
 
@@ -64,6 +64,7 @@
       <button class="b" id="b-llevar" type="button">+ <span class="solo-ancho">Para </span>llevar</button>
       <button class="b" id="b-agotados" type="button">Agotados</button>
       <button class="b" id="b-caja" type="button">Caja</button>
+      <button class="b b-mini b-ok" id="b-porimprimir" type="button" hidden>🖨 Por imprimir <b id="n-porimprimir"></b></button>
       <button class="b b-mini" id="b-impresora" type="button" title="Impresora de tickets">🖨</button>
       <button class="b b-mini" id="b-sonido" type="button" aria-pressed="false" title="Sonido de pedidos web: tocar para silenciar">🔔</button>
       <button class="b b-mini" id="b-instalar" type="button" hidden title="Instalar el TPV como app en este dispositivo">⬇ Instalar app</button>
@@ -307,6 +308,7 @@
     <div class="dlg-pie rc-botones">
       <button class="b" value="cancel">Cerrar</button>
       <button class="b" type="button" id="rc-comanda">Comanda</button>
+      <button class="b" type="button" id="rc-listo">✓ Listo para recoger</button>
       <button class="b b-ok" type="button" id="rc-efectivo">Cobrar efectivo y entregar</button>
       <button class="b b-ok" type="button" id="rc-tarjeta">Cobrar tarjeta y entregar</button>
       <button class="b b-ok" type="button" id="rc-entregar">Entregar</button>
@@ -387,11 +389,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611260858"></script>
-<script src="/pedir/acceso.js?v=202611260858"></script>
+<script src="/pedir/api.js?v=202611260904"></script>
+<script src="/pedir/acceso.js?v=202611260904"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611260858"></script>
-<script src="/pedir/plano.js?v=202611260858"></script>
-<script src="tpv.js?v=202611260858"></script>
+<script src="/pedir/ticket.js?v=202611260904"></script>
+<script src="/pedir/plano.js?v=202611260904"></script>
+<script src="tpv.js?v=202611260904"></script>
 </body>
 </html>

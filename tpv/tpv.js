@@ -163,7 +163,7 @@
       pedidosHoy = hoy;
       reservasHoy = (rvs || []).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
-      avisaWebNuevos(); avisaQR(hoy);
+      avisaWebNuevos(); avisaQR(hoy); pintaPorImprimir();
     }
     catch (e) { console.warn(e); if (esDeRed(e)) ponConexion(false); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
@@ -220,7 +220,31 @@
   $('#b-sonido').onclick = () => { silencio = !silencio; ls('op-tpv-silencio', silencio); pintaSonido();
     if (!silencio) timbre(); aviso(silencio ? '🔕 Sonido silenciado en este TPV' : '🔔 Sonido activado'); };
   pintaSonido();
-  $('#b-impresora').onclick = () => OP.ajustesImpresora();
+  $('#b-impresora').onclick = () => OP.ajustesImpresora({ comandas: true, alCambiar: () => pintaPorImprimir() });
+
+  /* ══ Comandas en papel (una sola tablet, sin pantalla en cocina) ══
+     Al enviar desde el TPV se imprimen solas. Los pedidos que llegan solos (web y QR de mesa) esperan en
+     "🖨 Por imprimir": un toque los imprime (cocina y barra por separado si así está) y pasan a "preparando". */
+  const modoComanda = () => OP.prefComanda();
+  const htmlComanda = p => OP.comandasPorPuesto(p, local.nombre, carta, modoComanda() === 'separada' ? 'separada' : 'junta');
+  let impresos = new Set((() => { try { const x = JSON.parse(localStorage.getItem('op-tpv-impresos')) || {}; return x.dia === partesMadrid(new Date()).fecha ? x.ids : []; } catch (e) { return []; } })());
+  const guardaImpresos = () => { try { localStorage.setItem('op-tpv-impresos', JSON.stringify({ dia: partesMadrid(new Date()).fecha, ids: [...impresos].slice(-300) })); } catch (e) {} };
+  const porImprimir = () => modoComanda() === 'no' ? [] : (pedidosHoy || []).filter(p => p.estado === 'nuevo' && !impresos.has(p.id)
+    && (p.canal === 'web' || (p.canal === 'sala' && p.persona === 'Cliente (QR)'))).sort((a, b) => a.numero - b.numero);
+  function pintaPorImprimir() {
+    const n = porImprimir().length;
+    $('#b-porimprimir').hidden = !n; $('#n-porimprimir').textContent = n || '';
+    $('#b-porimprimir').classList.toggle('parpadea', n > 0);
+  }
+  $('#b-porimprimir').onclick = async () => {
+    const ps = porImprimir(); if (!ps.length) return;
+    OP.imprimir(ps.map(htmlComanda).join('<div class="corte"></div>'));
+    ps.forEach(p => impresos.add(p.id)); guardaImpresos(); pintaPorImprimir();
+    const ahora = new Date().toISOString();
+    await Promise.allSettled(ps.map(p => api.actualizarPedido(p.id, { estado: 'preparando', aceptado: p.aceptado || ahora })));
+    aviso(`🖨 ${ps.length} ${ps.length === 1 ? 'comanda impresa' : 'comandas impresas'}: #${ps.map(p => p.numero).join(', #')}`);
+    recarga();
+  };
   function timbre() {
     if (silencio) return;
     try {
@@ -409,10 +433,18 @@
     $('#rc-estado-pago').textContent = pWeb.pagado ? '✓ Ya pagado online: sólo hay que entregarlo.' : 'Pendiente de cobro.';
     $('#rc-estado-pago').style.color = pWeb.pagado ? 'var(--nopal)' : 'var(--mal)';
     $('#rc-entregado').value = ''; $('#rc-error').hidden = true;
+    $('#rc-listo').hidden = !['nuevo', 'preparando'].includes(pWeb.estado);
     $('#rc-entregado-l').hidden = pWeb.pagado; $('#rc-efectivo').hidden = $('#rc-tarjeta').hidden = pWeb.pagado; $('#rc-entregar').hidden = !pWeb.pagado;
     drc.showModal();
   });
-  $('#rc-comanda').onclick = () => OP.imprimir(OP.ticketComanda(pWeb, local.nombre));
+  $('#rc-comanda').onclick = () => { OP.imprimir(modoComanda() === 'no' ? OP.ticketComanda(pWeb, local.nombre) : htmlComanda(pWeb)); impresos.add(pWeb.id); guardaImpresos(); pintaPorImprimir(); };
+  // Sin pantalla en cocina, el TPV avisa al cliente de que ya puede pasar (le llega el aviso del pedido listo).
+  $('#rc-listo').onclick = async () => {
+    try { const ahora = new Date().toISOString();
+      await api.actualizarPedido(pWeb.id, { estado: 'listo', listo_at: ahora, aceptado: pWeb.aceptado || ahora });
+      drc.close(); aviso(`✓ Pedido #${pWeb.numero} listo para recoger`); recarga(); }
+    catch (ex) { $('#rc-error').textContent = mensajeError(ex); $('#rc-error').hidden = false; }
+  };
   async function cobrarWeb(metodo) {
     const fallo = t => { $('#rc-error').textContent = t; $('#rc-error').hidden = false; };
     let entregado = null;
@@ -565,7 +597,9 @@
       const r = await api.enviarComanda(c.id, pend.map(({ producto, cantidad, opciones, nota }) => ({ producto, cantidad, opciones, nota })), $('#c-nota').value.trim());
       delete pendientes[c.id]; guardaPend(); $('#c-nota').value = '';
       aviso(`✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
-      if (cuenta && cuenta.id === c.id) pedidosCuenta = await api.pedidosDeCuenta(c.id);
+      const ps = await api.pedidosDeCuenta(c.id);
+      if (cuenta && cuenta.id === c.id) pedidosCuenta = ps;
+      if (modoComanda() !== 'no') { const p = ps.find(x => x.id === r.pedido); if (p) { OP.imprimir(htmlComanda(p)); impresos.add(p.id); guardaImpresos(); } }
       return true;
     } catch (ex) {
       if (esDeRed(ex)) { ponConexion(false); aviso('✗ Sin conexión: no ha llegado a cocina. Queda guardado aquí; envíalo cuando vuelva la conexión.', true); }

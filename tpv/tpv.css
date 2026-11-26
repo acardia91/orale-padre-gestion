@@ -430,3 +430,6 @@ body.sin-red .aviso-flota{top:120px}
 .pl-el.llama{box-shadow:0 0 0 4px #F2C94C!important;animation:parpadea 1s steps(2) infinite}
 .pl-el.llama-pagado{box-shadow:0 0 0 4px #4F7A3A!important;animation:none}
 @keyframes parpadea{50%{opacity:.55}}
+
+/* Pedidos web/QR esperando a imprimirse (modo sin pantalla en cocina) */
+#b-porimprimir.parpadea{animation:parpadea 1s steps(2) infinite}
