@@ -415,8 +415,7 @@ body.sin-red .aviso-flota{top:120px}
 #dlg-pasar .mesas.mini{max-height:30vh}
 .mesa.sel{outline:4px solid #1F7A4D;outline-offset:2px}
 /* Botón de sonido */
-#b-sonido{min-width:44px;font-size:18px;line-height:1}
-#b-sonido.silenciado{background:#FDECEA;border-color:#F3B9B3}
+#b-sonido.silenciado{background:#FDECEA;border-color:#F3B9B3;color:var(--mal)}
 
 /* ── Comensales, propina, descuento por producto y avisos del QR de mesa ── */
 .pe-num{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 4px}
@@ -442,3 +441,21 @@ body.sin-red .aviso-flota{top:120px}
 .pl-el.llama:not(.ocupada),.mesa:not(.ocupada):has(.llama){background:#F1EAF8;color:#4B2A78}
 .pl-el.llama-pagado:not(.ocupada),.mesa.llama-pagado:not(.ocupada){background:var(--nopal-cl);color:var(--nopal)}
 a.b{text-decoration:none}
+
+/* ── Barra estilo "icono y palabra" (como Uber Eats Manager): icono arriba, palabra corta debajo ── */
+.b.b-ico{position:relative;flex-direction:column;gap:3px;min-width:70px;padding:7px 10px 6px;font-size:12px;font-weight:700;line-height:1.1;color:var(--tinta-2)}
+.b.b-ico svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.b.b-ico:hover{color:var(--tinta)}
+.b.b-ico .cnt{position:absolute;top:3px;right:6px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:var(--mal);color:#fff;font:800 11px/19px var(--texto);font-style:normal;text-align:center}
+.b.b-nueva{color:var(--burdeos);border-color:var(--burdeos-m);background:var(--burdeos-cl)}
+.b.b-nueva:hover{background:#F1DADB;color:var(--burdeos-d)}
+.b.b-nueva::after{content:"+";position:absolute;top:2px;right:7px;font:800 15px/1 var(--texto);color:var(--burdeos)}
+.b.b-aviso{background:var(--azul);border-color:var(--azul);color:#fff}
+.b.b-aviso .cnt{background:#fff;color:var(--azul)}
+.b-sep{width:1px;align-self:stretch;margin:4px 2px;background:var(--borde)}
+.b-ctrl{display:flex;align-items:stretch;gap:6px}
+.b-ctrl > *{flex:none}
+.menu button{display:flex;align-items:center;gap:12px}
+.menu button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;color:var(--humo)}
+.menu .peligro svg{color:var(--mal)}
+@media (max-width:760px){ .b-ctrl .b.b-ico{min-width:60px;padding:6px 8px 5px;font-size:11.5px} .b-sep{display:none} }

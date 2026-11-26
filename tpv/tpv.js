@@ -168,7 +168,7 @@
     }
     catch (e) { console.warn(e); if (esDeRed(e)) ponConexion(false); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
-    $('#b-agotados').textContent = 'Agotados' + (agotados.size ? ` (${agotados.size})` : '');
+    $('#n-agotados').textContent = agotados.size || ''; $('#n-agotados').hidden = !agotados.size;
     if (cuenta) {
       const c = cuentas.find(x => x.id === cuenta.id);
       if (!c) { cuenta = null; verSala(); return; }      // la cobraron o anularon desde otro TPV
@@ -214,7 +214,7 @@
   // Botón 🔔/🔕: silencia el aviso sonoro de pedidos web en este TPV (se recuerda). El aviso escrito sigue saliendo.
   let silencio = ls('op-tpv-silencio') === true;
   function pintaSonido() {
-    const b = $('#b-sonido'); b.textContent = silencio ? '🔕' : '🔔'; b.setAttribute('aria-pressed', String(silencio));
+    const b = $('#b-sonido'); b.querySelector('span').textContent = silencio ? 'Silencio' : 'Sonido'; b.setAttribute('aria-pressed', String(silencio));
     b.classList.toggle('silenciado', silencio);
     b.title = silencio ? 'Sonido de pedidos web silenciado: tocar para activarlo' : 'Sonido de pedidos web: tocar para silenciar';
   }
@@ -815,7 +815,7 @@
   const estaAgotado = p => p.agotado || agotados.has(p.id);
   function pintaAgotados() {
     const q = quitaAcentos($('#ag-buscar').value.trim());
-    $('#b-agotados').textContent = 'Agotados' + (agotados.size ? ` (${agotados.size})` : '');
+    $('#n-agotados').textContent = agotados.size || ''; $('#n-agotados').hidden = !agotados.size;
     const cats = agCats();
     if (agCat && !cats.some(c => c.clave === agCat)) agCat = '';
     $('#ag-cats').innerHTML = `<button type="button" data-agc="" class="${agCat ? '' : 'activa'}">Todas</button>` + cats.map(c => {
