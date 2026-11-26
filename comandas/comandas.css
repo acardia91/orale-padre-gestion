@@ -196,3 +196,18 @@ html{overscroll-behavior-y:none}
 .pie,.ag-lista,.dlg{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 button,.b,a,li[data-linea]{touch-action:manipulation}
 .prep span small{display:block;font-size:10.5px;font-weight:700;color:var(--humo);text-transform:uppercase;letter-spacing:.3px;line-height:1.1}
+
+/* ══ Colores con significado (revisión 26/11): igual que el TPV ══
+   VERDE avanzar/listo · ROJO peligro y retraso grave · AZUL nuevo · GRIS en marcha/en espera ·
+   ÁMBAR atención (lleva rato) · BURDEOS sólo marca y navegación. */
+.b-ok{background:var(--listo);border-color:var(--listo);color:#fff}
+.b-ok:hover{background:#256628;border-color:#256628}
+/* "¡Listo!" parpadea en verde (antes en azul, que es "nuevo") */
+.b-ok.parpadea{animation:parpadeo-ok 1s steps(2) infinite}
+@keyframes parpadeo-ok{50%{background:#fff;color:var(--listo);border-color:var(--listo)}}
+/* Ticket para pagar: acción normal, no aviso */
+.ped-pie .b-pagar{background:var(--blanco);border:2px solid var(--tinta);color:var(--tinta)}
+/* Retraso grave: además del color, palabra y símbolo (daltónicos y de lejos) */
+.ped.t-rojo .ped-tiempo{font-weight:800}
+.ped.t-rojo .ped-tiempo::before{content:"⚠ RETRASO · "}
+.ped.t-ambar .ped-tiempo{font-weight:700}
