@@ -227,6 +227,8 @@
       guarda('op-demo-delivery-res', rs); return { filas: (filas || []).length, resumenes: (resumenes || []).length };
     },
     async costes(local) { return lee('op-demo-costes', {})[local] || {}; },
+    async ajustesDelivery() { return lee('op-demo-deliv-ajustes', {}); },
+    async guardarAjustesDelivery(d) { guarda('op-demo-deliv-ajustes', d); },
     async guardarCostes(local, costes) { const t = lee('op-demo-costes', {}); t[local] = t[local] || {};
       costes.forEach(c => { if (c.coste == null) delete t[local][c.producto]; else t[local][c.producto] = { producto: c.producto, coste: c.coste, fuente: c.fuente }; });
       guarda('op-demo-costes', t); return costes.length; },
@@ -714,6 +716,8 @@
     async resumenesDelivery(desde, hasta) { return ok(await cliente().from('delivery_resumen').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false })); },
     async guardarDelivery(filas, resumenes, fuente) { return ok(await cliente().rpc('guardar_delivery', { p_filas: filas || [], p_resumenes: resumenes || [], p_fuente: fuente || 'manual' })); },
     async costes(local) { return Object.fromEntries(ok(await cliente().from('costes_producto').select('producto,coste,fuente').eq('local', local)).map(r => [r.producto, r])); },
+    async ajustesDelivery() { const r = ok(await cliente().from('delivery_ajustes').select('datos').maybeSingle()); return (r && r.datos) || {}; },
+    async guardarAjustesDelivery(d) { ok(await cliente().rpc('guardar_ajustes_delivery', { p_datos: d })); },
     async guardarCostes(local, costes) { return ok(await cliente().rpc('guardar_costes', { p_local: local, p_costes: costes })); },
     async costesEscandallo() { return ok(await cliente().rpc('costes_escandallo')); },
     async pedidosEntre(local, desde, hasta) { return ok(await cliente().from('pedidos').select('*').eq('local', local).gte('creado', desde).lt('creado', hasta).order('creado')); },
