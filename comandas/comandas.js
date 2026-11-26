@@ -73,13 +73,21 @@
     $('#vista-entrar').hidden = true; $('#vista-panel').hidden = false;
     carta = await api.carta(LOCAL);
     await recarga();
-    api.escuchar(LOCAL, () => recarga());
+    // Los avisos en vivo llegan a ráfagas (un cobro cambia varias comandas a la vez): se agrupan en una sola recarga.
+    let tRec = null; api.escuchar(LOCAL, () => { clearTimeout(tRec); tRec = setTimeout(recarga, 300); });
     setInterval(recarga, 30000);          // red de seguridad si se cae el tiempo real
     setInterval(() => { reloj(); pinta(); }, 20000);
     reloj();
   }
 
-  async function recarga() {
+  // Nunca dos recargas a la vez: si llega otra mientras tanto, se hace una más al terminar.
+  let recargando = null, otraVez = false;
+  function recarga() {
+    if (recargando) { otraVez = true; return recargando; }
+    recargando = recargaYa().finally(() => { recargando = null; if (otraVez) { otraVez = false; recarga(); } });
+    return recargando;
+  }
+  async function recargaYa() {
     try {
       [local, pedidos, agotados] = await Promise.all([api.local(LOCAL), api.pedidosDelDia(LOCAL), api.agotados(LOCAL)]);
     } catch (e) { console.warn('recarga', e); return; }
