@@ -9,7 +9,9 @@
   --borde:#E8E1DB; --borde-2:#D9CFC6;
   --tinta:#241A1C; --tinta-2:#574548; --humo:#7A6A6D;
   --burdeos:#7C2430; --burdeos-d:#5E1A24; --burdeos-cl:#F6E7E7;
-  --nuevo:#C98A12; --nuevo-cl:#FBF1DC; --prep:#2F6A9E; --prep-cl:#E3EEF8; --listo:#3F7A3A; --listo-cl:#E4F0E0; --mal:#B3261E;
+  /* Código de colores (igual en TPV y Comandas): AZUL nuevo/en marcha · GRIS trabajando · VERDE listo · ÁMBAR atención · ROJO urgente · VIOLETA te llaman */
+  --nuevo:#2B5C8A; --nuevo-cl:#E3ECF6; --prep:#56616B; --prep-cl:#ECEFF2; --listo:#2E7D32; --listo-cl:#E3F1E4; --mal:#C62828;
+  --atencion:#E0A030; --atencion-cl:#FCEFD6;
   --sombra:0 1px 3px rgba(36,26,28,.08), 0 1px 1px rgba(36,26,28,.04);
   --sombra-2:0 12px 32px rgba(36,26,28,.16);
   --r:12px; --r-s:9px;
@@ -50,7 +52,7 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .org-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;background:var(--burdeos);color:#fff;font-weight:800;font-size:12.5px}
 .b-local strong{display:block;font-size:15px;line-height:1.15}
 .b-local span:not(.org-ico){display:block;font-size:12.5px;color:var(--humo);font-variant-numeric:tabular-nums;text-transform:capitalize}
-.demo{background:var(--nuevo);color:#000;font-weight:800;padding:3px 8px;border-radius:6px;font-size:12px}
+.demo{background:var(--atencion);color:#000;font-weight:800;padding:3px 8px;border-radius:6px;font-size:12px}
 .b-ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .prep{display:flex;align-items:center;border:1px solid var(--borde-2);border-radius:var(--r-s);background:var(--blanco)}
 .prep button{background:none;border:0;font-size:19px;width:36px;height:38px;color:var(--burdeos);font-weight:700}
@@ -84,7 +86,7 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .ped-quien{margin-right:auto;line-height:1.25}
 .ped-quien strong{display:block;font-size:17px}
 .ped-quien a{color:var(--tinta-2);font-size:13.5px;text-decoration:none}
-.ped-quien .canal{display:inline-block;margin-left:6px;font-size:11px;font-weight:800;text-transform:uppercase;background:var(--prep);color:#fff;padding:1px 7px;border-radius:99px;vertical-align:middle}
+.ped-quien .canal{display:inline-block;margin-left:6px;font-size:11px;font-weight:800;text-transform:uppercase;background:var(--nuevo);color:#fff;padding:1px 7px;border-radius:99px;vertical-align:middle}
 .ped-hora{text-align:right;line-height:1.15}
 .ped-hora b{display:block;font-size:21px;font-variant-numeric:tabular-nums}
 .ped-hora small{font-size:12.5px;font-weight:700;color:var(--tinta-2)}
@@ -95,7 +97,7 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .ped-lineas b{font-size:19px;margin-right:6px;color:var(--burdeos)}
 .ped-lineas small{display:block;font-size:14.5px;color:var(--tinta-2);padding-left:30px}
 .ped-lineas .nota{color:var(--mal);font-weight:700}
-.ped-notas{margin:0 14px 10px;padding:9px 11px;background:var(--nuevo-cl);border:1px solid #F1E2C2;border-radius:var(--r-s);font-weight:700}
+.ped-notas{margin:0 14px 10px;padding:9px 11px;background:var(--atencion-cl);border:1px solid #F0D9A8;border-radius:var(--r-s);font-weight:700}
 .ped-pie{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--crema-3);border-top:1px solid var(--borde)}
 .ped-pie .imp{margin-right:auto;font-weight:700}
 .ped-pie .imp small{display:block;font-weight:600;color:var(--humo);font-size:12.5px}
@@ -133,10 +135,10 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .ped-lineas li.quitada small{text-decoration:none}
 /* Tiempo en cocina: la tarjeta entera cambia de color */
 .ped-tiempo{margin:0 14px 10px;font-weight:700;font-size:14px;color:var(--humo,#6b6b6b)}
-.ped.t-ambar{box-shadow:0 0 0 4px #E0A33A}
+.ped.t-ambar{box-shadow:0 0 0 4px var(--atencion);background:#FFFBF2}
 .ped.t-ambar .ped-tiempo{color:#9A5B00}
-.ped.t-rojo{box-shadow:0 0 0 4px #B3261E;background:#FFF5F4}
-.ped.t-rojo .ped-tiempo{color:#B3261E}
+.ped.t-rojo{box-shadow:0 0 0 5px var(--mal);background:#FFF3F2}
+.ped.t-rojo .ped-tiempo{color:var(--mal)}
 /* Cocina / barra */
 .puesto-sel{display:flex;align-items:center;gap:6px;font-weight:800}
 .puesto-sel select{font:inherit;font-weight:700;padding:8px 10px;border-radius:10px;border:1px solid var(--borde);background:var(--blanco)}
