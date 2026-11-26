@@ -503,3 +503,17 @@ a.b{text-decoration:none}
 .entrar .e-ayuda a{color:var(--burdeos);font-weight:700}
 
 .cb-parte-info{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:var(--azul-cl);color:#1E4468;font-weight:600;font-size:14px}
+
+/* Pre-cuenta bien visible: fila entera encima de En espera / Enviar / Cobrar */
+.tq-btns .b-precuenta{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:16px;font-weight:800;
+  background:var(--oro-cl,#FFF4D6);border:2px solid var(--oro,#E0A100);color:var(--tinta)}
+.tq-btns .b-precuenta svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tq-btns .b-precuenta:hover{filter:brightness(.97)}
+
+/* Chips de quitar ingredientes: los del producto en rojo suave; marcados = rellenos */
+.dn-rapidas button.quitar{border-color:#E7B9BF;color:var(--burdeos,#7C2430);font-weight:700}
+.dn-rapidas button.on{background:var(--burdeos,#7C2430);border-color:var(--burdeos,#7C2430);color:#fff}
+
+/* Ir rápido a Comandas: en burdeos */
+.b.b-ir{background:var(--burdeos,#7C2430)!important;border-color:var(--burdeos,#7C2430)!important;color:#fff!important}
+.b.b-ir svg{stroke:#fff}

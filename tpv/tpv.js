@@ -639,7 +639,7 @@
       const p = idx.prod.get(l.producto); const ops = nombreOps(l);
       return `<div class="ln pendiente">
         <div class="ctl"><button type="button" data-menos="${i}" aria-label="Uno menos">−</button><output data-cant="${i}" role="button" title="Tocar para escribir la cantidad">${l.cantidad}</output><button type="button" data-mas="${i}" aria-label="Uno más">+</button></div>
-        <div class="ln-txt" data-nota="${i}" role="button" title="Tocar para añadir una nota">${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : '<small class="add-nota">📝 Nota</small>'}</div>
+        <div class="ln-txt" data-nota="${i}" role="button" title="Tocar para añadir una nota">${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : '<small class="add-nota">✂︎ Quitar / nota</small>'}</div>
         <span class="imp">${p ? euros(precioLinea(idx, l, enSala()) * l.cantidad) : ''}</span></div>`;
     }).join('') : '';
     $('#c-lineas').innerHTML = (enviados + pendHTML) || '<p class="vacio">Toca los productos de la carta para añadirlos.</p>';
@@ -753,14 +753,27 @@
     $('#dn-prod').textContent = `${l.cantidad}× ${p ? p.nombre : ''}`;
     $('#dn-texto').value = l.nota || ''; $('#dn-cant').textContent = l.cantidad;
     $('#dn-una-l').hidden = l.cantidad < 2; $('#dn-una').checked = false; $('#dn-quitar').hidden = !l.nota;
+    chipsNota($('#dn-rapidas'), $('#dn-texto'), p);
     dn.showModal();
   }
-  $('#dn-rapidas').onclick = e => {
-    const b = e.target.closest('button[data-r]'); if (!b) return;
-    const inp = $('#dn-texto'); const v = inp.value.trim();
-    if (quitaAcentos(v).includes(quitaAcentos(b.dataset.r))) return;
-    inp.value = v ? v + ', ' + b.dataset.r.toLowerCase() : b.dataset.r;
-  };
+  /* Quitar ingredientes con un toque: "Sin X" de lo que el encargado marcó en admin → Carta
+     (campo "Se puede quitar" de cada producto) + unas rápidas generales. Tocar otra vez lo quita. */
+  const RAPIDAS = ['Sin picante', 'Salsa aparte', 'Poco hecho', 'Para compartir', 'Alergia'];
+  const trozos = v => v.split(',').map(x => x.trim()).filter(Boolean);
+  function chipsNota(cont, inp, p) {
+    const sin = ((p && p.quitar) || []).map(x => 'Sin ' + x.toLowerCase());
+    const generales = sin.length ? RAPIDAS : ['Sin cebolla', 'Sin cilantro', 'Sin queso', ...RAPIDAS];
+    const pinta = () => { const t = trozos(inp.value).map(quitaAcentos);
+      cont.innerHTML = [...sin.map(r => [r, 'quitar']), ...generales.filter(r => !sin.includes(r)).map(r => [r, ''])]
+        .map(([r, c]) => `<button type="button" class="${c} ${t.includes(quitaAcentos(r)) ? 'on' : ''}" data-r="${esc(r)}">${esc(r)}</button>`).join(''); };
+    cont.onclick = e => {
+      const b = e.target.closest('button[data-r]'); if (!b) return;
+      const r = b.dataset.r; const t = trozos(inp.value); const i = t.findIndex(x => quitaAcentos(x) === quitaAcentos(r));
+      if (i >= 0) t.splice(i, 1); else t.push(t.length ? r.toLowerCase() : r);
+      inp.value = t.join(', ').replace(/^./, m => m.toUpperCase()); pinta();
+    };
+    inp.oninput = pinta; pinta();
+  }
   function guardaNota(texto) {
     const lista = pendientes[cuenta.id] || []; const l = lista[notaIdx]; dn.close(); if (!l) return;
     texto = texto.trim().slice(0, 140);
@@ -785,6 +798,7 @@
       return `<div class="grupo" data-grupo="${gid}"><h3>${esc(g.nombre)}<span>${g.min ? 'Obligatorio' : uno ? 'Opcional' : 'Hasta ' + g.max}</span></h3>
         <div class="ops">${g.opciones.map(o => `<label><input type="${uno ? 'radio' : 'checkbox'}" name="g-${gid}" value="${o.id}"> ${esc(o.nombre)}${o.precio ? `<small>+${euros(o.precio)}</small>` : ''}</label>`).join('')}</div></div>`;
     }).join('');
+    chipsNota($('#dp-rapidas'), $('#dp-nota'), p);
     refrescaExtras(); dp.showModal();
   }
   function refrescaExtras() {
@@ -808,18 +822,23 @@
     anade(enCurso); dp.close();
   };
 
+  /* ── Pre-cuenta: botón grande en la cuenta (cuando la mesa pide la cuenta) y en el menú ⋯ ── */
+  function precuenta() {
+    const lineas = lineasPendientes();
+    if (!lineas.length) { alert('Aún no hay nada enviado a cocina en esta cuenta.'); return; }
+    if ((pendientes[cuenta.id] || []).length) alert('Ojo: hay productos sin enviar a cocina; no salen en la pre-cuenta.');
+    const tot = calculaTicket(lineas).total;
+    OP.imprimir(OP.ticketPrecuenta(cuenta.nombre, lineas, tot));
+    api.registrarPrecuenta(cuenta.id, tot);
+    aviso('🧾 Cuenta impresa · ' + euros(tot));
+  }
+  $('#c-precuenta').onclick = precuenta;
   /* ── Menú de la cuenta ── */
   $('#c-menu').onclick = () => { $('#menu-cuenta').hidden = !$('#menu-cuenta').hidden; };
   document.addEventListener('click', e => { if (!e.target.closest('#c-menu, #menu-cuenta')) $('#menu-cuenta').hidden = true; });
   $('#menu-cuenta').addEventListener('click', async e => {
     const m = e.target.dataset.m; if (!m) return; $('#menu-cuenta').hidden = true;
-    if (m === 'precuenta') {
-      const lineas = lineasPendientes();
-      if ((pendientes[cuenta.id] || []).length) alert('Ojo: hay productos sin enviar a cocina; no salen en la pre-cuenta.');
-      const tot = calculaTicket(lineas).total;
-      OP.imprimir(OP.ticketPrecuenta(cuenta.nombre, lineas, tot));
-      api.registrarPrecuenta(cuenta.id, tot);
-    }
+    if (m === 'precuenta') precuenta();
     if (m === 'mover') {
       const libres = mesas.filter(x => x.tipo !== 'deco' && !cuentas.some(c => c.mesa_id === x.id));
       $('#mv-mesas').innerHTML = libres.map(x => `<button class="mesa" type="button" value="${esc(x.id)}"><strong>${esc(x.nombre)}</strong><small>${esc(x.zona)}</small></button>`).join('') || '<p class="vacio">No hay mesas libres.</p>';

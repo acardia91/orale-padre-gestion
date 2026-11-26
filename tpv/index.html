@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611262018">
+<link rel="stylesheet" href="tpv.css?v=202611262044">
 </head>
 <body>
 
@@ -71,7 +71,7 @@
       <button class="b b-ico" id="b-impresora" type="button" title="Impresora de tickets y comandas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-6a2 2 0 012-2h14a2 2 0 012 2v6a1 1 0 01-1 1h-2M6 14h12v7H6z"/></svg><span>Impresora</span></button>
       <button class="b b-ico" id="b-sonido" type="button" aria-pressed="false" title="Sonido de pedidos web: tocar para silenciar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span>Sonido</span></button>
       <button class="b b-ico" id="b-instalar" type="button" hidden title="Instalar el TPV como app en este dispositivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Instalar</span></button>
-      <a class="b b-ico" id="b-ir-comandas" href="/comandas/" title="Ver la pantalla de cocina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 13.9A4 4 0 017 6a5 5 0 0110 0 4 4 0 011 7.9V20H6zM6 17h12"/></svg><span>Comandas</span></a>
+      <a class="b b-ico b-ir" id="b-ir-comandas" href="/comandas/" title="Ver la pantalla de cocina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 13.9A4 4 0 017 6a5 5 0 0110 0 4 4 0 011 7.9V20H6zM6 17h12"/></svg><span>Comandas</span></a>
       <button class="b b-ico" id="b-salir" type="button" title="Cerrar sesión (cambiar de persona)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Salir</span></button>
     </div>
   </header>
@@ -121,6 +121,7 @@
         <label class="tq-nota"><span>Nota para cocina</span><input id="c-nota" maxlength="300" autocomplete="off" placeholder="Opcional"></label>
         <div class="tq-total"><span>Total</span><strong id="c-total">0,00 €</strong></div>
         <div class="tq-btns">
+          <button class="b b-precuenta" id="c-precuenta" type="button" title="Imprimir la cuenta para que el cliente la vea antes de pagar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/></svg>Imprimir cuenta</button>
           <button class="b b-espera" id="c-espera" type="button" title="Enviar en espera (los segundos): cocina lo ve pero no lo prepara hasta que pulses Marchar">⏸ En espera</button>
           <button class="b b-env" id="c-enviar" type="button">Enviar a cocina</button>
           <button class="b b-ok" id="c-cobrar" type="button">Cobrar</button>
@@ -204,6 +205,7 @@
   <form method="dialog" id="f-prod">
     <h2 id="dp-nombre"></h2>
     <div id="dp-grupos"></div>
+    <div class="dn-rapidas" id="dp-rapidas"></div>
     <label class="campo">Nota<input id="dp-nota" maxlength="140" autocomplete="off" placeholder="Sin cebolla, poco hecho…"></label>
     <div class="dlg-pie">
       <div class="cantidad"><button type="button" id="dp-menos">−</button><output id="dp-cant">1</output><button type="button" id="dp-mas">+</button></div>
@@ -232,13 +234,9 @@
 <!-- ── Nota de una línea sin enviar ── -->
 <dialog class="dlg" id="dlg-nota">
   <form method="dialog">
-    <h2>Nota para cocina</h2>
+    <h2>Quitar ingredientes o nota</h2>
     <p class="dn-prod" id="dn-prod"></p>
-    <div class="dn-rapidas" id="dn-rapidas">
-      <button type="button" data-r="Sin cebolla">Sin cebolla</button><button type="button" data-r="Sin picante">Sin picante</button>
-      <button type="button" data-r="Sin cilantro">Sin cilantro</button><button type="button" data-r="Salsa aparte">Salsa aparte</button>
-      <button type="button" data-r="Sin queso">Sin queso</button><button type="button" data-r="Alergia">Alergia</button>
-    </div>
+    <div class="dn-rapidas" id="dn-rapidas"></div>
     <label class="campo">Nota<input id="dn-texto" maxlength="140" autocomplete="off" placeholder="Sin cebolla, poco hecho…"></label>
     <label class="dn-una" id="dn-una-l" hidden><input type="checkbox" id="dn-una"> Solo para una (de <span id="dn-cant"></span>)</label>
     <div class="dlg-pie">
@@ -399,11 +397,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611262018"></script>
-<script src="/pedir/acceso.js?v=202611262018"></script>
+<script src="/pedir/api.js?v=202611262044"></script>
+<script src="/pedir/acceso.js?v=202611262044"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611262018"></script>
-<script src="/pedir/plano.js?v=202611262018"></script>
-<script src="tpv.js?v=202611262018"></script>
+<script src="/pedir/ticket.js?v=202611262044"></script>
+<script src="/pedir/plano.js?v=202611262044"></script>
+<script src="tpv.js?v=202611262044"></script>
 </body>
 </html>
