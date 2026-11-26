@@ -10,7 +10,10 @@
   --borde:#E8E1DB; --borde-2:#D9CFC6;
   --tinta:#241A1C; --tinta-2:#574548; --humo:#7A6A6D;
   --burdeos:#7C2430; --burdeos-d:#5E1A24; --burdeos-cl:#F6E7E7; --burdeos-m:#E9C9CB;
-  --nopal:#3F7A3A; --nopal-cl:#E4F0E0; --azul:#2F6A9E; --azul-cl:#E3EEF8; --oro:#C98A12; --oro-cl:#FBF1DC; --mal:#B3261E;
+  --nopal:#2E7D32; --nopal-cl:#E3F1E4; --azul:#2B5C8A; --azul-cl:#E3ECF6; --oro:#E0A030; --oro-cl:#FCEFD6; --mal:#C62828;
+  /* Código de colores de estado (igual en TPV y Comandas; el burdeos es sólo marca y botones):
+     AZUL ocupada / en cocina · GRIS preparando · VERDE listo, pagado · ÁMBAR atención · ROJO urgente · VIOLETA el cliente llama */
+  --ocupada:#2B5C8A; --prep:#56616B; --prep-cl:#ECEFF2; --llama:#6A3FA0;
   --sombra:0 1px 2px rgba(36,26,28,.06), 0 1px 1px rgba(36,26,28,.03);
   --sombra-2:0 12px 32px rgba(36,26,28,.16);
   --r:12px; --r-s:9px;
@@ -66,17 +69,17 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .plano-tpv{max-width:1200px;box-shadow:var(--sombra)}
 .plano-tpv .pl-el{border-width:2px;box-shadow:0 1px 3px rgba(36,26,28,.08)}
 .plano-tpv .pl-el:not(.deco):active{transform:scale(.96)}
-.plano-tpv .pl-el.ocupada{box-shadow:0 4px 12px rgba(124,36,48,.3)}
+.plano-tpv .pl-el.ocupada{box-shadow:0 4px 12px rgba(43,92,138,.3)}
 .mesas{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
 .mesas.mini{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));max-height:60vh;overflow:auto}
 .mesa{min-height:110px;border:1px solid var(--borde);background:var(--blanco);border-radius:var(--r);padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;box-shadow:var(--sombra)}
 .mesa strong{font-size:18px;font-weight:700;color:var(--tinta)}
 .mesa small{color:var(--humo);font-weight:600}
-.mesa.ocupada{border-color:var(--burdeos);background:var(--burdeos);color:#fff;box-shadow:0 4px 12px rgba(124,36,48,.25)}
+.mesa.ocupada{border-color:var(--ocupada);background:var(--ocupada);color:#fff;box-shadow:0 4px 12px rgba(43,92,138,.25)}
 .mesa.ocupada strong{color:#fff}
 .mesa.ocupada small{color:rgba(255,255,255,.85)}
 .mesa .imp{margin-top:auto;font-size:21px;font-weight:700}
-.mesa .aviso{align-self:flex-start;background:var(--oro);color:#000;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:99px}
+.mesa .aviso{align-self:flex-start;background:var(--oro);color:#241A1C;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:99px}
 .mini .mesa{min-height:72px}
 .sub{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--humo);margin:26px 0 12px}
 .vacio{color:var(--humo);padding:14px 0;grid-column:1/-1}
@@ -111,9 +114,10 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .tq-lineas{flex:1;overflow:auto;padding:4px 16px}
 .grupo-env{margin:12px 0 2px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--humo);display:flex;justify-content:space-between;align-items:center}
 .estado{padding:2px 8px;border-radius:99px;font-size:11px;background:var(--fondo);color:var(--tinta-2)}
-.estado.nuevo{background:var(--oro-cl);color:#8a5f0c}
-.estado.preparando{background:var(--azul-cl);color:var(--azul)}
-.estado.listo,.estado.entregado{background:var(--nopal-cl);color:var(--nopal)}
+.estado.nuevo{background:var(--azul-cl);color:var(--azul)}
+.estado.preparando{background:var(--prep-cl);color:var(--prep)}
+.estado.listo{background:var(--nopal-cl);color:var(--nopal)}
+.estado.entregado{background:#F1EEEB;color:#7A6A6D}
 .estado.cancelado{background:#FDF1F0;color:var(--mal)}
 .ln{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:9px 0;border-bottom:1px solid var(--borde)}
 .ln small{display:block;color:var(--humo);font-size:13px}
@@ -340,8 +344,8 @@ button.t-quien:hover{border-color:var(--burdeos,#7C2430)}
 .ln.pendiente .ctl output{min-width:28px;font-size:17px}
 .cb-item .ctl button{width:44px;height:44px;font-size:22px}
 /* Mesas según el tiempo: ámbar a los 45 min, rojo a la hora */
-.mesa.ocupada.t-ambar{background:#B7791F;border-color:#B7791F;box-shadow:0 4px 12px rgba(183,121,31,.3)}
-.mesa.ocupada.t-rojo{background:#B3261E;border-color:#B3261E;box-shadow:0 4px 12px rgba(179,38,30,.3)}
+.mesa.ocupada.t-ambar{background:var(--oro);border-color:#C98A12;color:#241A1C;box-shadow:0 4px 12px rgba(224,160,48,.35)}
+.mesa.ocupada.t-ambar strong,.mesa.ocupada.t-ambar small,.mesa.ocupada.t-ambar .imp{color:#241A1C}
 
 /* Agotados */
 .ag-lista{max-height:52dvh;overflow:auto;margin:12px 0}
@@ -425,11 +429,15 @@ body.sin-red .aviso-flota{top:120px}
 .cb-prop-txt{margin:8px 0 0;font-weight:700}
 .dq-dto-txt{margin:6px 0 0;font-weight:700}
 .ln small.dto{color:#B7791F;font-weight:700}
-.mesa .llama,.pl-el .pl-llama{display:inline-block;align-self:flex-start;background:#F2C94C;color:#000;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:99px;animation:parpadea 1s steps(2) infinite}
-.mesa.llama-pagado .llama{background:#4F7A3A;color:#fff;animation:none}
-.pl-el.llama{box-shadow:0 0 0 4px #F2C94C!important;animation:parpadea 1s steps(2) infinite}
-.pl-el.llama-pagado{box-shadow:0 0 0 4px #4F7A3A!important;animation:none}
+.mesa .llama,.pl-el .pl-llama{display:inline-block;align-self:flex-start;background:var(--llama);color:#fff;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:99px;animation:parpadea 1s steps(2) infinite}
+.mesa.llama-pagado .llama{background:var(--nopal);color:#fff;animation:none}
+.mesa:has(.llama){box-shadow:0 0 0 4px var(--llama)}
+.mesa.llama-pagado{box-shadow:0 0 0 4px var(--nopal)}
+.pl-el.llama{box-shadow:0 0 0 5px var(--llama)!important;animation:parpadea 1s steps(2) infinite}
+.pl-el.llama-pagado{box-shadow:0 0 0 5px var(--nopal)!important;animation:none}
 @keyframes parpadea{50%{opacity:.55}}
 
 /* Pedidos web/QR esperando a imprimirse (modo sin pantalla en cocina) */
 #b-porimprimir.parpadea{animation:parpadea 1s steps(2) infinite}
+.pl-el.llama:not(.ocupada),.mesa:not(.ocupada):has(.llama){background:#F1EAF8;color:#4B2A78}
+.pl-el.llama-pagado:not(.ocupada),.mesa.llama-pagado:not(.ocupada){background:var(--nopal-cl);color:var(--nopal)}

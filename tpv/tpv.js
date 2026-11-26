@@ -260,8 +260,9 @@
 
   /* ══ Sala ══ */
   const minutos = d => Math.round((Date.now() - new Date(d)) / 60000);
-  // Color de la mesa según el tiempo que lleva abierta: normal, ámbar a los 45 min y rojo a la hora.
-  const claseTiempo = c => { const m = minutos(c.abierta); return c.para_llevar || !c.mesa_id ? '' : m >= 60 ? 't-rojo' : m >= 45 ? 't-ambar' : ''; };
+  // Color de la mesa: azul mientras todo va normal; ámbar a la hora (pásate: ¿algo más, postre, la cuenta?).
+  // El rojo se reserva para lo urgente (comanda que va tarde, error), así no se pierde su fuerza.
+  const claseTiempo = c => { const m = minutos(c.abierta); return c.para_llevar || !c.mesa_id ? '' : m >= 60 ? 't-ambar' : ''; };
   const totales = {};                     // total enviado de cada cuenta abierta
   /* ══ Reservas de hoy ══ */
   let reservasHoy = [], rvSentar = null;
