@@ -8,7 +8,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fecha = d => new Date(d).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
   const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
-  let LOCAL, LOCALES = [], tickets = [], prodImp = [], rango = 'mes';
+  let LOCAL, LOCALES = [], tickets = [], prodImp = [], cuentasR = [], rango = 'mes';
   const PAGO = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', stripe: 'Online', invitacion: 'Invitación', mixto: 'Mixto' };
   const nombreLocal = id => ((LOCALES.find(l => l.id === id) || {}).nombre || id).replace(/^Órale Padre\s*/, '');
   const propio = t => t.origen !== 'lastapp';
@@ -38,7 +38,7 @@
       return { ts: ts.map(t => ({ ...t, local: id })).concat(importadas), ps, cs, pimp };
     }));
     tickets = res.flatMap(r => r.ts).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
-    prodImp = res.flatMap(r => r.pimp);
+    prodImp = res.flatMap(r => r.pimp); cuentasR = res.flatMap(r => r.cs);
     pintaKpis(); pintaLocales(); pintaHoras(); pintaTop(); pintaFacturas(); pintaAnul(res.flatMap(r => r.ps), res.flatMap(r => r.cs));
   }
 
@@ -52,6 +52,13 @@
     $('#r-kpis').innerHTML =
       k('Ventas (IVA incl.)', euros(total), `${n} cuentas cobradas`) +
       k('Ticket medio', n ? euros(Math.round(total / n)) : '—') +
+      (() => { // Gasto por comensal: sólo mesas cobradas con los comensales apuntados.
+        const con = cuentasR.filter(c => c.comensales && c.estado === 'cobrada'); const ids = new Set(con.map(c => c.id));
+        const gasto = tickets.filter(t => ids.has(t.cuenta_id)).reduce((s, t) => s + t.total, 0); const pers = con.reduce((s, c) => s + c.comensales, 0);
+        const propinas = tickets.reduce((s, t) => s + (t.propina || 0), 0);
+        return k('Gasto por comensal', pers ? euros(Math.round(gasto / pers)) : '—', pers ? `${pers} comensales en ${con.length} mesas` : 'Apunta los comensales al abrir la mesa en el TPV') +
+               (propinas ? k('Propinas', euros(propinas), 'Aparte de las ventas (no llevan IVA)') : '');
+      })() +
       k('Base imponible', euros(base), (hayImp ? 'Last App: IVA estimado al 10% · ' : '') + Object.keys(iva).map(t => `${t}%: ${euros(iva[t].base)}`).join(' · ')) +
       k('IVA', euros(cuota), Object.keys(iva).map(t => `${t}%: ${euros(iva[t].cuota)}`).join(' · ')) +
       k('Efectivo', euros(suma(t => t.metodo === 'efectivo'))) +

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611251500">
+<link rel="stylesheet" href="admin.css?v=202611260138">
 </head>
 <body>
 
@@ -493,6 +493,12 @@
         <h2 style="margin-top:14px">Pago de los pedidos online</h2>
         <label class="chk"><input type="checkbox" id="l-pago-local"> Pago al recoger (efectivo o datáfono)</label>
         <label class="chk"><input type="checkbox" id="l-pago-online"> Pago online con tarjeta (Stripe)</label>
+        <h2 style="margin-top:14px">QR de mesa: pedir y pagar desde el móvil</h2>
+        <label class="chk"><input type="checkbox" id="l-qr"> Los clientes pueden pedir desde el móvil (va directo a cocina, en la cuenta de su mesa)</label>
+        <p class="nota" style="margin:4px 0 8px">Se guarda al momento. Con el QR de su mesa el cliente ve la carta, ve su cuenta, llama al camarero y pide la cuenta; pedir sólo si esto está activado, y pagar con tarjeta sólo si está activado el pago online de arriba. Cada mesa tiene su propio QR: si alguien se lleva una foto, cámbiale el código.</p>
+        <div class="botones" style="flex-wrap:wrap;gap:8px"><button class="b" type="button" id="l-qr-imprimir">Imprimir QR de las mesas</button>
+          <select id="l-qr-mesa" aria-label="Mesa"></select><button class="b b-mini" type="button" id="l-qr-nuevo">Cambiar su código</button></div>
+        <p class="aviso" id="l-qr-msg" hidden></p>
         <h2 style="margin-top:14px">Reservas</h2>
         <label class="chk"><input type="checkbox" id="l-reservas"> Aceptar reservas online</label>
         <div class="dos">
@@ -549,6 +555,17 @@
       </form>
       <div class="u-locales"><span>Acceso a:</span><div id="u-locales"></div></div>
       <p class="nota"><b>Sala</b> y <b>cocina</b> entran en el TPV y en comandas. Solo el <b>encargado</b> entra en este panel.</p>
+    </div>
+    <div class="panel">
+      <h2>Poner contraseña nueva a alguien del equipo</h2>
+      <p class="nota" style="margin-top:0">Para quien la ha olvidado. Escríbela aquí, díselo en persona y que la cambie al entrar. Sólo personas con acceso a tus locales (no las de la app interna).</p>
+      <form class="fila-form" id="rc-form" onsubmit="return false" autocomplete="off">
+        <select id="rc-email" aria-label="Persona"></select>
+        <input id="rc-1" type="password" autocomplete="new-password" placeholder="Contraseña nueva" minlength="8">
+        <input id="rc-2" type="password" autocomplete="new-password" placeholder="Repítela" minlength="8">
+        <button class="b b-ok" type="button" id="rc-ok">Guardar</button>
+      </form>
+      <p class="aviso" id="rc-msg" hidden></p>
     </div>
     <div class="panel">
       <h2>Cambiar mi contraseña</h2>
@@ -769,25 +786,26 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611251500"></script>
-<script src="/pedir/plano.js?v=202611251500"></script>
+<script src="/pedir/api.js?v=202611260138"></script>
+<script src="/pedir/acceso.js?v=202611260138"></script>
+<script src="/pedir/plano.js?v=202611260138"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611251500"></script>
-<script src="sec-plano.js?v=202611251500"></script>
-<script src="sec-resumen.js?v=202611251500"></script>
-<script src="sec-carta.js?v=202611251500"></script>
-<script src="sec-local.js?v=202611251500"></script>
-<script src="sec-pedidos.js?v=202611251500"></script>
-<script src="sec-reservas.js?v=202611251500"></script>
-<script src="sec-clientes.js?v=202611251500"></script>
-<script src="sec-control.js?v=202611251500"></script>
-<script src="sec-panel.js?v=202611251500"></script>
-<script src="sec-delivery.js?v=202611251500"></script>
-<script src="sec-promos.js?v=202611251500"></script>
-<script src="sec-informes.js?v=202611251500"></script>
-<script src="sec-resenas.js?v=202611251500"></script>
-<script src="sec-equipo.js?v=202611251500"></script>
-<script src="admin.js?v=202611251500"></script>
+<script src="/pedir/ticket.js?v=202611260138"></script>
+<script src="sec-plano.js?v=202611260138"></script>
+<script src="sec-resumen.js?v=202611260138"></script>
+<script src="sec-carta.js?v=202611260138"></script>
+<script src="sec-local.js?v=202611260138"></script>
+<script src="sec-pedidos.js?v=202611260138"></script>
+<script src="sec-reservas.js?v=202611260138"></script>
+<script src="sec-clientes.js?v=202611260138"></script>
+<script src="sec-control.js?v=202611260138"></script>
+<script src="sec-panel.js?v=202611260138"></script>
+<script src="sec-delivery.js?v=202611260138"></script>
+<script src="sec-promos.js?v=202611260138"></script>
+<script src="sec-informes.js?v=202611260138"></script>
+<script src="sec-resenas.js?v=202611260138"></script>
+<script src="sec-equipo.js?v=202611260138"></script>
+<script src="admin.js?v=202611260138"></script>
 </body>
 </html>
 

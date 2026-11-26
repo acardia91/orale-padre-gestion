@@ -7,7 +7,7 @@
   const fecha = d => new Date(d).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   const quien = e => e ? esc(e.split('@')[0].replace(/^orale\.padre\.food\+/, '')) : '—';
   const ACC = {
-    linea_anulada: ['Producto quitado', 'rojo'], cuenta_anulada: ['Cuenta anulada', 'rojo'], pedido_cancelado: ['Pedido web cancelado', ''], lineas_pasadas: ['Productos pasados de cuenta', ''], cuentas_juntadas: ['Mesas juntadas', ''], movimiento_caja: ['Movimiento de caja', ''],
+    linea_anulada: ['Producto quitado', 'rojo'], cuenta_anulada: ['Cuenta anulada', 'rojo'], pedido_cancelado: ['Pedido web cancelado', ''], lineas_pasadas: ['Productos pasados de cuenta', ''], cuentas_juntadas: ['Mesas juntadas', ''], movimiento_caja: ['Movimiento de caja', ''], descuento_linea: ['Descuento en producto', 'rojo'], pago_mesa_online: ['Pagado desde el móvil', ''], pago_mesa_error: ['Pago del móvil con error: devolver', 'rojo'],
     precuenta: ['Pre-cuenta impresa', 'gris'], entrada: ['Entrada al TPV (PIN)', 'gris'], pin_fallido: ['Clave fallida', 'rojo'], cierre_caja: ['Cierre de caja', 'verde'], pin_cambiado: ['Clave cambiada', 'gris'],
   };
   let LOCAL, LOCALES = [], rango = '7', lista = [], cierres = [];
@@ -45,6 +45,9 @@
         const [t, c] = ACC[x.accion] || [x.accion, '']; const d = x.detalle || {};
         const det = x.accion === 'linea_anulada' ? `${d.cantidad}× ${esc(d.producto)} · ${esc(d.mesa)} · comanda #${d.comanda}`
           : x.accion === 'movimiento_caja' ? (d.tipo === 'salida' ? 'Sacado de la caja' : 'Metido en la caja')
+          : x.accion === 'descuento_linea' ? `${esc(d.mesa)} · ${d.cantidad}× ${esc(d.producto)} · ${d.pct === 100 ? 'invitado' : d.pct ? '−' + d.pct + ' %' : 'descuento quitado'}`
+          : x.accion === 'pago_mesa_online' ? `${esc(d.mesa)} · ticket ${esc(d.ticket)}${d.propina ? ' · propina ' + OP.euros(d.propina) : ''}`
+          : x.accion === 'pago_mesa_error' ? `${esc(d.mesa)} · devuelve el pago en Stripe (sesión ${esc(String(d.session || '').slice(-8))})`
           : ['lineas_pasadas', 'cuentas_juntadas'].includes(x.accion) ? `${esc(d.de)} → ${esc(d.a)} · ${d.unidades} uds.`
           : x.accion === 'cuenta_anulada' ? esc(d.mesa) : x.accion === 'precuenta' ? esc(d.mesa)
           : x.accion === 'pedido_cancelado' ? `#${d.numero} · ${esc(d.cliente || '')}${d.pagado ? ' · pagado online' : ''}`

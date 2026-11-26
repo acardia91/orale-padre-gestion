@@ -28,6 +28,7 @@
         return `<tr><th>${n}</th><td>${t(0)}</td><td>${t(1)}</td><td>${i ? `<button class="b b-mini" type="button" data-copia="${i + 1}" title="Copiar el horario del día anterior">= ayer</button>` : ''}</td></tr>`;
       }).join('') + '</tbody>';
     original = estado();
+    cargarQR();
   }
   function leeHorario() {
     const h = {};
@@ -61,6 +62,43 @@
     finally { btn.disabled = false; }
   };
 
+  /* ── QR de mesa: activar pedidos desde el móvil, imprimir un QR por mesa, cambiar el código de una ── */
+  let mesasQR = [];
+  const urlMesa = m => `https://www.oralepadre.com/mesa/?l=${encodeURIComponent(LOCAL)}&m=${encodeURIComponent(m.id)}&k=${encodeURIComponent(m.qr_token || '')}`;
+  const msgQR = (t, ok) => { const e = $('#l-qr-msg'); e.textContent = t; e.hidden = false; e.style.background = ok ? '#E4EEDD' : ''; e.style.color = ok ? '#4F7A3A' : ''; };
+  async function cargarQR() {
+    $('#l-qr').checked = !!local.qr_pedidos; $('#l-qr-msg').hidden = true;
+    try { mesasQR = (await api.mesas(LOCAL)).filter(m => m.tipo !== 'deco' && m.activa !== false); } catch (e) { mesasQR = []; }
+    $('#l-qr-mesa').innerHTML = mesasQR.map(m => `<option value="${esc(m.id)}">${esc(m.nombre)}</option>`).join('');
+  }
+  $('#l-qr').onchange = async e => {
+    try { await api.guardarQrLocal(LOCAL, e.target.checked); local.qr_pedidos = e.target.checked;
+      msgQR(e.target.checked ? 'Activado: los clientes ya pueden pedir desde el QR de su mesa.' : 'Desactivado: con el QR sólo ven la carta y su cuenta, llaman al camarero y piden la cuenta.', true); }
+    catch (ex) { e.target.checked = !e.target.checked; msgQR(mensajeError(ex)); }
+  };
+  $('#l-qr-nuevo').onclick = async () => {
+    const m = mesasQR.find(x => x.id === $('#l-qr-mesa').value); if (!m) return;
+    if (!confirm(`¿Cambiar el código de ${m.nombre}? El QR que hay ahora en esa mesa deja de valer: tendrás que imprimir y poner el nuevo.`)) return;
+    try { m.qr_token = await api.nuevoQrMesa(LOCAL, m.id); msgQR(`Código de ${m.nombre} cambiado. Imprime su QR nuevo.`, true); }
+    catch (ex) { msgQR(mensajeError(ex)); }
+  };
+  $('#l-qr-imprimir').onclick = async () => {
+    if (!mesasQR.length) return msgQR('No hay mesas en el plano de este local.');
+    if (mesasQR.some(m => !m.qr_token) && api.modo !== 'demo') return msgQR('Falta el código de alguna mesa: recarga la página.');
+    try { if (!window.qrcode) await new Promise((ok, ko) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'; s.onload = ok; s.onerror = ko; document.head.appendChild(s); }); }
+    catch (e) { return msgQR('No se ha podido cargar el generador de QR. Revisa la conexión.'); }
+    const w = window.open('', '_blank'); if (!w) return msgQR('Permite las ventanas emergentes para imprimir los QR.');
+    const nom = esc((local.nombre || '').replace(/^Órale Padre\s*/, ''));
+    const hojas = mesasQR.map(m => { const q = window.qrcode(0, 'M'); q.addData(api.modo === 'demo' ? urlMesa({ ...m, qr_token: 'demo' }) : urlMesa(m)); q.make();
+      return `<section><h1>${esc(m.nombre)}</h1><p>Escanea para ver la carta, pedir y pagar</p><div class="qr">${q.createSvgTag({ cellSize: 8, margin: 0, scalable: true })}</div>
+        <small>Órale Padre ${nom} · también puedes llamar al camarero desde aquí</small></section>`; }).join('');
+    w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>QR de las mesas · ${nom}</title>
+      <style>body{font-family:Archivo,Arial,sans-serif;text-align:center;margin:0;color:#241a1c}section{padding:28px 20px;page-break-after:always;break-after:page}
+      h1{font-size:52px;margin:0 0 6px;color:#7C2430}p{font-size:20px;margin:0 0 20px}.qr svg{width:290px;height:290px}small{display:block;margin-top:16px;font-size:14px;color:#6b5b5e}
+      @page{size:A6;margin:7mm}</style></head><body>${hojas}<script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+    w.document.close();
+  };
+
   window.ADMIN = window.ADMIN || {};
   window.ADMIN.local = { async init(l) { LOCAL = l; await cargarLocal(); }, sucio: () => !!original && estado() !== original };
 
@@ -84,6 +122,8 @@
     $('#u-lista').innerHTML = cab + '<tbody>' + (con.map(fila).join('') || `<tr><td colspan="${LOCALES_U.length + 2}" class="nota">Nadie tiene acceso todavía.</td></tr>`) + '</tbody>';
     $('#u-sin-cab').hidden = !sin.length;
     $('#u-sin').innerHTML = sin.length ? cab + '<tbody>' + sin.map(fila).join('') + '</tbody>' : '';
+    const cambiables = con.filter(u => !u.interna);
+    $('#rc-email').innerHTML = '<option value="">¿A quién?</option>' + cambiables.map(u => `<option value="${esc(u.email)}">${esc(u.email)}</option>`).join('');
     $('#u-locales').innerHTML = LOCALES_U.map(l => `<label class="chk-local"><input type="checkbox" value="${esc(l.id)}" ${l.id === LOCAL ? 'checked' : ''}> ${esc(corto(l.nombre))}</label>`).join('');
   }
   const alCambiar = async e => {
@@ -119,6 +159,20 @@
     } catch (ex) { aviso(mensajeError(ex)); }
     finally { btn.disabled = false; }
     cargarUsuarios();
+  };
+  $('#rc-ok').onclick = async () => {
+    const m = $('#rc-msg'); const email = $('#rc-email').value; const a = $('#rc-1').value, b = $('#rc-2').value;
+    const di = (t, ok) => { m.textContent = t; m.hidden = false; m.style.background = ok ? '#E4EEDD' : ''; m.style.color = ok ? '#4F7A3A' : ''; };
+    if (!email) return di('Elige a quién.');
+    if (a.length < 8) return di('Mínimo 8 caracteres.');
+    if (a !== b) return di('Las dos contraseñas no coinciden.');
+    const u = usuarios.find(x => x.email === email);
+    const local = LOCALES_U.map(l => l.id).find(l => u && u.roles[l]) || LOCAL;
+    if (!confirm(`¿Poner esta contraseña nueva a ${email}? La de antes deja de valer.`)) return;
+    const btn = $('#rc-ok'); btn.disabled = true;
+    try { await api.cambiarClaveDe(local, email, a); $('#rc-1').value = $('#rc-2').value = ''; di(`Hecho: ${email} ya entra con la contraseña nueva. Díselo en persona.`, true); }
+    catch (ex) { di(mensajeError(ex)); }
+    finally { btn.disabled = false; }
   };
   $('#pw-ok').onclick = async () => {
     const m = $('#pw-msg'); const a = $('#pw-1').value, b = $('#pw-2').value;
