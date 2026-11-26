@@ -162,7 +162,7 @@
       ponConexion(true);
       reservasHoy = (rvs || []).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
-      avisaWebNuevos();
+      avisaWebNuevos(); avisaQR(hoy);
     }
     catch (e) { console.warn(e); if (esDeRed(e)) ponConexion(false); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
@@ -184,6 +184,30 @@
     }
     webVistos = new Set([...(webVistos || []), ...nuevos.map(p => p.id)]);
   }
+  /* ══ QR de mesa: pedidos desde el móvil y mesas que llaman al camarero o piden la cuenta ══ */
+  const AVISO_TXT = { camarero: '🙋 Llama', cuenta: '🧾 Pide la cuenta', pagado: '✓ Pagó con el móvil', error_pago: '⚠ Pago con error' };
+  let qrVistos = null, avisosVistos = null;
+  function avisaQR(hoy) {
+    const qr = hoy.filter(p => p.canal === 'sala' && p.persona === 'Cliente (QR)' && p.estado !== 'cancelado');
+    const av = mesas.filter(m => m.aviso).map(m => ({ m, k: m.id + '|' + m.aviso.cuando }));
+    if (qrVistos) {
+      const nuevos = qr.filter(p => !qrVistos.has(p.id));
+      if (nuevos.length) { timbre(); aviso(`📱 ${nuevos.map(p => p.mesa).join(', ')}: pedido desde el móvil (#${nuevos.map(p => p.numero).join(', #')})`); }
+      const nuevosAv = av.filter(x => !avisosVistos.has(x.k));
+      if (nuevosAv.length) {
+        timbre();
+        const x = nuevosAv[0].m; const t = x.aviso.tipo;
+        aviso(t === 'camarero' ? `🙋 ${x.nombre} llama al camarero` : t === 'cuenta' ? `🧾 ${x.nombre} pide la cuenta`
+          : t === 'pagado' ? `✓ ${x.nombre} ha pagado ${euros(x.aviso.importe || 0)} con el móvil` : `⚠ ${x.nombre}: el pago con el móvil ha fallado; mira Control en el admin`, t === 'error_pago');
+      }
+    }
+    qrVistos = new Set(qr.map(p => p.id)); avisosVistos = new Set(av.map(x => x.k));
+  }
+  function atiende(mesaId) {
+    const m = mesas.find(x => x.id === mesaId); if (!m || !m.aviso) return;
+    m.aviso = null; api.atenderMesa(LOCAL, mesaId).catch(() => {});
+  }
+
   let audio = null;
   // Botón 🔔/🔕: silencia el aviso sonoro de pedidos web en este TPV (se recuerda). El aviso escrito sigue saliendo.
   let silencio = ls('op-tpv-silencio') === true;
@@ -195,6 +219,7 @@
   $('#b-sonido').onclick = () => { silencio = !silencio; ls('op-tpv-silencio', silencio); pintaSonido();
     if (!silencio) timbre(); aviso(silencio ? '🔕 Sonido silenciado en este TPV' : '🔔 Sonido activado'); };
   pintaSonido();
+  $('#b-impresora').onclick = () => OP.ajustesImpresora();
   function timbre() {
     if (silencio) return;
     try {
@@ -296,15 +321,17 @@
       OP.plano.pintar(cont, deZona, { estado: m => {
         if (m.tipo === 'deco') return null;
         const c = cuentas.find(x => x.mesa_id === m.id);
-        if (!c) { const rv = reservaDeMesa(m.id); return { sub: rv ? `Reserva ${hhmm(rv.fecha)}` : (m.plazas ? m.plazas + ' pax' : '') }; }
-        return { ocupada: true, clase: claseTiempo(c), sub: minutos(c.abierta) + ' min', imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
+        const av = m.aviso ? ' llama' + (m.aviso.tipo === 'pagado' ? ' llama-pagado' : '') : '';
+        if (!c) { const rv = reservaDeMesa(m.id); return { clase: av, sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : rv ? `Reserva ${hhmm(rv.fecha)}` : (m.plazas ? m.plazas + ' pax' : '') }; }
+        return { ocupada: true, clase: claseTiempo(c) + av, sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : minutos(c.abierta) + ' min' + (c.comensales ? ` · ${c.comensales}p` : ''), imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
       } });
     } else {
       cont.className = 'mesas';
       cont.innerHTML = deZona.filter(m => m.tipo !== 'deco').map(m => {
         const c = cuentas.find(x => x.mesa_id === m.id);
         const rv = !c && reservaDeMesa(m.id);
-        return c ? tileCuenta(c, m.nombre) : `<button class="mesa" type="button" data-mesa="${esc(m.id)}"><strong>${esc(m.nombre)}</strong><small>${rv ? `<span class="rv-mesa">Reserva ${hhmm(rv.fecha)} · ${rv.personas}p</span>` : 'Libre'}</small></button>`;
+        const av = m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : '';
+        return c ? tileCuenta(c, m.nombre, m) : `<button class="mesa ${m.aviso && m.aviso.tipo === 'pagado' ? 'llama-pagado' : ''}" type="button" data-mesa="${esc(m.id)}"><strong>${esc(m.nombre)}</strong><small>${rv ? `<span class="rv-mesa">Reserva ${hhmm(rv.fecha)} · ${rv.personas}p</span>` : 'Libre'}</small>${av}</button>`;
       }).join('') || '<p class="vacio">No hay mesas en esta zona.</p>';
     }
     const sueltas = cuentas.filter(c => !c.mesa_id);
@@ -316,10 +343,11 @@
   addEventListener('resize', () => { clearTimeout(tRes); tRes = setTimeout(() => { if ((innerWidth >= 700) !== anchoPlano) { anchoPlano = innerWidth >= 700; if (!$('#vista-sala').hidden) pintaSala(); } }, 200); });
   // Móvil: la cuenta es una hoja que se despliega desde abajo.
   $('#c-hoja').onclick = () => $('#vista-cuenta').classList.toggle('hoja-abierta');
-  function tileCuenta(c, nombre) {
+  function tileCuenta(c, nombre, m) {
     const pend = (pendientes[c.id] || []).length;
     return `<button class="mesa ocupada ${claseTiempo(c)}" type="button" data-cuenta="${c.id}">
-      <strong>${esc(nombre)}</strong><small>${minutos(c.abierta)} min${c.para_llevar ? ' · llevar' : ''}</small>
+      <strong>${esc(nombre)}</strong><small>${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}</small>
+      ${m && m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : ''}
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
       <span class="imp" data-total="${c.id}">${totales[c.id] != null ? euros(totales[c.id]) : '…'}</span></button>`;
   }
@@ -347,8 +375,13 @@
     const mesa = mesas.find(x => x.id === mesaId); if (!mesa || mesa.tipo === 'deco') return;
     const abierta = cuentas.find(x => x.mesa_id === mesaId);
     if (abierta) return abrir(abierta);
+    if (mesa.aviso && ['pagado', 'error_pago'].includes(mesa.aviso.tipo)) {
+      const t = mesa.aviso.tipo; atiende(mesaId); pintaSala();
+      alert(t === 'pagado' ? `${mesa.nombre} pagó ${euros(mesa.aviso.importe || 0)} con el móvil y la mesa queda libre.` : `El pago con el móvil de ${mesa.nombre} ha fallado (la cuenta cambió mientras pagaban). Mira "Control" en el admin para devolverlo.`);
+      return;
+    }
     {
-      try { abrir(await api.abrirCuenta({ local: LOCAL, mesa_id: mesaId })); }
+      try { await abrir(await api.abrirCuenta({ local: LOCAL, mesa_id: mesaId })); preguntaComensales(); }
       catch (ex) { alert(mensajeError(ex)); recarga(); }
     }
   });
@@ -400,7 +433,7 @@
 
   /* ══ Cuenta ══ */
   async function abrir(c) {
-    cuenta = c; pedidosCuenta = await api.pedidosDeCuenta(c.id);
+    cuenta = c; if (c.mesa_id) atiende(c.mesa_id); pedidosCuenta = await api.pedidosDeCuenta(c.id);
     $('#vista-sala').hidden = true; $('#vista-cuenta').hidden = false; $('#b-atras').hidden = false;
     $('#b-barra').hidden = $('#b-llevar').hidden = true;
     $('#c-nota').value = ''; $('#buscar').value = ''; $('#buscar-x').hidden = true;
@@ -477,13 +510,13 @@
   const nombreOps = l => l.opciones.map(oid => { for (const g of idx.grupos.values()) { const o = g.opciones.find(x => x.id === oid); if (o) return o.nombre; } return ''; });
   function pintaCuenta() {
     $('#c-nombre').textContent = cuenta.nombre;
-    $('#c-info').textContent = `Abierta hace ${minutos(cuenta.abierta)} min${cuenta.para_llevar ? ' · para llevar' : ''}`;
+    $('#c-info').textContent = `Abierta hace ${minutos(cuenta.abierta)} min${cuenta.comensales ? ` · ${cuenta.comensales} ${cuenta.comensales === 1 ? 'persona' : 'personas'}` : ''}${cuenta.para_llevar ? ' · para llevar' : ''}`;
     const ESTADO = { nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
     const enviados = pedidosCuenta.filter(p => !(p.estado === 'cancelado' && !p.lineas.length && !(p.anuladas || []).length)).sort((a, b) => a.numero - b.numero).map(p => `
       <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span><span class="estado ${p.estado}">${ESTADO[p.estado]}</span></div>
       ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''} ${porCobrar(l) < 1 ? 'cobrada' : ''}" ${p.estado !== 'cancelado' && porCobrar(l) > 0 ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
-        <div>${esc(l.nombre)}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
+        <div>${esc(l.nombre)}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.dto ? `<small class="dto">${l.dto === 100 ? 'Invitado' : '−' + l.dto + ' %'} · antes ${euros(l.unitario_original * l.cantidad)}</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
         <span class="imp">${euros(l.unitario * l.cantidad)}</span></div>`).join('')}
       ${(p.anuladas || []).map(l => `<div class="ln quitada"><span class="cant-fija">${l.cantidad}×</span><div>${esc(l.nombre)}<small>Quitado: ${esc(l.motivo || '')}</small></div><span class="imp">−${euros(l.unitario * l.cantidad)}</span></div>`).join('')}`).join('');
     const pend = pendientes[cuenta.id] || [];
@@ -622,8 +655,25 @@
       $('#dlg-mover').showModal();
     }
     if (m === 'anular') abreAnular();
+    if (m === 'comensales') preguntaComensales(true);
     if (m === 'pasar' || m === 'juntar') abrePasar(m);
   });
+  /* ── Comensales: se preguntan al abrir una mesa (se puede saltar) y se cambian desde el menú ── */
+  function preguntaComensales(cambiar) {
+    if (!cuenta || (!cambiar && (cuenta.comensales || !cuenta.mesa_id))) return;
+    const mesa = mesas.find(x => x.id === cuenta.mesa_id);
+    $('#pe-mesa').textContent = cuenta.nombre + (mesa && mesa.plazas ? ` · ${mesa.plazas} plazas` : '');
+    $('#pe-num').innerHTML = [...Array(12)].map((_, i) => `<button type="button" data-n="${i + 1}" class="${cuenta.comensales === i + 1 ? 'sel' : ''}">${i + 1}</button>`).join('');
+    $('#pe-quitar').hidden = !cuenta.comensales;
+    $('#dlg-pers').showModal();
+  }
+  async function ponComensales(n) {
+    const c = cuenta; $('#dlg-pers').close(); if (!c) return;
+    try { await api.ponerComensales(c.id, n); c.comensales = n; if (cuenta && cuenta.id === c.id) pintaCuenta(); }
+    catch (ex) { aviso('No se han guardado los comensales: ' + mensajeError(ex), true); }
+  }
+  $('#pe-num').addEventListener('click', e => { const b = e.target.closest('[data-n]'); if (b) ponComensales(+b.dataset.n); });
+  $('#pe-quitar').onclick = () => ponComensales(null);
   $('#mv-mesas').addEventListener('click', async e => {
     const b = e.target.closest('button.mesa'); if (!b) return;
     try { await api.moverCuenta(cuenta.id, b.value); $('#dlg-mover').close(); await recarga(); }
@@ -764,6 +814,28 @@
 
   /* ── Cobrar ── */
   const dc = $('#dlg-cobrar'); let aCobrar = 0, lineasCobro = [], promos = [], todasPend = [], modo = 'todo', elegidos = {};
+  // Propina: aparte del ticket (no es venta ni lleva IVA). 'p0' nada, 'red' redondear, 'p5'/'p10' %, 'otra' a mano.
+  let propModo = 'p0', propina = 0;
+  const calculaPropina = () => {
+    if (!aCobrar) return 0;
+    if (propModo === 'red') { const r = Math.ceil(aCobrar / 100) * 100 - aCobrar; return r || 100; }
+    if (propModo === 'p5') return Math.round(aCobrar * 0.05 / 10) * 10;
+    if (propModo === 'p10') return Math.round(aCobrar * 0.10 / 10) * 10;
+    if (propModo === 'otra') { const v = centimos($('#cb-prop-otra').value); return isNaN(v) ? 0 : Math.max(0, v); }
+    return 0;
+  };
+  function pintaPropina() {
+    propina = calculaPropina();
+    const red = Math.ceil(aCobrar / 100) * 100 - aCobrar || 100;
+    $('#cb-prop').innerHTML = [['p0', 'Sin propina'], ['red', `Redondear (+${euros(red)})`], ['p5', '5 %'], ['p10', '10 %'], ['otra', 'Otra']]
+      .map(([k, t]) => `<button type="button" data-prop="${k}" class="${k === propModo ? 'sel' : ''}">${t}</button>`).join('');
+    $('#cb-prop-otra-l').hidden = propModo !== 'otra';
+    $('#cb-prop-txt').hidden = !propina;
+    $('#cb-prop-txt').textContent = `Propina ${euros(propina)} · total a pagar ${euros(aCobrar + propina)}`;
+    $('#cb-propina').hidden = aCobrar === 0;
+  }
+  $('#cb-prop').addEventListener('click', e => { const b = e.target.closest('[data-prop]'); if (!b) return; propModo = b.dataset.prop; recalcula(); if (propModo === 'otra') $('#cb-prop-otra').focus(); });
+  $('#cb-prop-otra').addEventListener('input', () => recalcula());
   const clave = l => l._pedido + ':' + l._indice;
   function pintaModo() {
     dc.querySelectorAll('[data-modo]').forEach(b => b.classList.toggle('activo', b.dataset.modo === modo));
@@ -798,7 +870,7 @@
     $('#cb-nombre').textContent = cuenta.nombre; $('#cb-nota').value = '';
     $('#cb-entregado').value = ''; $('#cb-error').hidden = true;
     dc.querySelector('[value=efectivo]').checked = true;
-    $('#cb-partes').value = ''; pintaModo();
+    $('#cb-partes').value = ''; propModo = 'p0'; $('#cb-prop-otra').value = ''; pintaModo();
     recalcula(); dc.showModal();
   };
   function recalcula() {
@@ -809,10 +881,11 @@
     $('#cb-ok').textContent = modo === 'productos' ? (lineasCobro.length ? `Cobrar ${euros(aCobrar)} de ${euros(calculaTicket(todasPend).total)}` : 'Elige qué se cobra') : 'Confirmar cobro';
     $('#cb-nota-l').hidden = !(promo && promo.requiere_nota);
     $('#cb-desc').hidden = !r.descuento; $('#cb-bruto').textContent = euros(r.bruto); $('#cb-dto').textContent = '−' + euros(r.descuento);
-    $('#cb-total').textContent = euros(aCobrar); $('#cb-tarjeta-imp').textContent = euros(aCobrar);
+    pintaPropina(); const aPagar = aCobrar + propina;
+    $('#cb-total').textContent = euros(aCobrar); $('#cb-tarjeta-imp').textContent = euros(aPagar);
     const gratis = aCobrar === 0;
     $('#cb-invita').hidden = !gratis; $('#cb-metodos').hidden = gratis;
-    const v = [aCobrar, ...[500, 1000, 2000, 5000].filter(x => x > aCobrar)].slice(0, 4);
+    const v = [aPagar, ...[500, 1000, 2000, 5000].filter(x => x > aPagar)].slice(0, 4);
     $('#cb-rapidos').innerHTML = v.map((x, i) => `<button type="button" data-v="${x}">${i === 0 ? 'Justo' : euros(x)}</button>`).join('');
     metodo();
   }
@@ -825,7 +898,8 @@
   }
   function cambio() {
     const e = centimos($('#cb-entregado').value);
-    $('#cb-cambio').textContent = isNaN(e) ? '—' : e < aCobrar ? 'falta ' + euros(aCobrar - e) : euros(e - aCobrar);
+    const t = aCobrar + propina;
+    $('#cb-cambio').textContent = isNaN(e) ? '—' : e < t ? 'falta ' + euros(t - e) : euros(e - t);
   }
   dc.addEventListener('change', e => { if (e.target.name === 'metodo') metodo(); });
   $('#cb-entregado').addEventListener('input', cambio);
@@ -836,17 +910,19 @@
     if (promo && promo.requiere_nota && $('#cb-nota').value.trim().length < 2) return fallo(`"${promo.nombre}" necesita una nota: por ejemplo, el nombre del empleado o del socio.`);
     let entregado = null;
     if (met === 'efectivo' && aCobrar > 0) {
-      entregado = $('#cb-entregado').value ? centimos($('#cb-entregado').value) : aCobrar;
-      if (isNaN(entregado) || entregado < aCobrar) return fallo('El efectivo entregado no llega al total.');
+      entregado = $('#cb-entregado').value ? centimos($('#cb-entregado').value) : aCobrar + propina;
+      if (isNaN(entregado) || entregado < aCobrar + propina) return fallo('El efectivo entregado no llega al total' + (propina ? ' con la propina.' : '.'));
     }
+    if (propModo === 'otra' && propina > Math.min(20000, aCobrar)) return fallo('La propina no puede pasar del total ni de 200 €.');
     const btn = $('#cb-ok'); btn.disabled = true;
     try {
       const items = modo === 'productos' ? lineasCobro.map(l => ({ pedido: l._pedido, indice: l._indice, cantidad: l.cantidad })) : undefined;
       const parcial = modo === 'productos' && lineasCobro.reduce((a, l) => a + l.cantidad, 0) < todasPend.reduce((a, l) => a + l.cantidad, 0);
-      const t = await api.cobrar({ cuenta: cuenta.id, metodo: met, entregado, promocion: promo ? promo.id : null, nota: $('#cb-nota').value.trim(), items });
+      const t = await api.cobrar({ cuenta: cuenta.id, metodo: met, entregado, promocion: promo ? promo.id : null, nota: $('#cb-nota').value.trim(), items, propina: aCobrar ? propina : 0 });
       dc.close();
       if ($('#cb-imprimir').checked) OP.imprimir(OP.ticketFactura(t));
-      if (t.cambio) aviso('Cambio: ' + euros(t.cambio));
+      if (t.cambio) aviso('Cambio: ' + euros(t.cambio) + (t.propina ? ` · propina ${euros(t.propina)}` : ''));
+      else if (t.propina) aviso(`✓ Cobrado con ${euros(t.propina)} de propina`);
       if (parcial) {
         pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta();
         aviso(`✓ Cobrado ${euros(t.total)} (${t.serie}-${t.numero}). Quedan ${euros(lineasPendientes().reduce((a, l) => a + l.unitario * l.cantidad, 0))} en la mesa.`);
@@ -859,19 +935,48 @@
   };
 
   /* ══ Control: quitar productos enviados y anular cuentas (con clave de encargado) ══ */
-  const dq = $('#dlg-quitar'); let qAcc = null;
+  const dq = $('#dlg-quitar'); let qAcc = null, dqModo = 'quitar', dqPct = null;
+  const MOTIVOS = { quitar: ['Error al marcar', 'El cliente lo cambia', 'Tarda demasiado', 'Producto con fallo'],
+                    dto: ['Invitación de la casa', 'Compensación por espera', 'Producto con fallo', 'Cliente habitual'] };
+  function pintaDq() {
+    const l = qAcc && qAcc.tipo === 'linea' ? (pedidosCuenta.find(x => x.id === qAcc.pid) || { lineas: [] }).lineas[qAcc.i] : null;
+    dq.querySelectorAll('[data-dq]').forEach(b => b.classList.toggle('activo', b.dataset.dq === dqModo));
+    $('#dq-modos').hidden = !l;
+    $('#dq-dto').hidden = dqModo !== 'dto';
+    $('#dq-titulo').textContent = qAcc && qAcc.tipo === 'cuenta' ? 'Anular cuenta' : dqModo === 'dto' ? 'Descuento en el producto' : 'Quitar producto';
+    $('#dq-cant-txt').textContent = dqModo === 'dto' ? 'Cuántos llevan el descuento' : 'Cuántos quitar';
+    $('#dq-motivo').placeholder = dqModo === 'dto' ? 'Por qué se descuenta' : 'Por qué se quita';
+    $('#dq-motivos').innerHTML = MOTIVOS[dqModo].map(t => `<button type="button" data-mot="${t}">${t}</button>`).join('');
+    $('#dq-ok').textContent = dqModo === 'dto' ? (dqPct === 0 ? 'Quitar descuento' : dqPct === 100 ? 'Invitar' : 'Aplicar descuento') : 'Confirmar';
+    $('#dq-ok').className = 'b ' + (dqModo === 'dto' ? 'b-ok' : 'b-mal');
+    if (l) {
+      $('#dq-sin-dto').hidden = !l.dto;
+      $('#dq-pcts').querySelectorAll('[data-pct]').forEach(b => b.classList.toggle('sel', +b.dataset.pct === dqPct));
+      const q = Math.max(1, Math.min(+$('#dq-cant').value || 1, porCobrar(l))); const orig = l.unitario_original ?? l.unitario;
+      $('#dq-dto-txt').textContent = dqPct == null ? 'Elige el descuento.' : dqPct === 0 ? `Vuelve a ${euros(orig * q)}.`
+        : `${q}× ${l.nombre}: ${euros(orig * q)} → ${euros(Math.round(orig * (100 - dqPct) / 100) * q)}`;
+    }
+  }
+  dq.addEventListener('click', e => {
+    const m = e.target.closest('[data-dq]'); if (m) { dqModo = m.dataset.dq; dqPct = null; $('#dq-pct').value = ''; pintaDq(); return; }
+    const p = e.target.closest('[data-pct]'); if (p) { dqPct = +p.dataset.pct; $('#dq-pct').value = ''; pintaDq(); }
+  });
+  $('#dq-pct').addEventListener('input', () => { const v = parseInt($('#dq-pct').value, 10); dqPct = v >= 1 && v <= 100 ? v : null; pintaDq(); });
+  $('#dq-cant').addEventListener('input', () => pintaDq());
   function prepQuitar(titulo, detalle, conCantidad, max) {
+    dqModo = 'quitar'; dqPct = null; $('#dq-pct').value = '';
     $('#dq-titulo').textContent = titulo; $('#dq-detalle').innerHTML = detalle;
     $('#dq-cant-l').hidden = !conCantidad; $('#dq-cant').max = max || 1; $('#dq-cant').value = 1;
     $('#dq-motivo').value = ''; $('#dq-pin').value = ''; $('#dq-error').hidden = true;
     $('#dq-pin-l').hidden = esEncargado();
     $('#dq-pin-nota').textContent = esEncargado() ? 'Eres encargado: queda registrado a tu nombre.' : 'Hace falta la clave de un encargado. Queda registrado quién lo pide y quién lo autoriza.';
-    dq.showModal();
+    pintaDq(); dq.showModal();
   }
   function abreQuitar(pid, i) {
     const p = pedidosCuenta.find(x => x.id === pid); const l = p && p.lineas[i]; if (!l) return;
     qAcc = { tipo: 'linea', pid, i };
-    prepQuitar('Quitar producto', `<b>${l.cantidad}× ${esc(l.nombre)}</b> · comanda #${p.numero} · ${euros(l.unitario * l.cantidad)}<br><small>Ya se mandó a cocina: avisa en cocina si hay que pararlo.</small>`, l.cantidad > 1, l.cantidad);
+    const pend = porCobrar(l);
+    prepQuitar('Quitar producto', `<b>${l.cantidad}× ${esc(l.nombre)}</b> · comanda #${p.numero} · ${euros(l.unitario * l.cantidad)}${l.dto ? ` <small class="dto">(${l.dto === 100 ? 'invitado' : '−' + l.dto + ' %'})</small>` : ''}<br><small>Ya se mandó a cocina: avisa en cocina si hay que pararlo.</small>`, pend > 1, pend);
   }
   function abreAnular() {
     const tot = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
@@ -883,10 +988,15 @@
     const motivo = $('#dq-motivo').value.trim(); const pin = $('#dq-pin').value.trim();
     const fallo = t => { $('#dq-error').textContent = t; $('#dq-error').hidden = false; };
     if (motivo.length < 3) return fallo('Escribe el motivo (queda registrado).');
+    if (dqModo === 'dto' && dqPct == null) return fallo('Elige el descuento.');
     if (!esEncargado() && !/^[0-9]{4,8}$/.test(pin)) return fallo('Falta la clave del encargado.');
     const btn = $('#dq-ok'); btn.disabled = true;
     try {
-      if (qAcc.tipo === 'linea') {
+      if (qAcc.tipo === 'linea' && dqModo === 'dto') {
+        await api.descontarLinea(qAcc.pid, qAcc.i, +$('#dq-cant').value || 1, dqPct, motivo, pin);
+        dq.close(); aviso(dqPct === 0 ? 'Descuento quitado.' : dqPct === 100 ? '✓ Producto invitado y registrado.' : `✓ Descuento del ${dqPct} % aplicado y registrado.`);
+        pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta();
+      } else if (qAcc.tipo === 'linea') {
         await api.anularLinea(qAcc.pid, qAcc.i, +$('#dq-cant').value || 1, motivo, pin);
         dq.close(); aviso('Producto quitado y registrado. Avisa en cocina si ya lo estaban haciendo.');
         pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta();
@@ -897,7 +1007,7 @@
       }
     } catch (ex) {
       const m = mensajeError(ex); fallo(m);
-      if (/clave de encargado incorrecta/i.test(m)) { api.apuntarPinFallido(LOCAL, qAcc.tipo === 'linea' ? 'quitar producto' : 'anular cuenta'); $('#dq-pin').value = ''; $('#dq-pin').focus(); }
+      if (/clave de encargado incorrecta/i.test(m)) { api.apuntarPinFallido(LOCAL, qAcc.tipo === 'linea' ? (dqModo === 'dto' ? 'descuento en producto' : 'quitar producto') : 'anular cuenta'); $('#dq-pin').value = ''; $('#dq-pin').focus(); }
     } finally { btn.disabled = false; }
   };
 
@@ -905,7 +1015,7 @@
   let resumen = null;
   // "12,50", "1.234,50" o "12.50" (teclado con punto) → céntimos
   const cent = v => { let t = String(v || '').trim(); t = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : (/^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, '') : t); const n = Math.round(parseFloat(t) * 100); return isNaN(n) ? null : n; };
-  const esperadoCaja = r => r.fondo_inicial + r.efectivo + (r.entradas || 0) - (r.salidas || 0);
+  const esperadoCaja = r => r.fondo_inicial + r.efectivo + (r.propinas_efectivo || 0) + (r.entradas || 0) - (r.salidas || 0);
   function pintaCierre() {
     if (!resumen) return;
     const esperado = esperadoCaja(resumen);
@@ -931,7 +1041,7 @@
       <b>${m.tipo === 'salida' ? '−' : '+'}${euros(m.importe)}</b></div>`).join('') : '<p class="vacio">Ninguno desde el último cierre.</p>';
     pintaCierre();
   }
-  const MV_RAPIDOS = { entrada: ['Cambio', 'Fondo de caja', 'Devolución de proveedor'], salida: ['Pago a proveedor', 'Compra urgente', 'Ingreso al banco', 'Adelanto de sueldo'] };
+  const MV_RAPIDOS = { entrada: ['Cambio', 'Fondo de caja', 'Devolución de proveedor'], salida: ['Pago a proveedor', 'Compra urgente', 'Ingreso al banco', 'Propinas al equipo', 'Adelanto de sueldo'] };
   let mvTipo = 'salida';
   $('#dlg-caja').addEventListener('click', e => {
     const b = e.target.closest('[data-mv]'); if (!b) return;
@@ -969,6 +1079,9 @@
     $('#cz-desde').textContent = desde;
     $('#cz-fondo').textContent = euros(resumen.fondo_inicial); $('#cz-efectivo').textContent = euros(resumen.efectivo);
     $('#cz-tarjeta').textContent = euros(resumen.tarjeta); $('#cz-online').textContent = euros(resumen.online);
+    { const pe = resumen.propinas_efectivo || 0, pt = resumen.propinas_tarjeta || 0, po = resumen.propinas_online || 0;
+      $('#cz-propinas').textContent = euros(pe + pt + po);
+      $('#cz-prop-det').textContent = pe + pt + po ? `efectivo ${euros(pe)} (en el cajón) · tarjeta ${euros(pt)}${po ? ' · online ' + euros(po) : ''}` : ''; }
     pintaMovimientos();
     $('#cz-anul').textContent = resumen.anulaciones ? `${resumen.anulaciones} (${euros(resumen.importe_anulado)})` : '0';
     $('#cz-abiertas').hidden = !resumen.cuentas_abiertas;
@@ -1015,6 +1128,9 @@
         <div class="l"><span>Invitaciones</span><span>${z.invitaciones}</span></div>
         <div class="l"><span>Anulaciones</span><span>${z.anulaciones} · ${euros(z.importe_anulado)}</span></div><hr>
         <div class="l tot"><span>VENTAS</span><span>${euros(z.efectivo + z.tarjeta + z.online)}</span></div><hr>
+        ${(z.propinas_efectivo || 0) + (z.propinas_tarjeta || 0) + (z.propinas_online || 0) ? `<div class="l"><span>Propinas efectivo</span><span>${euros(z.propinas_efectivo || 0)}</span></div>
+        <div class="l"><span>Propinas tarjeta</span><span>${euros(z.propinas_tarjeta || 0)}</span></div>
+        ${z.propinas_online ? `<div class="l"><span>Propinas online</span><span>${euros(z.propinas_online)}</span></div>` : ''}<hr>` : ''}
         <div class="l"><span>Fondo inicial</span><span>${euros(z.fondo_inicial)}</span></div>
         ${z.entradas ? `<div class="l"><span>Metido en caja</span><span>+${euros(z.entradas)}</span></div>` : ''}
         ${z.salidas ? `<div class="l"><span>Sacado de caja</span><span>−${euros(z.salidas)}</span></div>` : ''}

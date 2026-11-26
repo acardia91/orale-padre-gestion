@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611251500">
+<link rel="stylesheet" href="tpv.css?v=202611260138">
 </head>
 <body>
 
@@ -64,6 +64,7 @@
       <button class="b" id="b-llevar" type="button">+ <span class="solo-ancho">Para </span>llevar</button>
       <button class="b" id="b-agotados" type="button">Agotados</button>
       <button class="b" id="b-caja" type="button">Caja</button>
+      <button class="b b-mini" id="b-impresora" type="button" title="Impresora de tickets">🖨</button>
       <button class="b b-mini" id="b-sonido" type="button" aria-pressed="false" title="Sonido de pedidos web: tocar para silenciar">🔔</button>
       <button class="b b-mini" id="b-instalar" type="button" hidden title="Instalar el TPV como app en este dispositivo">⬇ Instalar app</button>
       <button class="b b-mini" id="b-salir" type="button" title="Cerrar sesión (cambiar de persona)">Salir</button>
@@ -100,6 +101,7 @@
         <div><h2 id="c-nombre"></h2><small id="c-info"></small></div>
         <button class="b b-mini" id="c-menu" type="button" aria-haspopup="menu">⋯</button>
         <div class="menu" id="menu-cuenta" role="menu" hidden>
+          <button type="button" role="menuitem" data-m="comensales">Comensales</button>
           <button type="button" role="menuitem" data-m="mover">Cambiar de mesa</button>
           <button type="button" role="menuitem" data-m="pasar">Pasar productos a otra cuenta</button>
           <button type="button" role="menuitem" data-m="juntar">Juntar con otra mesa</button>
@@ -162,15 +164,23 @@
 <dialog class="dlg" id="dlg-quitar">
   <form method="dialog">
     <h2 id="dq-titulo">Quitar producto</h2>
-    <p id="dq-detalle" style="margin:0 0 12px"></p>
-    <label class="campo" id="dq-cant-l">Cuántos quitar<input id="dq-cant" type="number" min="1" value="1" inputmode="numeric"></label>
-    <label class="campo">Motivo<input id="dq-motivo" maxlength="120" autocomplete="off" placeholder="Por qué se quita"></label>
-    <div class="rapidos" id="dq-motivos">
-      <button type="button" data-mot="Error al marcar">Error al marcar</button>
-      <button type="button" data-mot="El cliente lo cambia">El cliente lo cambia</button>
-      <button type="button" data-mot="Tarda demasiado">Tarda demasiado</button>
-      <button type="button" data-mot="Producto con fallo">Producto con fallo</button>
+    <div class="cb-modos" id="dq-modos" role="group" aria-label="Qué hacer con el producto">
+      <button type="button" data-dq="quitar" class="activo">Quitar</button>
+      <button type="button" data-dq="dto">Descuento / invitar</button>
     </div>
+    <p id="dq-detalle" style="margin:0 0 12px"></p>
+    <label class="campo" id="dq-cant-l"><span id="dq-cant-txt">Cuántos quitar</span><input id="dq-cant" type="number" min="1" value="1" inputmode="numeric"></label>
+    <div id="dq-dto" hidden>
+      <div class="rapidos" id="dq-pcts">
+        <button type="button" data-pct="10">−10 %</button><button type="button" data-pct="20">−20 %</button>
+        <button type="button" data-pct="50">−50 %</button><button type="button" data-pct="100">Invitar (gratis)</button>
+        <button type="button" data-pct="0" id="dq-sin-dto" hidden>Quitar descuento</button>
+      </div>
+      <label class="campo">Otro descuento (%)<input id="dq-pct" type="number" min="1" max="100" inputmode="numeric" placeholder="—"></label>
+      <p class="dq-dto-txt" id="dq-dto-txt"></p>
+    </div>
+    <label class="campo">Motivo<input id="dq-motivo" maxlength="120" autocomplete="off" placeholder="Por qué se quita"></label>
+    <div class="rapidos" id="dq-motivos"></div>
     <label class="campo" id="dq-pin-l">Clave del encargado<input id="dq-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="8"></label>
     <p class="nota-pin" id="dq-pin-nota"></p>
     <p class="err" id="dq-error" role="alert" hidden></p>
@@ -246,6 +256,12 @@
     </div>
     <div class="cb-desc" id="cb-desc" hidden><span>Subtotal <b id="cb-bruto"></b></span><span>Descuento <b id="cb-dto"></b></span></div>
     <p class="cb-total" id="cb-total"></p>
+    <div class="cb-propina" id="cb-propina">
+      <span class="cb-prop-tit">Propina</span>
+      <div class="rapidos" id="cb-prop"></div>
+      <label class="campo" id="cb-prop-otra-l" hidden>Propina (€)<input id="cb-prop-otra" inputmode="decimal" autocomplete="off"></label>
+      <p class="cb-prop-txt" id="cb-prop-txt" hidden></p>
+    </div>
     <p class="cb-partes"><label>Entre <input id="cb-partes" type="number" min="2" max="30" inputmode="numeric" placeholder="—"> personas</label> <b id="cb-cada"></b></p>
     <p class="cb-invita" id="cb-invita" hidden>Invitación: no hay nada que cobrar. Se emite el ticket a 0,00 €.</p>
     <div class="cb-metodo" id="cb-metodos" role="radiogroup" aria-label="Forma de pago">
@@ -264,6 +280,16 @@
       <button class="b" value="cancel">Volver</button>
       <button class="b b-ok" type="button" id="cb-ok">Confirmar cobro</button>
     </div>
+  </form>
+</dialog>
+
+<!-- ── Comensales ── -->
+<dialog class="dlg" id="dlg-pers">
+  <form method="dialog">
+    <h2>¿Cuántos son?</h2>
+    <p class="nota-pin" id="pe-mesa"></p>
+    <div class="pe-num" id="pe-num"></div>
+    <div class="dlg-pie"><button class="b" value="cancel">Saltar</button><button class="b" type="button" id="pe-quitar" hidden>Sin apuntar</button></div>
   </form>
 </dialog>
 
@@ -326,6 +352,7 @@
         <div><small>Tarjeta</small><b id="cz-tarjeta"></b></div>
         <div><small>Online</small><b id="cz-online"></b></div>
         <div><small>Anulaciones</small><b id="cz-anul"></b></div>
+        <div><small>Propinas</small><b id="cz-propinas"></b><small id="cz-prop-det"></small></div>
         <div><small>Metido en caja</small><b id="cz-entradas"></b></div>
         <div><small>Sacado de caja</small><b id="cz-salidas"></b></div>
         <div class="cz-dest"><small>Debe haber en el cajón</small><b id="cz-esperado"></b></div>
@@ -360,10 +387,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611251500"></script>
+<script src="/pedir/api.js?v=202611260138"></script>
+<script src="/pedir/acceso.js?v=202611260138"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611251500"></script>
-<script src="/pedir/plano.js?v=202611251500"></script>
-<script src="tpv.js?v=202611251500"></script>
+<script src="/pedir/ticket.js?v=202611260138"></script>
+<script src="/pedir/plano.js?v=202611260138"></script>
+<script src="tpv.js?v=202611260138"></script>
 </body>
 </html>
