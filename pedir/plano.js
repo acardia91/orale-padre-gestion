@@ -23,10 +23,9 @@
   .pl-el.f-pared{background:#574548;border-color:#574548;color:#F5EEE6;border-radius:2px}
   .pl-el.f-puerta{background:transparent;border:3px dashed #C98A12;color:#8a5f0c;border-radius:4px}
   .pl-el.f-planta{background:#E4EEDD;border-color:#4F7A3A;color:#4F7A3A;border-radius:50%}
-  .pl-el.ocupada{background:#7C2430;border-color:#5E1A24;color:#fff}
-  .pl-el.pendiente::after{content:"";position:absolute;top:8%;right:8%;width:1.6cqw;height:1.6cqw;min-width:8px;min-height:8px;border-radius:50%;background:#C98A12}
-  .pl-el.ocupada.t-ambar{background:#B7791F;border-color:#8a5a12}
-  .pl-el.ocupada.t-rojo{background:#B3261E;border-color:#8c1d17}
+  .pl-el.ocupada{background:#2B5C8A;border-color:#1F4568;color:#fff}
+  .pl-el.pendiente::after{content:"";position:absolute;top:8%;right:8%;width:1.6cqw;height:1.6cqw;min-width:8px;min-height:8px;border-radius:50%;background:#E0A030;box-shadow:0 0 0 2px #fff}
+  .pl-el.ocupada.t-ambar{background:#E0A030;border-color:#C98A12;color:#241A1C}
   .pl-el.sel{outline:3px solid #2F6A9E;outline-offset:2px;z-index:3}
   .pl-asa{position:absolute;right:-2px;bottom:-2px;width:max(16px,2cqw);height:max(16px,2cqw);background:#2F6A9E;border-radius:3px;cursor:nwse-resize}
   `;
