@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611261501">
+<link rel="stylesheet" href="tpv.css?v=202611261510">
 </head>
 <body>
 
@@ -256,9 +256,11 @@
     <div class="cb-modos" role="group" aria-label="Qué se cobra">
       <button type="button" data-modo="todo" class="activo">Todo</button>
       <button type="button" data-modo="productos">Dividir por productos</button>
+      <button type="button" data-modo="partes">Partes iguales</button>
     </div>
+    <p class="cb-parte-info" id="cb-parte-info" hidden></p>
     <div class="cb-items" id="cb-items" hidden></div>
-    <div class="cb-promo">
+    <div class="cb-promo" id="cb-promo-b">
       <label class="campo">Promoción<select id="cb-promo"><option value="">Sin promoción</option></select></label>
       <label class="campo" id="cb-nota-l" hidden>Nota de la promoción<input id="cb-nota" maxlength="80" autocomplete="off" placeholder="Nombre del empleado o del socio"></label>
     </div>
@@ -397,11 +399,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611261501"></script>
-<script src="/pedir/acceso.js?v=202611261501"></script>
+<script src="/pedir/api.js?v=202611261510"></script>
+<script src="/pedir/acceso.js?v=202611261510"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611261501"></script>
-<script src="/pedir/plano.js?v=202611261501"></script>
-<script src="tpv.js?v=202611261501"></script>
+<script src="/pedir/ticket.js?v=202611261510"></script>
+<script src="/pedir/plano.js?v=202611261510"></script>
+<script src="tpv.js?v=202611261510"></script>
 </body>
 </html>

@@ -646,6 +646,7 @@
     const tEnv = lineasPendientes().reduce((s, l) => s + l.unitario * l.cantidad, 0);
     const tCob = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.lineas.reduce((a, l) => a + l.unitario * (l.pagadas || 0), 0), 0);
     if (tCob) $('#c-info').textContent += ` · cobrado ${euros(tCob)}`;
+    if (cuenta.partes_pagadas > 0) $('#c-info').textContent += ` · a partes iguales: ${cuenta.partes_pagadas} de ${cuenta.partes} pagadas`;
     const tPend = pend.reduce((s, l) => s + (idx.prod.has(l.producto) ? precioLinea(idx, l, enSala()) * l.cantidad : 0), 0);
     $('#c-total').textContent = euros(tEnv + tPend); { const nL = ((pedidosCuenta || []).flatMap(x => (x.lineas || [])).length) + (((pendientes[cuenta && cuenta.id] || [])).length); $('#c-hoja-txt').textContent = `Cuenta · ${nL} ${nL === 1 ? 'línea' : 'líneas'} · ${$('#c-total').textContent}`; }
     if (enviando[cuenta.id]) { $('#c-enviar').textContent = 'Enviando…'; $('#c-enviar').disabled = true; $('#c-espera').disabled = true; }
@@ -1014,6 +1015,20 @@
       return `<div class="cb-item ${n ? 'sel' : ''}"><span>${esc(l.nombre)}<small>${euros(l.unitario)} · quedan ${l.cantidad}</small></span>
         <div class="ctl"><button type="button" data-k="${k}" data-d="-1" aria-label="Uno menos">−</button><output>${n}</output><button type="button" data-k="${k}" data-d="1" aria-label="Uno más">+</button></div></div>`; }).join('');
     lineasCobro = modo === 'todo' ? todasPend : todasPend.filter(l => elegidos[clave(l)]).map(l => ({ ...l, cantidad: elegidos[clave(l)] }));
+    // Partes iguales: cada persona paga su parte con su ticket y su forma de pago (efectivo o tarjeta).
+    const enCurso = cuenta.partes_pagadas > 0;
+    dc.querySelectorAll('[data-modo="todo"],[data-modo="productos"]').forEach(b => { b.hidden = enCurso; });
+    $('#cb-promo-b').hidden = modo === 'partes';
+    $('#cb-partes').disabled = enCurso; if (enCurso) $('#cb-partes').value = cuenta.partes;
+    $('#cb-parte-info').hidden = modo !== 'partes';
+    if (modo === 'partes') {
+      $('#cb-promo').value = '';
+      const np = parseInt($('#cb-partes').value, 10);
+      if (np >= 2 && np <= 30) {
+        const r = OP.lineasParteIgual(pedidosCuenta, cuenta, np); lineasCobro = r.lineas;
+        $('#cb-parte-info').textContent = `Parte ${r.n} de ${r.P}${enCurso ? ` · ya han pagado ${cuenta.partes_pagadas}` : ''}. Cada uno paga lo suyo, en efectivo o con tarjeta, y se lleva su ticket.`;
+      } else { lineasCobro = []; $('#cb-parte-info').textContent = 'Escribe abajo entre cuántas personas se paga.'; }
+    }
   }
   dc.addEventListener('click', e => {
     const m = e.target.closest('[data-modo]'); if (m) { modo = m.dataset.modo; pintaModo(); recalcula(); return; }
@@ -1022,14 +1037,14 @@
     elegidos[b.dataset.k] = Math.max(0, Math.min(l.cantidad, (elegidos[b.dataset.k] || 0) + +b.dataset.d));
     pintaModo(); recalcula();
   });
-  $('#cb-partes').addEventListener('input', () => recalcula());
+  $('#cb-partes').addEventListener('input', () => { if (modo === 'partes') pintaModo(); recalcula(); });
   const promoSel = () => promos.find(p => p.id === $('#cb-promo').value) || null;
   $('#c-cobrar').onclick = async () => {
     if ((pendientes[cuenta.id] || []).length) {
       if (!confirm('Hay productos sin enviar a cocina. ¿Enviarlos ahora y cobrar?')) return;
       if (!(await enviar())) return;
     }
-    todasPend = lineasPendientes(); modo = 'todo'; elegidos = {};
+    todasPend = lineasPendientes(); modo = cuenta.partes_pagadas > 0 ? 'partes' : 'todo'; elegidos = {};
     lineasCobro = todasPend;
     if (!todasPend.length) return;
     try { promos = (await api.promociones(LOCAL)).filter(p => p.activa); } catch (e) { promos = []; }
@@ -1040,15 +1055,16 @@
     $('#cb-nombre').textContent = cuenta.nombre; $('#cb-nota').value = '';
     $('#cb-entregado').value = ''; $('#cb-error').hidden = true;
     dc.querySelector('[value=efectivo]').checked = true;
-    $('#cb-partes').value = ''; propModo = 'p0'; $('#cb-prop-otra').value = ''; pintaModo();
+    if (!(cuenta.partes_pagadas > 0)) $('#cb-partes').value = '';
+    propModo = 'p0'; $('#cb-prop-otra').value = ''; pintaModo();
     recalcula(); dc.showModal();
   };
   function recalcula() {
     const promo = promoSel(); const r = calculaTicket(lineasCobro, promo); aCobrar = r.total;
     const np = parseInt($('#cb-partes').value, 10);
-    $('#cb-cada').textContent = np > 1 && aCobrar ? `${euros(Math.ceil(aCobrar / np))} cada uno (${np} personas)` : '';
+    $('#cb-cada').textContent = modo === 'partes' ? '' : np > 1 && aCobrar ? `${euros(Math.ceil(aCobrar / np))} cada uno (${np} personas)` : '';
     $('#cb-ok').disabled = !lineasCobro.length;
-    $('#cb-ok').textContent = modo === 'productos' ? (lineasCobro.length ? `Cobrar ${euros(aCobrar)} de ${euros(calculaTicket(todasPend).total)}` : 'Elige qué se cobra') : 'Confirmar cobro';
+    $('#cb-ok').textContent = modo === 'partes' ? (lineasCobro.length ? `Cobrar esta parte · ${euros(aCobrar)}` : 'Di entre cuántos') : modo === 'productos' ? (lineasCobro.length ? `Cobrar ${euros(aCobrar)} de ${euros(calculaTicket(todasPend).total)}` : 'Elige qué se cobra') : 'Confirmar cobro';
     $('#cb-nota-l').hidden = !(promo && promo.requiere_nota);
     $('#cb-desc').hidden = !r.descuento; $('#cb-bruto').textContent = euros(r.bruto); $('#cb-dto').textContent = '−' + euros(r.descuento);
     pintaPropina(); const aPagar = aCobrar + propina;
@@ -1085,6 +1101,27 @@
     }
     if (propModo === 'otra' && propina > Math.min(20000, aCobrar)) return fallo('La propina no puede pasar del total ni de 200 €.');
     const btn = $('#cb-ok'); btn.disabled = true;
+    if (modo === 'partes') {
+      try {
+        const np = parseInt($('#cb-partes').value, 10);
+        const t = await api.cobrarParteIgual({ cuenta: cuenta.id, partes: np, metodo: met, entregado, propina: aCobrar ? propina : 0 });
+        dc.close();
+        const cajon = met === 'efectivo';
+        if ($('#cb-imprimir').checked) OP.imprimir(OP.ticketFactura(t), { cajon }); else if (cajon) OP.abrirCajon(true);
+        cuentas = await api.cuentasAbiertas(LOCAL);
+        const sigue = cuentas.find(x => x.id === cuenta.id);
+        if (sigue) {
+          cuenta = sigue; pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta();
+          aviso(`✓ Parte ${sigue.partes_pagadas} de ${sigue.partes} cobrada (${euros(t.total)}${t.cambio ? ' · cambio ' + euros(t.cambio) : ''}). Siguiente persona…`);
+          setTimeout(() => $('#c-cobrar').click(), 400);   // la siguiente persona, sin tocar nada
+        } else {
+          aviso(`✓ Mesa pagada entera en ${np} partes${t.cambio ? ' · cambio ' + euros(t.cambio) : ''}`);
+          delete pendientes[cuenta.id]; guardaPend(); await recarga(); verSala();
+        }
+      } catch (ex) { if (esDeRed(ex)) { ponConexion(false); fallo('Sin conexión: esta parte NO se ha cobrado. Espera a que vuelva la conexión.'); } else fallo(mensajeError(ex)); }
+      finally { btn.disabled = false; }
+      return;
+    }
     try {
       const items = modo === 'productos' ? lineasCobro.map(l => ({ pedido: l._pedido, indice: l._indice, cantidad: l.cantidad })) : undefined;
       const parcial = modo === 'productos' && lineasCobro.reduce((a, l) => a + l.cantidad, 0) < todasPend.reduce((a, l) => a + l.cantidad, 0);
