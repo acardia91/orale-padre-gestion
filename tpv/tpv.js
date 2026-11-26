@@ -4,6 +4,15 @@
   const { api, DEMO, indexar, precioLinea, mensajeError, euros, partesMadrid, calculaTicket } = window.OP;
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Repintar sólo si ha cambiado: rehacer la lista mientras se desliza el dedo corta el scroll en la tablet.
+  const ponHTML = (el, h) => { if (el && el._h !== h) { el._h = h; el.innerHTML = h; return true; } return false; };
+  // Mientras alguien toca o desliza, las recargas automáticas esperan (y se hacen al soltar).
+  let tocando = false, tSuelta = null, recPendiente = false;
+  const suelta = (ms) => { clearTimeout(tSuelta); tSuelta = setTimeout(() => { tocando = false; if (recPendiente) { recPendiente = false; recarga(); } }, ms); };
+  document.addEventListener('touchstart', () => { tocando = true; clearTimeout(tSuelta); }, { passive: true, capture: true });
+  document.addEventListener('touchend', () => suelta(700), { passive: true, capture: true });
+  document.addEventListener('touchcancel', () => suelta(700), { passive: true, capture: true });
+  document.addEventListener('scroll', () => { if (tocando) suelta(700); }, { passive: true, capture: true });
   const ls = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
 
   let LOCAL = new URLSearchParams(location.search).get('local') || ls('op-tpv-local') || 'tomares';
@@ -154,6 +163,7 @@
 
   function recarga() { return recargando || (recargando = recargaYa().finally(() => { recargando = null; })); }
   async function recargaYa() {
+    if (tocando) { recPendiente = true; return; }
     try {
       let hoy;
       const d0 = new Date(); d0.setHours(0, 0, 0, 0); const d1 = new Date(d0); d1.setDate(d1.getDate() + 1);
@@ -361,15 +371,15 @@
       } });
     } else {
       cont.className = 'mesas';
-      cont.innerHTML = deZona.filter(m => m.tipo !== 'deco').map(m => {
+      ponHTML(cont, deZona.filter(m => m.tipo !== 'deco').map(m => {
         const c = cuentas.find(x => x.mesa_id === m.id);
         const rv = !c && reservaDeMesa(m.id);
         const av = m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : '';
         return c ? tileCuenta(c, m.nombre, m) : `<button class="mesa ${m.aviso && m.aviso.tipo === 'pagado' ? 'llama-pagado' : ''}" type="button" data-mesa="${esc(m.id)}"><strong>${esc(m.nombre)}</strong><small>${rv ? `<span class="rv-mesa">Reserva ${hhmm(rv.fecha)} · ${rv.personas}p</span>` : 'Libre'}</small>${av}</button>`;
-      }).join('') || '<p class="vacio">No hay mesas en esta zona.</p>';
+      }).join('') || '<p class="vacio">No hay mesas en esta zona.</p>');
     }
     const sueltas = cuentas.filter(c => !c.mesa_id);
-    $('#sueltas').innerHTML = sueltas.map(c => tileCuenta(c, c.nombre)).join('') || '<p class="vacio">Ninguna abierta. Usa “+ Terraza”, “+ Barra” o “+ Para llevar”.</p>';
+    ponHTML($('#sueltas'), sueltas.map(c => tileCuenta(c, c.nombre)).join('') || '<p class="vacio">Ninguna abierta. Usa “+ Terraza”, “+ Barra” o “+ Para llevar”.</p>');
     sumasSala(); pintaAvisos();
   }
 
@@ -592,13 +602,13 @@
       : (cat ? cat.productos : []);
     $('#cats').classList.toggle('buscando', !!q);
     const lista = ids.map(id => idx.prod.get(id)).filter(vale);
-    if (q && !lista.length) { $('#prods').innerHTML = `<p class="vacio">Nada con “${esc($('#buscar').value.trim())}”.</p>`; return; }
-    $('#prods').innerHTML = lista.map(p => {
+    if (q && !lista.length) { ponHTML($('#prods'), `<p class="vacio">Nada con “${esc($('#buscar').value.trim())}”.</p>`); return; }
+    ponHTML($('#prods'), lista.map(p => {
        const ag = p.agotado || agotados.has(p.id);
       return `<button class="prod ${p.grupos.length ? 'extras' : ''} ${p.foto ? 'con-foto' : ''}" type="button" data-prod="${p.id}" ${ag ? 'disabled' : ''}>
         ${p.foto ? `<img src="${esc(p.foto)}" alt="" loading="lazy">` : `<i class="ini">${esc(p.nombre.replace(/^(Burro|Nude|Taco|Quesadilla|Combo)\s+/i, '').slice(0, 2))}</i>`}
         <b>${esc(p.nombre)}</b><span>${ag ? 'Agotado' : euros(enSala() && Number.isInteger(p.precio_local) ? p.precio_local : p.precio)}</span></button>`;
-    }).join('');
+    }).join(''));
   }
   const quitaAcentos = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { catActiva = b.dataset.cat; $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); } });
@@ -642,7 +652,7 @@
         <div class="ln-txt" data-nota="${i}" role="button" title="Tocar para añadir una nota">${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : '<small class="add-nota">✂︎ Quitar / nota</small>'}</div>
         <span class="imp">${p ? euros(precioLinea(idx, l, enSala()) * l.cantidad) : ''}</span></div>`;
     }).join('') : '';
-    $('#c-lineas').innerHTML = (enviados + pendHTML) || '<p class="vacio">Toca los productos de la carta para añadirlos.</p>';
+    const cambiaL = ponHTML($('#c-lineas'), (enviados + pendHTML) || '<p class="vacio">Toca los productos de la carta para añadirlos.</p>');
     const tEnv = lineasPendientes().reduce((s, l) => s + l.unitario * l.cantidad, 0);
     const tCob = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.lineas.reduce((a, l) => a + l.unitario * (l.pagadas || 0), 0), 0);
     if (tCob) $('#c-info').textContent += ` · cobrado ${euros(tCob)}`;
@@ -657,7 +667,10 @@
     }
     $('#c-cobrar').disabled = !(tEnv + tPend);
     $('#c-repetir').hidden = !ultimaComanda();
-    const el = $('#c-lineas'); el.scrollTop = el.scrollHeight;
+    // Bajar al final sólo al abrir la cuenta o si hay líneas nuevas (no en cada recarga: si no, salta mientras miras arriba).
+    const el = $('#c-lineas'); const nL = el.querySelectorAll('.ln').length;
+    if (cambiaL && (pintaCuenta._id !== cuenta.id || nL > (pintaCuenta._n || 0))) el.scrollTop = el.scrollHeight;
+    pintaCuenta._id = cuenta.id; pintaCuenta._n = nL;
   }
   $('#c-lineas').addEventListener('click', e => {
     const mb = e.target.closest('[data-marchar]'); if (mb) { const p = pedidosCuenta.find(x => x.id === mb.dataset.marchar); if (p) marchar(p); return; }

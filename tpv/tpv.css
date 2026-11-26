@@ -517,3 +517,9 @@ a.b{text-decoration:none}
 /* Ir rápido a Comandas: en burdeos */
 .b.b-ir{background:var(--burdeos,#7C2430)!important;border-color:var(--burdeos,#7C2430)!important;color:#fff!important}
 .b.b-ir svg{stroke:#fff}
+
+/* Tablet: que la página no se mueva entera (sólo las listas) y que el desplazamiento no se "pegue" */
+html,body{overflow:hidden;overscroll-behavior:none}
+#vista-app{height:100dvh}
+.sala,.prods,.tq-lineas,.cats,.caja-lista,.rc-lineas,.mesas.mini,.cb-items,.dlg{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+button,.b,a,.mesa,.prod{touch-action:manipulation}
