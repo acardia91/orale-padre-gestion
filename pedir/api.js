@@ -344,6 +344,11 @@
       todos.push(ped); guarda(K.pedidos, todos); avisa();
       return { pedido: ped.id, numero, total: ped.total };
     },
+    async enviarComandaEspera(cuentaId, lineas, notas) {
+      const r = await this.enviarComanda(cuentaId, lineas, notas);
+      const todos = lee(K.pedidos, []); todos.find(x => x.id === r.pedido).en_espera = true; guarda(K.pedidos, todos); avisa(); return r;
+    },
+    async marcharPedido(id) { await this.actualizarPedido(id, { en_espera: false, marchado: new Date().toISOString() }); },
     async pedidosDeCuenta(cuentaId) { return lee(K.pedidos, []).filter(p => p.cuenta_id === cuentaId); },
     async moverCuenta(cuentaId, mesaId) {
       const cs = lee(K.cuentas, []); const c = cs.find(x => x.id === cuentaId);
@@ -700,6 +705,8 @@
         p_para_llevar: !!para_llevar, p_comensales: comensales || null }));
     },
     async enviarComanda(cuenta, lineas, notas) { return ok(await cliente().rpc('enviar_comanda', { p_cuenta: cuenta, p_lineas: lineas, p_notas: notas || '' })); },
+    async enviarComandaEspera(cuenta, lineas, notas) { return ok(await cliente().rpc('enviar_comanda_espera', { p_cuenta: cuenta, p_lineas: lineas, p_notas: notas || '' })); },
+    async marcharPedido(id) { ok(await cliente().from('pedidos').update({ en_espera: false, marchado: new Date().toISOString() }).eq('id', id)); },
     async pedidosDeCuenta(cuenta) { return ok(await cliente().from('pedidos').select('*').eq('cuenta_id', cuenta).order('numero')); },
     async moverCuenta(cuenta, mesa) { ok(await cliente().rpc('mover_cuenta', { p_cuenta: cuenta, p_mesa_id: mesa })); },
     async pasarLineas(origen, destino, items) { return ok(await cliente().rpc('pasar_lineas', { p_origen: origen, p_destino: destino, p_items: items })); },
