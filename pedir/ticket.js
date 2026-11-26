@@ -332,9 +332,9 @@
     const url = 'https://www.oralepadre.com/opinion/?t=' + t.id;
     if (window.qrcode && t.id) {
       try { const q = window.qrcode(0, 'L'); q.addData(url); q.make();
-        return `<div class="c peq">¿Qué tal? Valóranos:</div><div class="c" data-qr="${esc(url)}">${q.createSvgTag({ cellSize: 3, margin: 0 })}</div>`; } catch (e) {}
+        return `<div class="c peq">Valóranos o pide tu factura con NIF:</div><div class="c" data-qr="${esc(url)}">${q.createSvgTag({ cellSize: 3, margin: 0 })}</div>`; } catch (e) {}
     }
-    return '<div class="c peq">¿Qué tal? Cuéntanoslo en<br><b>oralepadre.com/opinion</b></div>';
+    return '<div class="c peq">¿Qué tal? Cuéntanoslo en<br><b>oralepadre.com/opinion</b><br>¿Factura con NIF? Pídela en el local</div>';
   }
 
   // Comandas en papel al enviar a cocina: si este equipo tiene una térmica (Epson por red o RawBT) y nadie ha

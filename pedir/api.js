@@ -212,6 +212,11 @@
       const g = lee(K.promos, {}); g[local] = (await this.promociones(local)).filter(x => x.id !== id); guarda(K.promos, g); avisa();
     },
     async ticketsEntre(local, desde, hasta) { return lee(K.tickets, []).filter(t => t.local === local && t.fecha >= desde && t.fecha < hasta); },
+    // Facturas completas (con NIF): las guarda pedir/factura.js en este navegador.
+    async facturasEntre(local, desde, hasta) { return lee('op-demo-facturas', []).filter(f => f.local === local && f.fecha >= desde && f.fecha < hasta)
+      .map(f => ({ ...f, pedida_desde: f.pedida_desde || 'qr' })).sort((a, b) => b.fecha.localeCompare(a.fecha)); },
+    async ticketPorRef(local, serie, numero) { return lee(K.tickets, []).find(t => t.local === local && t.serie === serie && +t.numero === +numero) || null; },
+    async solicitarFactura(ticket, datos) { return OP.facturas.pedir(ticket, datos); },
     async deliveryEntre(desde, hasta) { return lee('op-demo-delivery', []).filter(r => r.fecha >= desde && r.fecha <= hasta); },
     async resumenesDelivery(desde, hasta) { return lee('op-demo-delivery-res', []).filter(r => r.fecha >= desde && r.fecha <= hasta).sort((a, b) => b.fecha.localeCompare(a.fecha)); },
     async guardarDelivery(filas, resumenes) {
@@ -711,6 +716,11 @@
     async cambiarRol(local, email, rol) { ok(await cliente().rpc('cambiar_rol', { p_local: local, p_email: email, p_rol: rol })); },
     async quitarStaff(local, email) { ok(await cliente().rpc('quitar_staff', { p_local: local, p_email: email })); },
     async ticketsEntre(local, desde, hasta) { return ok(await cliente().from('tickets').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('numero')); },
+    async facturasEntre(local, desde, hasta) {
+      return ok(await cliente().from('facturas').select('*').eq('local', local).gte('fecha', desde).lt('fecha', hasta).order('fecha', { ascending: false }))
+        .map(f => ({ ...f, numero: f.serie + '-' + String(f.numero).padStart(6, '0'), ticket: f.ticket_ref })); },
+    async ticketPorRef(local, serie, numero) { return ok(await cliente().from('tickets').select('id,serie,numero,fecha,total').eq('local', local).eq('serie', serie).eq('numero', numero).maybeSingle()); },
+    async solicitarFactura(ticket, datos) { return ok(await cliente().rpc('solicitar_factura', { p_ticket: ticket, p_datos: datos })); },
     // ── Delivery (Uber/Glovo) y costes de escandallo (sólo encargados) ──
     async deliveryEntre(desde, hasta) { return ok(await cliente().from('delivery_diario').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha')); },
     async resumenesDelivery(desde, hasta) { return ok(await cliente().from('delivery_resumen').select('*').gte('fecha', desde).lte('fecha', hasta).order('fecha', { ascending: false })); },
