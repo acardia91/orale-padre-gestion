@@ -78,6 +78,18 @@
     return u;
   }
   /** Lo que el servidor guarda como foto fija de cada línea. */
+  /* ── Partes iguales: la parte que paga la siguiente persona (igual que cobrar_parte_igual en el servidor) ── */
+  function lineasParteIgual(pedidos, c, partes) {
+    const P = c.partes_pagadas ? c.partes : partes, n = (c.partes_pagadas || 0) + 1, rest = P - (c.partes_pagadas || 0);
+    const grupos = {};
+    pedidos.filter(p => p.estado !== 'cancelado').forEach(p => p.lineas.forEach(l => { const q = l.cantidad - (l.pagadas || 0); if (q > 0) { const k = l.iva || 10; grupos[k] = (grupos[k] || 0) + l.unitario * q; } }));
+    const cobrado = { ...(c.partes_cobrado || {}) }, lineas = [];
+    Object.keys(grupos).map(Number).sort((a, b) => a - b).forEach(k => {
+      const falta = grupos[k] - (cobrado[k] || 0); const parte = rest === 1 ? falta : Math.round(falta / rest);
+      if (parte > 0) { lineas.push({ nombre: `Parte ${n} de ${P} · ${c.nombre}${k !== 10 ? ` (IVA ${k} %)` : ''}`, cantidad: 1, unitario: parte, opciones: [], iva: k, parte: true }); cobrado[k] = (cobrado[k] || 0) + parte; }
+    });
+    return { lineas, cobrado, n, P, rest };
+  }
   function fotoLineas(carta, lineas, agotados = new Set(), dow, paraLlevar = true) {
     const idx = indexar(carta);
     return lineas.map(l => {
@@ -505,14 +517,16 @@
         .forEach(p => { p.estado = 'cancelado'; p.motivo_cancel = 'Cuenta anulada: ' + motivo; });
       guarda(K.pedidos, ps); avisa();
     },
-    async cobrar({ cuenta, pedido, metodo, entregado, promocion, nota, items, propina }) {
+    async cobrar({ cuenta, pedido, metodo, entregado, promocion, nota, items, propina, _lineas, _ultima }) {
       const ps = lee(K.pedidos, []); const cs = lee(K.cuentas, []);
       let lineas, localId;
       const vivos = () => ps.filter(p => p.cuenta_id === cuenta && p.estado !== 'cancelado').sort((a, b) => a.numero - b.numero);
       if (cuenta) {
         const c = cs.find(x => x.id === cuenta); if (!c || c.estado !== 'abierta') throw new Error('COBRO: la cuenta no está abierta');
         localId = c.local;
-        if (items) {
+        if (c.partes_pagadas > 0 && !_lineas) throw new Error('COBRO: esta mesa se está pagando a partes iguales; cobra la parte siguiente');
+        if (_lineas) { lineas = _lineas; if (_ultima) vivos().forEach(p => p.lineas.forEach(l => { l.pagadas = l.cantidad; })); }
+        else if (items) {
           lineas = items.map(it => { const p = ps.find(x => x.id === it.pedido); const l = p.lineas[it.indice];
             if (it.cantidad > l.cantidad - (l.pagadas || 0)) throw new Error('COBRO: de "' + l.nombre + '" ya no quedan tantos por cobrar');
             l.pagadas = (l.pagadas || 0) + it.cantidad; const { pagadas, ...resto } = l; return { ...resto, cantidad: it.cantidad }; });
@@ -556,6 +570,16 @@
         ps.filter(p => p.cuenta_id === cuenta && p.estado !== 'cancelado').forEach(p => { p.pagado = true; p.pago_metodo = metodo; });
       } else { const p = ps.find(x => x.id === pedido); p.pagado = true; p.pago_metodo = metodo; }
       guarda(K.pedidos, ps); avisa(); return t;
+    },
+    async cobrarParteIgual({ cuenta, partes, metodo, entregado, propina }) {
+      const c = lee(K.cuentas, []).find(x => x.id === cuenta);
+      if (!c || c.estado !== 'abierta') throw new Error('COBRO: la cuenta no está abierta');
+      if (c.partes_pagadas > 0 && c.partes !== partes) throw new Error(`COBRO: esta mesa ya se está pagando en ${c.partes} partes (van ${c.partes_pagadas} pagadas)`);
+      const P = c.partes_pagadas ? c.partes : partes, n = (c.partes_pagadas || 0) + 1, rest = P - (c.partes_pagadas || 0);
+      const { lineas, cobrado } = lineasParteIgual(lee(K.pedidos, []).filter(p => p.cuenta_id === cuenta && p.estado !== 'cancelado'), c, P);
+      const t = await this.cobrar({ cuenta, metodo, entregado, propina, _lineas: lineas, _ultima: rest === 1 });
+      const cs = lee(K.cuentas, []); Object.assign(cs.find(x => x.id === cuenta), { partes: P, partes_pagadas: n, partes_cobrado: cobrado }); guarda(K.cuentas, cs); avisa();
+      return t;
     },
     async ticketsDelDia(local) {
       const hoy = partesMadrid(new Date()).fecha;
@@ -751,6 +775,9 @@
       return ok(await cliente().rpc('cobrar', { p_cuenta: cuenta || null, p_pedido: pedido || null, p_metodo: metodo,
         p_entregado: entregado ?? null, p_promocion: promocion || null, p_nota: nota || null, p_propina: propina || 0 }));
     },
+    async cobrarParteIgual({ cuenta, partes, metodo, entregado, propina }) {
+      return ok(await cliente().rpc('cobrar_parte_igual', { p_cuenta: cuenta, p_partes: partes, p_metodo: metodo, p_entregado: entregado ?? null, p_propina: propina || 0 }));
+    },
     async ponerComensales(cuenta, n) { ok(await cliente().rpc('poner_comensales', { p_cuenta: cuenta, p_n: n || null })); },
     async descontarLinea(pedido, indice, cantidad, pct, motivo, pin) {
       return ok(await cliente().rpc('descontar_linea', { p_pedido: pedido, p_indice: indice, p_cantidad: cantidad, p_pct: pct, p_motivo: motivo, p_pin: pin || null }));
@@ -844,5 +871,5 @@
   }
 
   window.OP = { api: DEMO ? demo : real, selectorLocal, DEMO, CONFIG, franjas, enHorario, hhmm, partesMadrid,
-                indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, mensajeError, euros, puestoDe };
+                indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, lineasParteIgual, mensajeError, euros, puestoDe };
 })();
