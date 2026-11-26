@@ -20,7 +20,24 @@
   const iso = d => { const z = new Date(d); z.setMinutes(z.getMinutes() - z.getTimezoneOffset()); return z.toISOString().slice(0, 10); };
   const LOCS = { 'san-luis': 'San Luis', remedios: 'Los Remedios', 'sevilla-este': 'Sevilla Este', tomares: 'Tomares' };
   const PLAT = { uber: ['Uber Eats', '#06C167'], glovo: ['Glovo', '#FFC244'] };
-  let rango = '7', filtroLocal = '', filas = [], resumenes = [], previas = [];
+  let rango = '7', filtroLocal = '', filas = [], resumenes = [], previas = [], LOCALES = [];
+  /* ── Rentabilidad real: ajustes y coste de cada producto (escandallo) por nombre ── */
+  const AJ_DEF = { uber: { comision_pct: 30, envase_eur: 0.5 }, glovo: { comision_pct: 30, envase_eur: 0.5 }, coste_pct_sin_detalle: 30, margen_objetivo_pct: 25 };
+  let AJ = AJ_DEF, costePorNombre = null;
+  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  async function cargaCostes() {
+    if (costePorNombre) return;
+    costePorNombre = new Map();
+    const ids = LOCALES.length ? LOCALES.map(l => l.id) : ['tomares'];
+    await Promise.all(ids.map(async id => {
+      try {
+        const [carta, cs] = await Promise.all([api.carta(id), api.costes(id)]);
+        (carta.productos || []).forEach(p => { const c = cs[p.id]; if (c && c.coste != null && !costePorNombre.has(norm(p.nombre))) costePorNombre.set(norm(p.nombre), c.coste); });
+      } catch (e) {}
+    }));
+  }
+  const costeDe = nombre => { const k = norm(nombre); if (costePorNombre.has(k)) return costePorNombre.get(k);
+    for (const [n, c] of costePorNombre) if (n.length > 5 && (k.includes(n) || n.includes(k))) return c; return null; };
   const dia = f => new Date(f + 'T12:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' });
   const val = r => r.valoracion == null ? '—' : r.valoracion_tipo === 'porcentaje' ? Math.round(r.valoracion) + ' %' : String(r.valoracion).replace('.', ',') + ' ★';
 
@@ -39,13 +56,15 @@
     // Periodo anterior de la misma duración (para comparar).
     const dias = Math.round((new Date(h) - new Date(d)) / 86400000) + 1;
     const pd = new Date(d + 'T12:00'); pd.setDate(pd.getDate() - dias); const ph = new Date(d + 'T12:00'); ph.setDate(ph.getDate() - 1);
-    try { [filas, resumenes, previas] = await Promise.all([api.deliveryEntre(d, h), api.resumenesDelivery(d, h), api.deliveryEntre(iso(pd), iso(ph)).catch(() => [])]); }
+    try { [filas, resumenes, previas] = await Promise.all([api.deliveryEntre(d, h), api.resumenesDelivery(d, h), api.deliveryEntre(iso(pd), iso(ph)).catch(() => []),
+      api.ajustesDelivery ? api.ajustesDelivery().then(a => { AJ = { ...AJ_DEF, ...a, uber: { ...AJ_DEF.uber, ...(a.uber || {}) }, glovo: { ...AJ_DEF.glovo, ...(a.glovo || {}) } }; }).catch(() => {}) : null, cargaCostes()]); }
     catch (ex) { $('#dl-kpis').innerHTML = `<p class="aviso">${esc(mensajeError(ex))}</p>`; return; }
     pinta(d, h);
   }
   function pinta(d, h) {
     const fs = filas.filter(r => !filtroLocal || r.local === filtroLocal);
     try { analisis(fs, previas.filter(r => !filtroLocal || r.local === filtroLocal)); } catch (e) { console.warn(e); }
+    try { rentabilidad(fs); } catch (e) { console.warn(e); }
     const s = (arr, k) => arr.reduce((a, r) => a + (r[k] || 0), 0);
     const ventas = s(fs, 'ventas'), pedidos = s(fs, 'pedidos'), neto = s(fs, 'neto'), comision = s(fs, 'comision'), anuncios = s(fs, 'anuncios'), promos = s(fs, 'promociones');
     const conVal = fs.filter(r => r.valoracion != null && r.valoracion_tipo !== 'porcentaje');
@@ -85,6 +104,90 @@
       ${(r.alertas || []).map(a => `<span class="tag ${a.nivel === 'alta' ? 'rojo' : a.nivel === 'media' ? '' : 'gris'}">${esc(a.texto)}</span>`).join('')}</div>`).join('')
       : '<p class="nota">Aquí aparece cada día el resumen del agente: qué ha ido bien, qué ha ido mal y qué revisar, por local y en general.</p>';
   }
+  /* ══ Rentabilidad real ══
+     Ventas sin IVA (comida 10 %) − comisión − anuncios/promos − coste de producto − envases.
+     Coste de producto: lo que trae el agente por producto × escandallo; lo que no se puede cuadrar, con el % de ajustes. */
+  const itemsDe = r => { const t = r.detalle && (r.detalle.productos || r.detalle.top); return Array.isArray(t) ? t.filter(x => x && typeof x === 'object') : []; };
+  const udsDe = x => +(x.uds || x.unidades || x.cantidad || 0);
+  const ventasDe = x => { const v = x.ventas_eur ?? x.importe_eur ?? x.ventas; return v == null ? null : Math.round(+v * 100); };
+  function rentabilidad(fs) {
+    const pct = AJ.coste_pct_sin_detalle / 100, obj = AJ.margen_objetivo_pct / 100;
+    const res = {}; let estimadaCom = false, cubierto = 0, total = 0;
+    const prods = new Map();
+    fs.forEach(r => {
+      const p = res[r.plataforma] = res[r.plataforma] || { pedidos: 0, ventas: 0, com: 0, mkt: 0, coste: 0, env: 0, est: 0 };
+      const aj = AJ[r.plataforma] || AJ_DEF.uber;
+      p.pedidos += r.pedidos; p.ventas += r.ventas; p.mkt += (r.anuncios || 0) + (r.promociones || 0);
+      if (r.comision != null) p.com += r.comision; else { p.com += Math.round(r.ventas * aj.comision_pct / 100); p.est = 1; estimadaCom = true; }
+      p.env += Math.round(r.pedidos * aj.envase_eur * 100);
+      let conocido = 0, cubiertas = 0;
+      itemsDe(r).forEach(x => {
+        const nombre = x.nombre || x.producto; if (!nombre) return;
+        const u = udsDe(x), v = ventasDe(x), c = costeDe(nombre);
+        const k = norm(nombre); const o = prods.get(k) || { nombre, uds: 0, ventas: 0, conVentas: 0, coste: c, plats: {} };
+        o.uds += u; if (v != null) { o.ventas += v; o.conVentas += u; } o.plats[r.plataforma] = (o.plats[r.plataforma] || 0) + u; prods.set(k, o);
+        if (c != null && v != null && u) { conocido += c * u; cubiertas += v; }
+      });
+      const resto = Math.max(0, r.ventas - cubiertas);
+      p.coste += conocido + Math.round(resto / 1.1 * pct);
+      cubierto += Math.min(cubiertas, r.ventas); total += r.ventas;
+    });
+    const fila = (t, v, sub, cls) => `<div class="${cls || ''}"><small>${t}</small><b>${v}</b>${sub ? `<span>${sub}</span>` : ''}</div>`;
+    const tarjeta = (titulo, color, p) => {
+      const base = Math.round(p.ventas / 1.1); const queda = base - p.com - p.mkt - p.coste - p.env;
+      const pq = base ? Math.round(queda * 1000 / base) / 10 : 0;
+      return `<article class="dl-rcard" style="--c:${color}"><header>${titulo}</header><div class="dl-pgrid">
+        ${fila('Ventas sin IVA', euros(base), `${p.pedidos} pedidos · ${euros(p.ventas)} con IVA`)}
+        ${fila('Comisión', '−' + euros(p.com), base ? Math.round(p.com * 100 / base) + ' %' + (p.est ? ' (estimada con ajustes)' : '') : '')}
+        ${fila('Anuncios y promos', '−' + euros(p.mkt), base ? Math.round(p.mkt * 100 / base) + ' %' : '')}
+        ${fila('Producto (escandallo)', '−' + euros(p.coste), base ? Math.round(p.coste * 100 / base) + ' %' : '')}
+        ${fila('Envases', '−' + euros(p.env), p.pedidos ? euros(Math.round(p.env / p.pedidos)) + ' por pedido' : '')}
+        ${fila('Os queda', euros(queda), `${String(pq).replace('.', ',')} % · ${p.pedidos ? euros(Math.round(queda / p.pedidos)) + ' por pedido' : ''}`, 'dl-queda ' + (pq < AJ.margen_objetivo_pct ? 'bajo' : 'ok'))}
+        </div>${p.pedidos && base ? `<p class="nota" style="margin:8px 0 0">Si esos pedidos fuesen por vuestra web (sin comisión ni anuncios) os quedarían unos <b>${euros(Math.round((p.com + p.mkt) / p.pedidos))} más por pedido</b>.</p>` : ''}</article>`;
+    };
+    const plats = Object.keys(res);
+    if (!plats.length) { $('#dl-rent').innerHTML = '<p class="nota">Sin datos de delivery en este periodo.</p>'; $('#dl-rprod').innerHTML = ''; $('#dl-rnota').textContent = ''; return; }
+    const tot = plats.reduce((a, k) => { Object.keys(res[k]).forEach(c => { a[c] = (a[c] || 0) + res[k][c]; }); return a; }, {});
+    $('#dl-rent').innerHTML = plats.map(k => tarjeta(PLAT[k][0], PLAT[k][1], res[k])).join('') + (plats.length > 1 ? tarjeta('Total delivery', 'var(--burdeos)', tot) : '');
+
+    // Por producto: precio medio, lo que se lleva la plataforma, coste y lo que queda por unidad.
+    const comPct = k => { const p = res[k]; return p && p.ventas ? p.com / p.ventas : (AJ[k] || AJ_DEF.uber).comision_pct / 100; };
+    const udsPorPedido = Math.max(1, [...prods.values()].reduce((a, o) => a + o.uds, 0) / Math.max(1, tot.pedidos));
+    const envUd = tot.pedidos ? tot.env / tot.pedidos / udsPorPedido : 0;
+    const lista = [...prods.values()].filter(o => o.conVentas).map(o => {
+      const precio = o.ventas / o.conVentas; const udsT = Object.values(o.plats).reduce((a, b) => a + b, 0) || 1;
+      const c = Object.entries(o.plats).reduce((a, [k, u]) => a + comPct(k) * u, 0) / udsT;
+      const base = precio / 1.1; const coste = o.coste;
+      const queda = coste == null ? null : base - precio * c - coste - envUd;
+      const minimo = coste == null ? null : (coste + envUd) / ((1 - obj) / 1.1 - c);
+      return { ...o, precio, c, queda, pq: queda == null ? null : queda * 100 / base, minimo };
+    }).sort((a, b) => (a.pq ?? 999) - (b.pq ?? 999));
+    $('#dl-rprod').innerHTML = lista.length ? `<thead><tr><th>Producto</th><th class="num">Uds.</th><th class="num">Precio medio</th><th class="num">Plataforma</th><th class="num">Coste</th><th class="num">Os queda / ud.</th><th class="num">Precio para tu margen</th></tr></thead><tbody>` +
+      lista.map(o => `<tr><td><b>${esc(o.nombre)}</b></td><td class="num">${o.uds}</td><td class="num">${euros(Math.round(o.precio))}</td>
+        <td class="num">−${euros(Math.round(o.precio * o.c))} <small>(${Math.round(o.c * 100)} %)</small></td>
+        <td class="num">${o.coste == null ? '<span class="tag gris">sin escandallo</span>' : euros(o.coste)}</td>
+        <td class="num">${o.queda == null ? '—' : `<span class="tag ${o.pq < AJ.margen_objetivo_pct ? (o.pq < 10 ? 'rojo' : '') : 'verde'}">${euros(Math.round(o.queda))} · ${Math.round(o.pq)} %</span>`}</td>
+        <td class="num">${o.minimo == null || o.minimo <= 0 ? '—' : o.minimo > o.precio ? `<b>${euros(Math.ceil(o.minimo / 10) * 10)}</b>` : '<small>ya llega</small>'}</td></tr>`).join('') + '</tbody>'
+      : '<tbody><tr><td class="nota">El agente aún no trae las ventas por producto (unidades y euros). Cuando las traiga, aquí sale qué platos os dejan dinero y cuáles no.</td></tr></tbody>';
+    $('#dl-rnota').innerHTML = total ? `Coste de producto calculado con escandallo para el <b>${Math.round(cubierto * 100 / total)} %</b> de las ventas; el resto, con el ${AJ.coste_pct_sin_detalle} % de ajustes.${estimadaCom ? ' Algún día sin comisión del agente: se estima con el % de ajustes.' : ''} Margen objetivo: ${AJ.margen_objetivo_pct} %.` : '';
+  }
+  // Ajustes (sólo encargados; se guardan para todos)
+  const dja = $('#dlg-dajustes');
+  $('#dl-ajustes').onclick = () => {
+    $('#da-uber-com').value = AJ.uber.comision_pct; $('#da-glovo-com').value = AJ.glovo.comision_pct;
+    $('#da-uber-env').value = AJ.uber.envase_eur; $('#da-glovo-env').value = AJ.glovo.envase_eur;
+    $('#da-coste').value = AJ.coste_pct_sin_detalle; $('#da-obj').value = AJ.margen_objetivo_pct; $('#da-error').hidden = true; dja.showModal();
+  };
+  $('#da-ok').onclick = async () => {
+    const n = id => { const v = parseFloat(String($(id).value).replace(',', '.')); return isNaN(v) ? null : v; };
+    const d = { uber: { comision_pct: n('#da-uber-com'), envase_eur: n('#da-uber-env') }, glovo: { comision_pct: n('#da-glovo-com'), envase_eur: n('#da-glovo-env') },
+      coste_pct_sin_detalle: n('#da-coste'), margen_objetivo_pct: n('#da-obj') };
+    if ([d.uber.comision_pct, d.uber.envase_eur, d.glovo.comision_pct, d.glovo.envase_eur, d.coste_pct_sin_detalle, d.margen_objetivo_pct].some(v => v == null || v < 0)) {
+      $('#da-error').textContent = 'Rellena todos los campos con números.'; $('#da-error').hidden = false; return; }
+    try { await api.guardarAjustesDelivery(d); AJ = { ...AJ_DEF, ...d }; dja.close(); pinta(); }
+    catch (ex) { $('#da-error').textContent = mensajeError(ex); $('#da-error').hidden = false; }
+  };
+
   /* ══ Análisis ══ */
   function analisis(fs, ant) {
     const s = (arr, k) => arr.reduce((a, r) => a + (+r[k] || 0), 0);
@@ -193,5 +296,5 @@
   window.OP.volcarDelivery = async datos => { const r = await api.guardarDelivery(datos.filas || [], datos.resumenes || [], datos.fuente || 'agente'); await cargar(); return r; };
 
   window.ADMIN = window.ADMIN || {};
-  window.ADMIN.delivery = { todos: true, async init() { await cargar(); }, mostrar: cargar };
+  window.ADMIN.delivery = { todos: true, async init(l, locales) { LOCALES = locales || []; await cargar(); }, mostrar: cargar };
 })();

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611261510">
+<link rel="stylesheet" href="admin.css?v=202611261523">
 </head>
 <body>
 
@@ -253,6 +253,14 @@
     <div class="pks" id="dl-kpis"></div>
     <div class="panel dl-claves"><h2>Lo importante</h2><ul id="dl-claves"></ul></div>
     <div class="dl-plats" id="dl-plats"></div>
+    <div class="panel dl-rent-panel">
+      <div class="panel-cab"><h2>Rentabilidad real: lo que os queda</h2><button class="b b-mini" type="button" id="dl-ajustes">Ajustes: comisiones y envases</button></div>
+      <p class="nota" style="margin-top:0">Ventas sin IVA, menos comisión, anuncios y promos, coste del producto (escandallo) y envases. Es lo que de verdad deja cada plataforma.</p>
+      <div class="dl-rent" id="dl-rent"></div>
+      <h3 class="dl-rsub">Por producto</h3>
+      <div class="tabla-wrap"><table class="tabla" id="dl-rprod"></table></div>
+      <p class="nota" id="dl-rnota"></p>
+    </div>
     <div class="pn-fila">
       <div class="panel"><h2>Ventas por día</h2><div id="dl-graf"></div></div>
       <div class="panel"><h2>Qué día se vende más</h2><div id="dl-semana"></div></div>
@@ -754,6 +762,23 @@
   </form>
 </dialog>
 
+<dialog class="dlg" id="dlg-dajustes">
+  <form method="dialog" class="form" style="min-width:min(460px,86vw)">
+    <h2>Ajustes de delivery</h2>
+    <p class="nota" style="margin-top:0">Sirven para calcular lo que os queda. La comisión sólo se usa los días que el agente no la trae.</p>
+    <div class="dos-campos">
+      <label>Comisión Uber Eats (%)<input id="da-uber-com" type="number" min="0" max="60" step="0.5"></label>
+      <label>Comisión Glovo (%)<input id="da-glovo-com" type="number" min="0" max="60" step="0.5"></label>
+      <label>Envases por pedido Uber (€)<input id="da-uber-env" type="number" min="0" max="10" step="0.05"></label>
+      <label>Envases por pedido Glovo (€)<input id="da-glovo-env" type="number" min="0" max="10" step="0.05"></label>
+      <label>Coste de producto si no hay detalle (%)<input id="da-coste" type="number" min="0" max="80" step="1"></label>
+      <label>Margen que queréis sacar (%)<input id="da-obj" type="number" min="0" max="80" step="1"></label>
+    </div>
+    <p class="aviso" id="da-error" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="da-ok">Guardar</button></div>
+  </form>
+</dialog>
+
 <dialog class="dlg" id="dlg-volcar">
   <form method="dialog">
     <h2>Volcar datos de delivery</h2>
@@ -803,26 +828,26 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611261510"></script>
-<script src="/pedir/acceso.js?v=202611261510"></script>
-<script src="/pedir/plano.js?v=202611261510"></script>
+<script src="/pedir/api.js?v=202611261523"></script>
+<script src="/pedir/acceso.js?v=202611261523"></script>
+<script src="/pedir/plano.js?v=202611261523"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611261510"></script>
-<script src="sec-plano.js?v=202611261510"></script>
-<script src="sec-resumen.js?v=202611261510"></script>
-<script src="sec-carta.js?v=202611261510"></script>
-<script src="sec-local.js?v=202611261510"></script>
-<script src="sec-pedidos.js?v=202611261510"></script>
-<script src="sec-reservas.js?v=202611261510"></script>
-<script src="sec-clientes.js?v=202611261510"></script>
-<script src="sec-control.js?v=202611261510"></script>
-<script src="sec-panel.js?v=202611261510"></script>
-<script src="sec-delivery.js?v=202611261510"></script>
-<script src="sec-promos.js?v=202611261510"></script>
-<script src="sec-informes.js?v=202611261510"></script>
-<script src="sec-resenas.js?v=202611261510"></script>
-<script src="sec-equipo.js?v=202611261510"></script>
-<script src="admin.js?v=202611261510"></script>
+<script src="/pedir/ticket.js?v=202611261523"></script>
+<script src="sec-plano.js?v=202611261523"></script>
+<script src="sec-resumen.js?v=202611261523"></script>
+<script src="sec-carta.js?v=202611261523"></script>
+<script src="sec-local.js?v=202611261523"></script>
+<script src="sec-pedidos.js?v=202611261523"></script>
+<script src="sec-reservas.js?v=202611261523"></script>
+<script src="sec-clientes.js?v=202611261523"></script>
+<script src="sec-control.js?v=202611261523"></script>
+<script src="sec-panel.js?v=202611261523"></script>
+<script src="sec-delivery.js?v=202611261523"></script>
+<script src="sec-promos.js?v=202611261523"></script>
+<script src="sec-informes.js?v=202611261523"></script>
+<script src="sec-resenas.js?v=202611261523"></script>
+<script src="sec-equipo.js?v=202611261523"></script>
+<script src="admin.js?v=202611261523"></script>
 </body>
 </html>
 
