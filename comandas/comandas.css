@@ -176,3 +176,17 @@ a.b{text-decoration:none}
 .ped-espera,.ped-marcha{margin:0 0 8px;padding:6px 10px;border-radius:8px;font-weight:800;font-size:14px;letter-spacing:.03em;text-align:center}
 .ped-espera{background:var(--prep-cl);color:var(--prep)}
 .ped-marcha{background:var(--nuevo);color:#fff;animation:parpadeo 1s steps(2) 6}
+
+/* Ir rápido al TPV: en burdeos */
+.b.b-ir{background:var(--burdeos,#7C2430)!important;border-color:var(--burdeos,#7C2430)!important;color:#fff!important}
+.b.b-ir svg{stroke:#fff}
+/* Ticket con precios para que pague el cliente que recoge */
+.ped-pie .b-pagar{background:#FCEFD6;border-color:#E0A030;font-weight:800}
+/* Cancelar: con cuidado */
+.ped-pie .lnk[data-acc=cancelar]{margin-right:auto;color:var(--mal,#C62828)}
+.cn-aviso{margin:0 0 6px;color:var(--mal,#C62828);font-weight:700}
+.cn-detalle{margin:0 0 10px;font-size:15px}
+/* Deshacer "Servido" */
+#deshacer{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;display:flex;gap:14px;align-items:center;background:#241A1C;color:#fff;
+  padding:10px 12px 10px 18px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-weight:700;font-size:16px}
+#deshacer .b{background:#fff;color:#241A1C;border-color:#fff;padding:10px 14px}

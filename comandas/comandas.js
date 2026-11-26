@@ -244,7 +244,8 @@
       <div class="ped-pie">
         <span class="imp">${euros(p.total)}<small>${p.canal === 'sala' ? 'Se cobra en el TPV' : p.pagado ? esc(PAGO[p.pago_metodo]) : 'Paga al recoger'}</small></span>
         ${p.canal === 'sala' || vista === 'barra' ? '' : `<button class="lnk" data-acc="cancelar" data-id="${p.id}">Cancelar</button>`}
-        <button class="b" data-acc="imprimir" data-id="${p.id}">Ticket</button>
+        <button class="b" data-acc="imprimir" data-id="${p.id}" title="Ticket de cocina (sin precios)">Ticket cocina</button>
+        ${p.canal !== 'sala' && !p.pagado ? `<button class="b b-pagar" data-acc="ticket-pago" data-id="${p.id}" title="Ticket con precios para que el cliente pague">🧾 Para pagar</button>` : ''}
         ${atras ? `<button class="b" data-acc="${atras}" data-id="${p.id}" title="Volver al paso anterior">↩</button>` : ''}
         ${boton ? `<button class="b b-ok${todoHecho && boton[0] === 'listo' ? ' parpadea' : ''}" data-acc="${boton[0]}" data-id="${p.id}">${boton[1]}</button>` : p.en_espera ? '<span class="ped-sirve">Esperando a sala</span>' : '<span class="ped-sirve">Lo sirve cocina</span>'}
       </div>
@@ -294,6 +295,7 @@
         }
         case 'cancelar': await cancelar(p); break;
         case 'imprimir': case 'reimprimir': imprime(p); break;
+        case 'ticket-pago': OP.imprimir(OP.ticketPrecuenta(`#${p.numero} · ${p.cliente_nombre || 'Para recoger'}`, p.lineas, p.total)); break;
       }
       await recarga();
     } catch (ex) { alert('No se ha podido guardar. ¿Hay conexión?\n' + (ex.message || ex)); }
@@ -304,7 +306,11 @@
     return new Promise(res => { dlg.returnValue = ''; dlg.showModal(); dlg.addEventListener('close', () => res(dlg.returnValue), { once: true }); });
   }
   async function entregar(p) {
-    if (p.pagado || p.canal === 'sala') { await api.actualizarPedido(p.id, { estado: 'entregado', entregado_at: ahora() }); return; }
+    if (p.pagado || p.canal === 'sala') {
+      await api.actualizarPedido(p.id, { estado: 'entregado', entregado_at: ahora() });
+      deshacer(`✓ #${p.numero} ${p.canal === 'sala' ? esc(p.mesa || '') : esc(p.cliente_nombre || '')} servido`, async () => { await api.actualizarPedido(p.id, { estado: 'listo', entregado_at: null }); await recarga(); });
+      return;
+    }
     $('#cb-titulo').textContent = `Entregar #${p.numero} · ${p.cliente_nombre}`;
     $('#cb-total').textContent = euros(p.total);
     const r = await pregunta($('#dlg-cobrar'));
@@ -314,8 +320,17 @@
       if (confirm('Cobrado. ¿Imprimir la factura simplificada para el cliente?')) OP.imprimir(OP.ticketFactura(t));
     }
   }
+  // Aviso abajo con "Deshacer" (por si se tocó Servido sin querer): 10 segundos.
+  function deshacer(txt, fn) {
+    let t = document.getElementById('deshacer');
+    if (!t) { t = document.createElement('div'); t.id = 'deshacer'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+    t.innerHTML = `<span>${txt}</span><button type="button" class="b">↩ Deshacer</button>`; t.hidden = false;
+    clearTimeout(deshacer.t); deshacer.t = setTimeout(() => { t.hidden = true; }, 10000);
+    t.querySelector('button').onclick = async () => { t.hidden = true; clearTimeout(deshacer.t); try { await fn(); } catch (ex) { alert('No se ha podido deshacer: ' + (ex.message || ex)); } };
+  }
   async function cancelar(p) {
-    $('#cn-titulo').textContent = `Cancelar #${p.numero}`;
+    $('#cn-titulo').textContent = `Cancelar #${p.numero} · ${p.cliente_nombre || ''}`;
+    $('#cn-detalle').innerHTML = `${p.lineas.map(l => `${l.cantidad}× ${esc(l.nombre)}`).join(' · ')} · <b>${euros(p.total)}</b>${p.pagado ? '<br><b>⚠ Está pagado online: habrá que devolver el dinero.</b>' : ''}`;
     if (await pregunta($('#dlg-cancelar')) === 'si') {
       await api.actualizarPedido(p.id, { estado: 'cancelado', motivo_cancel: $('#cn-motivo').value });
     }
