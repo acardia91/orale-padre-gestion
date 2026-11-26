@@ -27,6 +27,8 @@
       #ticket .nota{padding-left:5mm;font-weight:800}
       #ticket .tot{font-size:14pt;font-weight:800}
       #ticket .peq{font-size:8pt;word-break:break-all}
+      #ticket .corte{break-after:page;page-break-after:always;height:0}
+      #ticket .puesto{font-size:20pt;font-weight:800;text-align:center;border:2px solid #000;margin:0 0 2mm}
     }`;
   document.head.appendChild(css);
   function caja() {
@@ -91,14 +93,16 @@
     for (const el of raiz.children) {
       const cl = el.classList;
       if (el.tagName === 'HR') { estilo(0, 0, false); linea('-'.repeat(COLS)); continue; }
+      if (cl.contains('corte')) { estilo(0, 0, false); B.push(10, 10, 10, 10); ESC(0x1D, 0x56, 0x42, 0); continue; }   // cortar y seguir
       if (el.dataset && el.dataset.qr) {          // QR (valorar el ticket)
         estilo(1, 0, false); const d = bytesDe(el.dataset.qr); const n = d.length + 3;
         ESC(0x1D, 0x28, 0x6B, 4, 0, 0x31, 0x41, 0x32, 0); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x43, 6); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x45, 0x30);
         ESC(0x1D, 0x28, 0x6B, n & 255, n >> 8, 0x31, 0x50, 0x30, ...d); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x51, 0x30); B.push(10);
         continue;
       }
-      const grande = cl.contains('num') ? 0x33 : cl.contains('g') ? 0x11 : cl.contains('tot') ? 0x01 : 0;
-      const ancho = cl.contains('num') ? Math.floor(COLS / 4) : cl.contains('g') ? COLS / 2 : COLS;
+      const grande = cl.contains('num') ? 0x33 : cl.contains('g') || cl.contains('puesto') ? 0x11 : cl.contains('tot') ? 0x01 : 0;
+      const ancho = cl.contains('num') ? Math.floor(COLS / 4) : cl.contains('g') || cl.contains('puesto') ? COLS / 2 : COLS;
+      if (cl.contains('puesto')) { estilo(1, grande, true); B.push(0x1D, 0x42, 1); linea(' ' + texto(el) + ' '); B.push(0x1D, 0x42, 0); continue; }   // en negativo
       const negrita = cl.contains('g') || cl.contains('tot') || cl.contains('num') || cl.contains('nota') || !!el.querySelector(':scope > b:only-child');
       if (cl.contains('l') && el.children.length >= 2) {   // izquierda ……… derecha
         estilo(0, grande, negrita);
@@ -121,7 +125,9 @@
   }
 
   /* ── Botón 🖨: elegir impresora en esta tablet y probarla ── */
-  function ajustesImpresora() {
+  let opcionesImp = {};
+  function ajustesImpresora(opciones = {}) {
+    opcionesImp = opciones;
     let d = document.getElementById('dlg-impresora');
     if (!d) {
       d = document.createElement('dialog'); d.id = 'dlg-impresora'; d.className = 'dlg';
@@ -129,17 +135,29 @@
         <h2 style="margin:0">Impresora de esta tablet</h2>
         <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="navegador"> <span><b>Navegador</b><br><small>Sale el diálogo de imprimir (o directo si Chrome está en modo kiosco).</small></span></label>
         <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="rawbt"> <span><b>RawBT (Android)</b><br><small>Directo a la térmica por Bluetooth, USB o red, sin diálogo. Instala la app <b>RawBT</b> desde Google Play, empareja la impresora en RawBT y elige "ESC/POS, 80 mm".</small></span></label>
+        <div id="imp-comandas" hidden style="border-top:1px solid #e3d8cc;padding-top:10px;display:flex;flex-direction:column;gap:8px">
+          <b>Comandas en papel (sin pantalla en cocina)</b>
+          <label style="display:flex;gap:10px"><input type="radio" name="impc" value="no"> <span>No imprimir: hay pantalla de Comandas en cocina</span></label>
+          <label style="display:flex;gap:10px"><input type="radio" name="impc" value="junta"> <span>Imprimir una comanda con todo al enviar</span></label>
+          <label style="display:flex;gap:10px"><input type="radio" name="impc" value="separada"> <span>Imprimir separada: un ticket para <b>cocina</b> y otro para <b>barra</b></span></label>
+          <small>Lo que va a cocina o a barra se decide en admin → Carta. Los pedidos de la web y del QR se imprimen con el botón "🖨 Por imprimir".</small>
+        </div>
         <p id="imp-nota" style="margin:0;font-size:13px"></p>
         <div class="dlg-pie" style="display:flex;gap:8px;justify-content:flex-end"><button class="b" type="button" id="imp-prueba">Imprimir prueba</button><button class="b b-ok" value="ok">Listo</button></div>
       </form>`;
       document.body.appendChild(d);
-      d.addEventListener('change', e => { if (e.target.name === 'imp') { try { localStorage.setItem(PREF, e.target.value); } catch (x) {} nota(); } });
+      d.addEventListener('change', e => {
+        if (e.target.name === 'imp') { try { localStorage.setItem(PREF, e.target.value); } catch (x) {} nota(); }
+        if (e.target.name === 'impc') { try { localStorage.setItem('op-imprimir-comanda', e.target.value); } catch (x) {} if (typeof opcionesImp.alCambiar === 'function') opcionesImp.alCambiar(); }
+      });
       d.querySelector('#imp-prueba').onclick = () => imprimir(`<div class="c g">ÓRALE PADRE</div><div class="c">Prueba de impresora</div><hr>
         <div class="l"><span><b>2×</b> Burrito de cochinita</span><span>19,80 €</span></div><div class="op">+ Guacamole</div><div class="nota">!! Sin cebolla</div>
         <hr><div class="l tot"><span>TOTAL</span><span>19,80 €</span></div><div class="c">Áéíóú ñ ¿¡ € · ${new Date().toLocaleString('es-ES')}</div>`);
     }
     const nota = () => { d.querySelector('#imp-nota').textContent = modo() === 'rawbt' && !esAndroid ? 'Ojo: esta pantalla no es Android; RawBT sólo funciona en tablets Android.' : ''; };
     d.querySelectorAll('[name=imp]').forEach(r => { r.checked = r.value === modo(); }); nota();
+    d.querySelector('#imp-comandas').hidden = !opciones.comandas;
+    d.querySelectorAll('[name=impc]').forEach(r => { r.checked = r.value === prefComanda(); });
     d.showModal();
   }
 
@@ -160,6 +178,17 @@
       <hr>${lineasHTML(p.lineas, false)}
       ${p.notas ? `<hr><div class="nota">NOTA: ${esc(p.notas)}</div>` : ''}
       <hr><div class="c peq">Comanda interna · no es factura</div>`;
+  }
+
+  /** Comandas de un pedido separadas por puesto (cocina / barra), cada una con su corte.
+      modo: 'junta' = una sola comanda; 'separada' = una por puesto (si sólo hay un puesto, una). */
+  function comandasPorPuesto(p, local, carta, modo) {
+    const grupos = { cocina: [], barra: [] };
+    p.lineas.forEach(l => grupos[modo === 'separada' && window.OP.puestoDe ? window.OP.puestoDe(carta, l.producto) : 'cocina'].push(l));
+    const usados = Object.entries(grupos).filter(([, ls]) => ls.length);
+    if (modo !== 'separada' || usados.length < 2) return comanda(p, local);
+    return usados.map(([k, ls]) => `<div class="puesto">${k === 'barra' ? 'BARRA' : 'COCINA'}</div>` + comanda({ ...p, lineas: ls }, local)
+      + `<div class="c peq">${k === 'barra' ? 'Lo de cocina va en el otro ticket' : 'Lo de barra va en el otro ticket'}</div>`).join('<div class="corte"></div>');
   }
 
   /** Pre-cuenta: lo que se lleva a la mesa antes de cobrar. */
@@ -207,5 +236,6 @@
     return '<div class="c peq">¿Qué tal? Cuéntanoslo en<br><b>oralepadre.com/opinion</b></div>';
   }
 
-  Object.assign(window.OP, { imprimir, ajustesImpresora, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, _escpos: escpos });
+  const prefComanda = () => { try { return localStorage.getItem('op-imprimir-comanda') || 'no'; } catch (e) { return 'no'; } };
+  Object.assign(window.OP, { imprimir, ajustesImpresora, comandasPorPuesto, prefComanda, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, _escpos: escpos });
 })();
