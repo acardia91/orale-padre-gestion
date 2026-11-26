@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="comandas.css?v=202611251500">
+<link rel="stylesheet" href="comandas.css?v=202611260138">
 </head>
 <body>
 
@@ -39,6 +39,7 @@
     <div class="b-ctrl">
       <label class="puesto-sel" title="Qué ve esta pantalla"><span id="p-vista-txt">Comandas</span>
         <select id="p-puesto" aria-label="Qué ve esta pantalla"><option value="">Todo</option><option value="cocina">Sólo cocina</option><option value="barra">Sólo barra</option></select></label>
+      <button class="b" id="p-impresora" type="button" title="Impresora de tickets">🖨</button>
       <button class="b" id="p-sonido" type="button">🔇 Activar sonido</button>
       <div class="prep" role="group" aria-label="Tiempo de preparación">
         <button type="button" id="p-prep-menos" aria-label="Menos minutos">−</button>
@@ -111,8 +112,9 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611251500"></script>
-<script src="/pedir/ticket.js?v=202611251500"></script>
-<script src="comandas.js?v=202611251500"></script>
+<script src="/pedir/api.js?v=202611260138"></script>
+<script src="/pedir/acceso.js?v=202611260138"></script>
+<script src="/pedir/ticket.js?v=202611260138"></script>
+<script src="comandas.js?v=202611260138"></script>
 </body>
 </html>

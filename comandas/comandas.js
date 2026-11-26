@@ -122,6 +122,7 @@
     b.classList.toggle('on', !!audio && !silencio);
     b.title = silencio ? 'Tocar para volver a activar el sonido' : audio ? 'Tocar para silenciar' : 'Tocar para que suenen las comandas nuevas';
   }
+  $('#p-impresora').onclick = () => OP.ajustesImpresora();
   $('#p-sonido').onclick = () => {
     if (!audio || audio.state === 'suspended') {          // primer toque (o tras bloquear la tablet): activa
       audio = audio || new (window.AudioContext || window.webkitAudioContext)();
