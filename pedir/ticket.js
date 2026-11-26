@@ -179,7 +179,7 @@
         if (!ok) avisoImp(`La impresora no ha impreso: ${esc(EST[code] || code || 'error desconocido')}.`, true);
         return ok;
       } catch (e) {
-        avisoImp(`No llego a la impresora (${esc(ip)}). Comprueba que está encendida y en la misma red. Si es la primera vez en este equipo, abre <a href="https://${esc(ip)}/" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">https://${esc(ip)}</a>, acepta el aviso de seguridad y vuelve a probar.`, true);
+        avisoImp(`No llego a la impresora (${esc(ip)}). Comprueba que está encendida y en la misma red. Si Chrome pregunta por <b>dispositivos de la red local</b>, pulsa <b>Permitir</b>. Si es la primera vez en este equipo, abre <a href="https://${esc(ip)}/" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">https://${esc(ip)}</a>, acepta el aviso de seguridad y vuelve a probar.`, true);
         return false;
       }
     });
@@ -337,6 +337,9 @@
     return '<div class="c peq">¿Qué tal? Cuéntanoslo en<br><b>oralepadre.com/opinion</b></div>';
   }
 
-  const prefComanda = () => { try { return localStorage.getItem('op-imprimir-comanda') || 'no'; } catch (e) { return 'no'; } };
+  // Comandas en papel al enviar a cocina: si este equipo tiene una térmica (Epson por red o RawBT) y nadie ha
+  // elegido otra cosa, se imprime una comanda con todo. Con pantalla de Comandas en cocina, elegir "No imprimir".
+  const prefComanda = () => { const def = modo() === 'epson' || modo() === 'rawbt' ? 'junta' : 'no';
+    try { return localStorage.getItem('op-imprimir-comanda') || def; } catch (e) { return def; } };
   Object.assign(window.OP, { imprimir, abrirCajon, ajustesImpresora, comandasPorPuesto, prefComanda, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, _escpos: escpos });
 })();
