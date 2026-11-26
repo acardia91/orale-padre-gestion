@@ -86,6 +86,7 @@
     $('#fp-cat').innerHTML = carta.categorias.map(c => `<option value="${c.clave}">${esc(c.nombre)}</option>`).join('');
     const c = id ? catDe(id) : carta.categorias.find(x => x.clave === $('#c-filtro-cat').value) || carta.categorias[0];
     if (c) $('#fp-cat').value = c.clave;
+    $('#fp-quitar').value = (p.quitar || []).join(', '); pintaSugQuitar();
     $('#fp-alerg').innerHTML = ALERGENOS.map(a => `<label><input type="checkbox" value="${a}" ${p.alergenos.includes(a) ? 'checked' : ''}> ${a}</label>`).join('');
     $('#fp-grupos').innerHTML = carta.grupos.length ? carta.grupos.map(g => `<label><input type="checkbox" value="${g.id}" ${p.grupos.includes(g.id) ? 'checked' : ''}> ${esc(g.nombre)} <small>(${g.min ? 'obligatorio' : 'opcional'}, ${g.opciones.length} opciones)</small></label>`).join('')
       : '<p class="nota">Aún no hay grupos de extras. Créalos en la pestaña "Extras y combos".</p>';
@@ -93,6 +94,18 @@
     $('#fp-borrar').hidden = !id; $('#fp-error').hidden = true;
     pintaFoto(); dp.showModal();
   }
+  // "Se puede quitar": sugerencias de un toque (las de toda la carta + las típicas) para no escribir.
+  const TIPICOS = ['Cebolla', 'Cilantro', 'Pico de gallo', 'Guacamole', 'Queso', 'Frijoles', 'Arroz', 'Lechuga', 'Jalapeño', 'Salsa', 'Mayo', 'Picante'];
+  const partesQ = () => $('#fp-quitar').value.split(',').map(x => x.trim()).filter(Boolean);
+  function pintaSugQuitar() {
+    const usados = new Map(); carta.productos.forEach(x => (x.quitar || []).forEach(q => usados.set(q.toLowerCase(), q)));
+    TIPICOS.forEach(q => { if (!usados.has(q.toLowerCase())) usados.set(q.toLowerCase(), q); });
+    const ya = new Set(partesQ().map(x => x.toLowerCase()));
+    $('#fp-quitar-sug').innerHTML = [...usados.values()].map(q => `<button type="button" class="${ya.has(q.toLowerCase()) ? 'on' : ''}" data-q="${esc(q)}">${ya.has(q.toLowerCase()) ? '✓ ' : '+ '}${esc(q)}</button>`).join('');
+  }
+  $('#fp-quitar-sug').onclick = e => { const b = e.target.closest('[data-q]'); if (!b) return; const t = partesQ(); const i = t.findIndex(x => x.toLowerCase() === b.dataset.q.toLowerCase());
+    if (i >= 0) t.splice(i, 1); else t.push(b.dataset.q); $('#fp-quitar').value = t.join(', '); pintaSugQuitar(); };
+  $('#fp-quitar').addEventListener('input', pintaSugQuitar);
   function pintaFoto() { $('#fp-img').hidden = !fotoTmp; $('#fp-sin').hidden = !!fotoTmp; if (fotoTmp) $('#fp-img').src = fotoTmp; $('#fp-quitar-foto').hidden = !fotoTmp; }
   $('#fp-quitar-foto').onclick = () => { fotoTmp = null; pintaFoto(); };
   $('#fp-archivo').onchange = async e => {
@@ -124,6 +137,7 @@
     if (!carta.categorias.length) return err('Primero crea una categoría.');
     const datos = { nombre, precio, precio_local: pl === precio ? undefined : pl, desc: $('#fp-desc').value.trim(), foto: fotoTmp || null,
       alergenos: [...dp.querySelectorAll('#fp-alerg input:checked')].map(i => i.value),
+      quitar: (() => { const q = [...new Set(partesQ().map(x => x.slice(0, 30)))].slice(0, 12); return q.length ? q : undefined; })(),
       grupos: [...dp.querySelectorAll('#fp-grupos input:checked')].map(i => i.value),
       alcohol: $('#fp-alcohol').checked, agotado: $('#fp-agotado').checked, oculto: $('#fp-oculto').checked, solo: $('#fp-solo').value || undefined, puesto: $('#fp-puesto').value || undefined };
     let id = editando;

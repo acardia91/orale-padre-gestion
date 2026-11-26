@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611262018">
+<link rel="stylesheet" href="admin.css?v=202611262044">
 </head>
 <body>
 
@@ -87,6 +87,14 @@
       <div class="panel-cab"><h2>Facturas simplificadas</h2>
         <button class="b b-mini" type="button" id="r-csv">Exportar para la gestoría (CSV)</button></div>
       <div class="tabla-wrap"><table class="tabla" id="r-facturas"></table></div>
+    </div>
+    <div class="panel" id="fc-panel">
+      <div class="panel-cab"><h2>Facturas con NIF</h2>
+        <div class="botones"><button class="b b-mini b-ok" type="button" id="fc-nueva">+ Factura de un ticket</button>
+          <button class="b b-mini" type="button" id="fc-csv">CSV para la gestoría</button></div></div>
+      <p class="nota" style="margin-top:0">Las que piden los clientes desde el QR del ticket (al momento, con su NIF) y las que hacéis aquí. Cada una sustituye a su ticket; serie propia (F…).</p>
+      <div class="tabla-wrap"><table class="tabla" id="fc-tabla"></table></div>
+      <div id="fc-ver" hidden></div>
     </div>
     <div class="panel">
       <h2>Anulaciones y cancelaciones</h2>
@@ -640,6 +648,9 @@
       </div>
     </div>
     <fieldset class="fs"><legend>Alérgenos</legend><div class="checks" id="fp-alerg"></div></fieldset>
+    <fieldset class="fs"><legend>Se puede quitar <small style="font-weight:400;color:var(--humo)">(en el TPV sale "Sin …" con un toque)</small></legend>
+      <input id="fp-quitar" placeholder="Cebolla, cilantro, pico de gallo…" autocomplete="off" maxlength="300" style="width:100%">
+      <div class="rapidas-q" id="fp-quitar-sug"></div></fieldset>
     <fieldset class="fs"><legend>Extras que se pueden elegir</legend><div class="checks" id="fp-grupos"></div></fieldset>
     <fieldset class="fs"><legend>Opciones</legend>
       <div class="checks">
@@ -771,6 +782,24 @@
   </form>
 </dialog>
 
+<dialog class="dlg" id="dlg-factura">
+  <form method="dialog" class="form" style="min-width:min(480px,88vw)">
+    <h2>Factura con NIF de un ticket</h2>
+    <p class="nota" style="margin-top:0">Para quien la pide en el local. Busca el ticket por su número (sale arriba en el ticket, p. ej. TOM26-000123).</p>
+    <label>Nº de ticket<input id="fn-ticket" placeholder="TOM26-000123" autocomplete="off" autocapitalize="characters"></label>
+    <div class="dos-campos">
+      <label>NIF / CIF<input id="fn-nif" autocomplete="off" autocapitalize="characters" maxlength="12"></label>
+      <label>Nombre o razón social<input id="fn-nombre" maxlength="120"></label>
+      <label>Dirección<input id="fn-dir" maxlength="160"></label>
+      <label>C. P.<input id="fn-cp" maxlength="10" inputmode="numeric"></label>
+      <label>Población<input id="fn-pob" maxlength="80"></label>
+      <label>Email (opcional)<input id="fn-email" type="email" maxlength="120"></label>
+    </div>
+    <p class="aviso" id="fn-error" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="fn-ok">Emitir factura</button></div>
+  </form>
+</dialog>
+
 <dialog class="dlg" id="dlg-dajustes">
   <form method="dialog" class="form" style="min-width:min(460px,86vw)">
     <h2>Ajustes de márgenes</h2>
@@ -839,26 +868,28 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611262018"></script>
-<script src="/pedir/acceso.js?v=202611262018"></script>
-<script src="/pedir/plano.js?v=202611262018"></script>
+<script src="/pedir/api.js?v=202611262044"></script>
+<script src="/pedir/acceso.js?v=202611262044"></script>
+<script src="/pedir/plano.js?v=202611262044"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611262018"></script>
-<script src="sec-plano.js?v=202611262018"></script>
-<script src="sec-resumen.js?v=202611262018"></script>
-<script src="sec-carta.js?v=202611262018"></script>
-<script src="sec-local.js?v=202611262018"></script>
-<script src="sec-pedidos.js?v=202611262018"></script>
-<script src="sec-reservas.js?v=202611262018"></script>
-<script src="sec-clientes.js?v=202611262018"></script>
-<script src="sec-control.js?v=202611262018"></script>
-<script src="sec-panel.js?v=202611262018"></script>
-<script src="sec-delivery.js?v=202611262018"></script>
-<script src="sec-promos.js?v=202611262018"></script>
-<script src="sec-informes.js?v=202611262018"></script>
-<script src="sec-resenas.js?v=202611262018"></script>
-<script src="sec-equipo.js?v=202611262018"></script>
-<script src="admin.js?v=202611262018"></script>
+<script src="/pedir/ticket.js?v=202611262044"></script>
+<script src="/pedir/factura.js?v=202611262044"></script>
+<script src="sec-plano.js?v=202611262044"></script>
+<script src="sec-resumen.js?v=202611262044"></script>
+<script src="sec-facturas.js?v=202611262044"></script>
+<script src="sec-carta.js?v=202611262044"></script>
+<script src="sec-local.js?v=202611262044"></script>
+<script src="sec-pedidos.js?v=202611262044"></script>
+<script src="sec-reservas.js?v=202611262044"></script>
+<script src="sec-clientes.js?v=202611262044"></script>
+<script src="sec-control.js?v=202611262044"></script>
+<script src="sec-panel.js?v=202611262044"></script>
+<script src="sec-delivery.js?v=202611262044"></script>
+<script src="sec-promos.js?v=202611262044"></script>
+<script src="sec-informes.js?v=202611262044"></script>
+<script src="sec-resenas.js?v=202611262044"></script>
+<script src="sec-equipo.js?v=202611262044"></script>
+<script src="admin.js?v=202611262044"></script>
 </body>
 </html>
 

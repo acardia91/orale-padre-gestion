@@ -490,3 +490,8 @@ textarea{resize:vertical}
 /* Informes · margen por canal */
 #in-mc td:first-child,#in-mcp td:first-child{min-width:150px}
 #in-mc td,#in-mcp td{vertical-align:top}
+
+/* Carta · "Se puede quitar": sugerencias de un toque */
+.rapidas-q{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rapidas-q button{border:1px solid var(--linea,#DDD0C2);background:#fff;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.rapidas-q button.on{background:var(--burdeos);border-color:var(--burdeos);color:#fff}
