@@ -9,7 +9,8 @@
   css.textContent = `
   .plano{position:relative;width:100%;aspect-ratio:${W}/${H};container-type:inline-size;
     background:#FBF7F2 radial-gradient(circle, #DDD0C2 1px, transparent 1.2px) 0 0/2% 3.2%;
-    border:2px solid #DDD0C2;border-radius:14px;overflow:hidden;touch-action:none}
+    border:2px solid #DDD0C2;border-radius:14px;overflow:hidden;touch-action:manipulation}
+  .plano.plano-editor{touch-action:none}   /* sólo en el editor del admin (arrastrar mesas); en el TPV se puede deslizar */
   .pl-el{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
     border:2px solid #574548;background:#fff;color:#241A1C;border-radius:10%;padding:0;font:inherit;line-height:1.1;
     transform-origin:center;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -37,7 +38,7 @@
    * opciones.editor → true para mostrar selección y asa de tamaño
    */
   function pintar(cont, elementos, opciones = {}) {
-    cont.classList.add('plano');
+    cont.classList.add('plano'); cont.classList.toggle('plano-editor', !!opciones.editor);
     cont.innerHTML = elementos.filter(e => e.x != null).map(e => {
       const st = opciones.estado ? opciones.estado(e) || {} : {};
       const deco = e.tipo === 'deco';
