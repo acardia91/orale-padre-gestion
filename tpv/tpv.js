@@ -468,7 +468,7 @@
       if (metodo) t = await api.cobrar({ pedido: pWeb.id, metodo, entregado });
       await api.actualizarPedido(pWeb.id, { estado: 'entregado', entregado_at: new Date().toISOString() });
       drc.close();
-      if (t && $('#rc-imprimir').checked) OP.imprimir(OP.ticketFactura(t));
+      if (t && $('#rc-imprimir').checked) OP.imprimir(OP.ticketFactura(t), { cajon: metodo === 'efectivo' }); else if (t && metodo === 'efectivo') OP.abrirCajon(true);
       if (t && t.cambio) alert('Cambio: ' + euros(t.cambio));
       await recarga();
     } catch (ex) { fallo(mensajeError(ex)); }
@@ -968,7 +968,8 @@
       const parcial = modo === 'productos' && lineasCobro.reduce((a, l) => a + l.cantidad, 0) < todasPend.reduce((a, l) => a + l.cantidad, 0);
       const t = await api.cobrar({ cuenta: cuenta.id, metodo: met, entregado, promocion: promo ? promo.id : null, nota: $('#cb-nota').value.trim(), items, propina: aCobrar ? propina : 0 });
       dc.close();
-      if ($('#cb-imprimir').checked) OP.imprimir(OP.ticketFactura(t));
+      const cajon = met === 'efectivo' && aCobrar > 0;
+      if ($('#cb-imprimir').checked) OP.imprimir(OP.ticketFactura(t), { cajon }); else if (cajon) OP.abrirCajon(true);
       if (t.cambio) aviso('Cambio: ' + euros(t.cambio) + (t.propina ? ` · propina ${euros(t.propina)}` : ''));
       else if (t.propina) aviso(`✓ Cobrado con ${euros(t.propina)} de propina`);
       if (parcial) {
@@ -1112,6 +1113,7 @@
     const btn = $('#mv-ok'); btn.disabled = true;
     try {
       await api.movimientoCaja(LOCAL, mvTipo, imp, motivo, pin);
+      OP.abrirCajon(true);   // meter o sacar dinero: se abre el cajón (si hay)
       $('#dlg-mov').close(); aviso(`✓ ${mvTipo === 'salida' ? 'Sacados' : 'Metidos'} ${euros(imp)} · ${motivo}`);
       [resumen, movimientos] = await Promise.all([api.resumenCaja(LOCAL), api.movimientosCaja(LOCAL)]);
       pintaMovimientos();
