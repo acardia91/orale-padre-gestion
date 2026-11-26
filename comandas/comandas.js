@@ -4,6 +4,14 @@
   const { api, DEMO, hhmm, euros, puestoDe } = window.OP;
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Repintar sólo si cambia, y nunca mientras se desliza el dedo (en la tablet cortaba el scroll).
+  const ponHTML = (el, h) => { if (el && el._h !== h) { el._h = h; el.innerHTML = h; } };
+  let tocando = false, tSuelta = null, pintaPendiente = false;
+  const suelta = ms => { clearTimeout(tSuelta); tSuelta = setTimeout(() => { tocando = false; if (pintaPendiente) { pintaPendiente = false; pinta(); } }, ms); };
+  document.addEventListener('touchstart', () => { tocando = true; clearTimeout(tSuelta); }, { passive: true, capture: true });
+  document.addEventListener('touchend', () => suelta(700), { passive: true, capture: true });
+  document.addEventListener('touchcancel', () => suelta(700), { passive: true, capture: true });
+  document.addEventListener('scroll', () => { if (tocando) suelta(700); }, { passive: true, capture: true });
   const pref = (k, v) => { try { if (v === undefined) return localStorage.getItem('op-cocina-' + k); localStorage.setItem('op-cocina-' + k, v); } catch (e) { return null; } };
 
   let LOCAL = new URLSearchParams(location.search).get('local') || pref('local') || 'tomares';
@@ -160,11 +168,12 @@
   const PAGO = { local: 'Paga al recoger', efectivo: 'Pagado · efectivo', tarjeta: 'Pagado · tarjeta', stripe: 'Pagado online' };
   function pinta() {
     if (!local) return;
+    if (tocando) { pintaPendiente = true; return; }
     const ord = (a, b) => (a.en_espera ? 1 : 0) - (b.en_espera ? 1 : 0) || new Date(a.canal === 'sala' ? desde(a) : a.recogida) - new Date(b.canal === 'sala' ? desde(b) : b.recogida) || a.numero - b.numero;
     ['nuevo', 'preparando', 'listo'].forEach(est => {
       const l = pedidos.filter(p => columna(p) === est).sort(ord);
       $('#n-' + est).textContent = l.length;
-      $('#l-' + est).innerHTML = l.length ? l.map(tarjeta).join('') : `<p class="vacio">${est === 'nuevo' ? (vista === 'barra' ? 'Sin bebidas pendientes' : 'Sin pedidos nuevos') : 'Nada por aquí'}</p>`;
+      ponHTML($('#l-' + est), l.length ? l.map(tarjeta).join('') : `<p class="vacio">${est === 'nuevo' ? (vista === 'barra' ? 'Sin bebidas pendientes' : 'Sin pedidos nuevos') : 'Nada por aquí'}</p>`);
     });
     const hechos = pedidos.filter(p => p.estado === 'entregado' || p.estado === 'cancelado').sort((a, b) => b.numero - a.numero);
     const ent = hechos.filter(p => p.estado === 'entregado' && p.canal !== 'sala');   // la sala se cuadra en el TPV

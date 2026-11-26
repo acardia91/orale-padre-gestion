@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="comandas.css?v=202611262044">
+<link rel="stylesheet" href="comandas.css?v=202611262049">
 </head>
 <body>
 
@@ -41,9 +41,9 @@
         <select id="p-puesto" aria-label="Qué ve esta pantalla"><option value="">Todo</option><option value="cocina">Sólo cocina</option><option value="barra">Sólo barra</option></select></label>
       <button class="b b-ico" id="p-impresora" type="button" title="Impresora de tickets y comandas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-6a2 2 0 012-2h14a2 2 0 012 2v6a1 1 0 01-1 1h-2M6 14h12v7H6z"/></svg><span>Impresora</span></button>
       <button class="b b-ico" id="p-sonido" type="button" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span>Activar sonido</span></button>
-      <div class="prep" role="group" aria-label="Tiempo de preparación">
+      <div class="prep" role="group" aria-label="Tiempo de espera para recoger en la web" title="Lo antes que un cliente de la web puede recoger su pedido. Súbelo si vais con mucho lío; bájalo si estáis tranquilos.">
         <button type="button" id="p-prep-menos" aria-label="Menos minutos">−</button>
-        <span><b id="p-prep">20</b> min</span>
+        <span><small>Espera web</small><b id="p-prep">20</b> min</span>
         <button type="button" id="p-prep-mas" aria-label="Más minutos">+</button>
       </div>
       <button class="b b-ico" id="p-online" type="button" title="Pausar o activar los pedidos de la web"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg><span>Online ON</span></button>
@@ -115,9 +115,9 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611262044"></script>
-<script src="/pedir/acceso.js?v=202611262044"></script>
-<script src="/pedir/ticket.js?v=202611262044"></script>
-<script src="comandas.js?v=202611262044"></script>
+<script src="/pedir/api.js?v=202611262049"></script>
+<script src="/pedir/acceso.js?v=202611262049"></script>
+<script src="/pedir/ticket.js?v=202611262049"></script>
+<script src="comandas.js?v=202611262049"></script>
 </body>
 </html>
