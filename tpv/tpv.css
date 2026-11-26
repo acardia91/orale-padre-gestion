@@ -525,3 +525,14 @@ html,body{overflow:hidden;overscroll-behavior:none}
 button,.b,a,.mesa,.prod{touch-action:manipulation}
 
 .cz-quien{margin:4px 0 0;font-size:13.5px;color:var(--tinta-2,#574548);font-weight:600}
+
+/* ══ Colores con significado (revisión 26/11) ══
+   VERDE = avanzar / dinero que entra / listo (Cobrar, Confirmar, Sentar, Guardar).
+   ROJO = peligro (anular, quitar). AZUL = en cocina / ocupada. ÁMBAR = atención (algo espera).
+   BURDEOS = marca y navegación (cambiar de pantalla), nunca una acción: así "Cobrar" no se
+   parece a "Anular" (antes los dos eran rojizos). */
+.b-ok{background:var(--nopal);border-color:var(--nopal);color:#fff}
+.b-ok:hover{background:#256628;border-color:#256628}
+/* La pre-cuenta no es una alerta: botón neutro, grande y con borde fuerte (el ámbar queda para avisos). */
+.tq-btns .b-precuenta{background:var(--blanco);border:2px solid var(--tinta);color:var(--tinta)}
+.tq-btns .b-precuenta:hover{background:var(--crema-3);filter:none}
