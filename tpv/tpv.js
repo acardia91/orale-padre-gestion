@@ -160,6 +160,7 @@
       [local, cuentas, agotados, mesas, hoy, rvs] = await conTiempo(Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL), api.pedidosDelDia(LOCAL),
         api.reservasEntre ? api.reservasEntre(LOCAL, d0.toISOString(), d1.toISOString()).catch(() => []) : []]), 15000);
       ponConexion(true);
+      pedidosHoy = hoy;
       reservasHoy = (rvs || []).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
       avisaWebNuevos(); avisaQR(hoy);
@@ -351,14 +352,16 @@
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
       <span class="imp" data-total="${c.id}">${totales[c.id] != null ? euros(totales[c.id]) : '…'}</span></button>`;
   }
-  let sumando = false;
+  let sumando = false, pedidosHoy = [];
   async function sumasSala() {
-    // El total de cada mesa sale de sus comandas enviadas.
+    // El total de cada mesa sale de sus comandas enviadas. Las de hoy ya vienen en pedidosHoy (una sola consulta
+    // para toda la sala); sólo una cuenta abierta antes de medianoche se pregunta aparte.
     if (sumando) return; sumando = true;
     let cambio = false;
+    const hoyF = partesMadrid(new Date()).fecha;
     try {
       await Promise.all(cuentas.map(async c => {
-        const ps = await api.pedidosDeCuenta(c.id);
+        const ps = partesMadrid(new Date(c.abierta)).fecha === hoyF ? pedidosHoy.filter(p => p.cuenta_id === c.id) : await api.pedidosDeCuenta(c.id);
         const t = ps.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
         if (totales[c.id] !== t) { totales[c.id] = t; cambio = true; }
       }));
