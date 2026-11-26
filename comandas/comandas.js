@@ -105,9 +105,9 @@
   function pintaBarra() {
     if ($('#p-local')) $('#p-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
     $('#p-prep').textContent = local.minutos_prep;
-    const on = $('#p-online'); on.textContent = 'Pedidos online: ' + (local.acepta_pedidos ? 'ON' : 'PAUSADOS');
-    on.className = 'b ' + (local.acepta_pedidos ? 'on' : 'off');
-    $('#p-agotados').textContent = 'Agotados' + (agotados.size ? ` (${agotados.size})` : '');
+    const on = $('#p-online'); on.querySelector('span').textContent = local.acepta_pedidos ? 'Online ON' : 'PAUSADOS';
+    on.className = 'b b-ico ' + (local.acepta_pedidos ? 'on' : 'off');
+    $('#n-agotados').textContent = agotados.size || ''; $('#n-agotados').hidden = !agotados.size;
   }
   $('#p-online').onclick = async () => {
     const pausar = local.acepta_pedidos;
@@ -127,7 +127,7 @@
   let silencio = (() => { try { return localStorage.getItem('op-comandas-silencio') === '1'; } catch (e) { return false; } })();
   function pintaSonido() {
     const b = $('#p-sonido');
-    b.textContent = silencio ? '🔕 Silenciado' : audio ? '🔔 Sonido activado' : '🔇 Activar sonido';
+    b.querySelector('span').textContent = silencio ? 'Silenciado' : audio ? 'Sonido' : 'Activar sonido';
     b.classList.toggle('on', !!audio && !silencio);
     b.title = silencio ? 'Tocar para volver a activar el sonido' : audio ? 'Tocar para silenciar' : 'Tocar para que suenen las comandas nuevas';
   }

@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;800&display=swap">
-<link rel="stylesheet" href="comandas.css?v=202611260912">
+<link rel="stylesheet" href="comandas.css?v=202611261248">
 </head>
 <body>
 
@@ -39,19 +39,19 @@
     <div class="b-ctrl">
       <label class="puesto-sel" title="Qué ve esta pantalla"><span id="p-vista-txt">Comandas</span>
         <select id="p-puesto" aria-label="Qué ve esta pantalla"><option value="">Todo</option><option value="cocina">Sólo cocina</option><option value="barra">Sólo barra</option></select></label>
-      <button class="b" id="p-impresora" type="button" title="Impresora de tickets">🖨</button>
-      <button class="b" id="p-sonido" type="button">🔇 Activar sonido</button>
+      <button class="b b-ico" id="p-impresora" type="button" title="Impresora de tickets y comandas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-6a2 2 0 012-2h14a2 2 0 012 2v6a1 1 0 01-1 1h-2M6 14h12v7H6z"/></svg><span>Impresora</span></button>
+      <button class="b b-ico" id="p-sonido" type="button" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span>Activar sonido</span></button>
       <div class="prep" role="group" aria-label="Tiempo de preparación">
         <button type="button" id="p-prep-menos" aria-label="Menos minutos">−</button>
         <span><b id="p-prep">20</b> min</span>
         <button type="button" id="p-prep-mas" aria-label="Más minutos">+</button>
       </div>
-      <button class="b" id="p-online" type="button">Pedidos online: ON</button>
-      <button class="b" id="p-agotados" type="button">Agotados</button>
+      <button class="b b-ico" id="p-online" type="button" title="Pausar o activar los pedidos de la web"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg><span>Online ON</span></button>
+      <button class="b b-ico" id="p-agotados" type="button" title="Marcar productos agotados"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM5.6 5.6l12.8 12.8"/></svg><span>Agotados</span><em class="cnt" id="n-agotados" hidden></em></button>
       <label class="chk"><input type="checkbox" id="p-autoprint"> Imprimir al aceptar</label>
-      <button class="b b-mini" id="p-instalar" type="button" hidden title="Instalar Comandas como app en este dispositivo">⬇ Instalar app</button>
-      <a class="b b-mini" id="p-ir-tpv" href="/tpv/" title="Abrir el TPV (tomar nota, cobrar)">🧾 TPV</a>
-      <button class="b b-mini" id="p-salir" type="button">Salir</button>
+      <button class="b b-ico" id="p-instalar" type="button" hidden title="Instalar Comandas como app en este dispositivo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg><span>Instalar</span></button>
+      <a class="b b-ico" id="p-ir-tpv" href="/tpv/" title="Abrir el TPV (tomar nota, cobrar)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v12H3zM8 20h8M12 16v4"/></svg><span>TPV</span></a>
+      <button class="b b-ico" id="p-salir" type="button" ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Salir</span></button>
     </div>
   </header>
 
@@ -113,9 +113,9 @@
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611260912"></script>
-<script src="/pedir/acceso.js?v=202611260912"></script>
-<script src="/pedir/ticket.js?v=202611260912"></script>
-<script src="comandas.js?v=202611260912"></script>
+<script src="/pedir/api.js?v=202611261248"></script>
+<script src="/pedir/acceso.js?v=202611261248"></script>
+<script src="/pedir/ticket.js?v=202611261248"></script>
+<script src="comandas.js?v=202611261248"></script>
 </body>
 </html>
