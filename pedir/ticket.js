@@ -3,6 +3,10 @@
    · "Navegador": lanza la impresión del navegador (con Chrome --kiosk-printing sale directo).
    · "RawBT" (tablet Android con la app RawBT y la impresora por Bluetooth/USB/red):
      convierte el ticket a ESC/POS y se lo pasa a RawBT, sin diálogo.
+   · "Epson por red" (TM-m30III y otras Epson con ePOS): el mismo ESC/POS va directo
+     del navegador a la impresora (https://IP/cgi-bin/epos/service.cgi). Sirve en
+     iPad, ordenador o cualquier tablet de la misma red. La primera vez hay que abrir
+     https://IP y aceptar el aviso del certificado de la impresora.
    Se elige en cada tablet con el botón 🖨 (OP.ajustesImpresora). */
 (function () {
   'use strict';
@@ -47,12 +51,14 @@
   const papel = () => lee('op-imp-papel', '80');            // 80 mm (48 letras) o 58 mm (32 letras)
   const conCajon = () => lee('op-imp-cajon', '0') === '1';  // cajón portamonedas enchufado a la impresora
   const sinTildes = () => lee('op-imp-sintildes', '0') === '1';
+  const ipEpson = () => lee('op-imp-ip', '').trim();
   const pintaCSS = () => { css.textContent = cssTicket(); };
   pintaCSS();
   const esAndroid = /Android/i.test(navigator.userAgent);
   // opciones.cajon: abrir el cajón con este ticket (cobro en efectivo), si está activado en esta tablet.
   function imprimir(html, opciones = {}) {
     caja().innerHTML = html;
+    if (modo() === 'epson') return enviaEpson(escpos(caja(), !!opciones.cajon && conCajon()));
     if (modo() === 'rawbt') {
       if (esAndroid) return rawbt(caja(), !!opciones.cajon && conCajon());
       if (!imprimir.avisado) { imprimir.avisado = true; alert('RawBT sólo funciona en tablets Android. En este equipo se imprime con el navegador.'); }
@@ -64,8 +70,9 @@
   let COLS = 48;
   const PATADA = [0x1B, 0x70, 0x00, 0x19, 0xFA];   // abrir cajón (pin 2)
   function abrirCajon(silencioso) {
+    if (modo() === 'epson' && conCajon()) return enviaEpson([0x1B, 0x40, ...PATADA], silencioso);
     if (!(modo() === 'rawbt' && esAndroid && conCajon())) {
-      if (!silencioso) alert('El cajón se abre a través de la impresora: elige RawBT, activa "Tengo cajón" y usa una tablet Android.');
+      if (!silencioso) alert('El cajón se abre a través de la impresora: elige "Epson por red" o RawBT y activa "Tengo cajón".');
       return;
     }
     enviaRawbt([0x1B, 0x40, ...PATADA]);
@@ -144,6 +151,41 @@
     return new Uint8Array(B);
   }
   function rawbt(raiz, cajon) { enviaRawbt(escpos(raiz, cajon)); }
+  /* ── Epson por red (ePOS-Print): el ESC/POS en hexadecimal dentro de <command>.
+     Se envían de uno en uno (cola) para que dos tickets seguidos no se mezclen. ── */
+  let colaEpson = Promise.resolve();
+  function avisoImp(txt, malo) {
+    let t = document.getElementById('imp-aviso');
+    if (!t) { t = document.createElement('div'); t.id = 'imp-aviso'; t.setAttribute('role', 'status');
+      t.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;max-width:min(560px,92vw);padding:12px 16px;border-radius:12px;font:600 14px/1.35 system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.25)';
+      document.body.appendChild(t); }
+    t.style.background = malo ? '#7C2430' : '#1f5130'; t.style.color = '#fff'; t.innerHTML = txt; t.hidden = false;
+    clearTimeout(avisoImp.t); avisoImp.t = setTimeout(() => { t.hidden = true; }, malo ? 12000 : 2500);
+  }
+  function enviaEpson(b, silencioso) {
+    const ip = ipEpson();
+    if (!ip) { alert('Falta la IP de la impresora: pulsa 🖨 Impresora y escríbela (sale en su hoja de prueba).'); return Promise.resolve(false); }
+    const hex = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+    const xml = '<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body>' +
+      '<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"><command>' + hex + '</command></epos-print></s:Body></s:Envelope>';
+    const url = `https://${ip}/cgi-bin/epos/service.cgi?devid=local_printer&timeout=10000`;
+    const EST = { EX_TIMEOUT: 'no contesta a tiempo', EPTR_COVER_OPEN: 'la tapa está abierta', EPTR_REC_EMPTY: 'no le queda papel', EX_ENPC_TIMEOUT: 'está ocupada',
+      DeviceNotFound: 'no encuentra la impresora', EPTR_AUTOMATICAL: 'error de la impresora (revisa papel y cuchilla)', EPTR_UNRECOVERABLE: 'error grave: apágala y enciéndela' };
+    const vez = colaEpson.then(async () => {
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/xml; charset=utf-8', SOAPAction: '""' }, body: xml });
+        const txt = await r.text();
+        const ok = /success="true"/.test(txt); const code = (txt.match(/code="([^"]*)"/) || [])[1] || '';
+        if (!ok) avisoImp(`La impresora no ha impreso: ${esc(EST[code] || code || 'error desconocido')}.`, true);
+        return ok;
+      } catch (e) {
+        avisoImp(`No llego a la impresora (${esc(ip)}). Comprueba que está encendida y en la misma red. Si es la primera vez en este equipo, abre <a href="https://${esc(ip)}/" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline">https://${esc(ip)}</a>, acepta el aviso de seguridad y vuelve a probar.`, true);
+        return false;
+      }
+    });
+    colaEpson = vez.catch(() => false);
+    return vez;
+  }
   function enviaRawbt(b) {
     let bin = ''; b.forEach(x => { bin += String.fromCharCode(x); });
     location.href = 'intent:base64,' + btoa(bin) + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
@@ -159,7 +201,12 @@
       d.innerHTML = `<form method="dialog" style="display:flex;flex-direction:column;gap:12px;min-width:min(420px,86vw)">
         <h2 style="margin:0">Impresora de esta tablet</h2>
         <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="navegador"> <span><b>Navegador</b><br><small>Sale el diálogo de imprimir (o directo si Chrome está en modo kiosco).</small></span></label>
-        <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="rawbt"> <span><b>RawBT (Android) · recomendado</b><br><small>Directo a la térmica por Bluetooth, USB o red, sin diálogo.</small></span></label>
+        <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="epson"> <span><b>Epson por red · recomendado</b><br><small>Directo a la Epson (TM-m30III) por cable de red o wifi, sin diálogo. iPad, ordenador o cualquier tablet.</small></span></label>
+        <div id="imp-epson" style="display:flex;flex-direction:column;gap:6px;background:#f6f1eb;border-radius:10px;padding:10px 12px">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:14px"><b>IP de la impresora</b><input id="imp-ip" inputmode="decimal" placeholder="192.168.1.133" autocomplete="off" style="font:inherit;padding:8px 10px;border:1px solid #d9cbbd;border-radius:8px"></label>
+          <small>Sale en su hoja de prueba (apágala y enciéndela con FEED pulsado). La <b>primera vez en cada equipo</b>: abre <a id="imp-ip-link" href="#" target="_blank" rel="noopener">la impresora</a>, pulsa "Avanzado → Acceder" (o "Visitar sitio") para aceptar su certificado, y vuelve aquí.</small>
+        </div>
+        <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="rawbt"> <span><b>RawBT (Android)</b><br><small>Con la app RawBT: Bluetooth, USB o red, sin diálogo.</small></span></label>
         <details style="background:#f6f1eb;border-radius:10px;padding:8px 12px"><summary style="cursor:pointer;font-weight:700">Cómo dejarla funcionando (5 minutos)</summary>
           <ol style="margin:8px 0 4px;padding-left:20px;font-size:13.5px;line-height:1.45">
             <li>Enciende la impresora y conéctala: <b>Bluetooth</b> (emparéjala en Ajustes → Bluetooth de la tablet; el PIN suele ser 0000 o 1234), <b>USB</b> (cable a la tablet, con adaptador OTG) o <b>red</b> (cable a router/wifi; apunta su IP, sale al imprimir su hoja de prueba manteniendo FEED al encenderla).</li>
@@ -172,7 +219,7 @@
         <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><b style="font-size:14px">Papel:</b>
           <label style="display:flex;gap:6px"><input type="radio" name="imp-papel" value="80"> 80 mm</label>
           <label style="display:flex;gap:6px"><input type="radio" name="imp-papel" value="58"> 58 mm</label></div>
-        <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="imp-cajon"> <span><b>Tengo cajón portamonedas</b> enchufado a la impresora<br><small>Se abre solo al cobrar en efectivo (sólo con RawBT).</small></span></label>
+        <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="imp-cajon"> <span><b>Tengo cajón portamonedas</b> enchufado a la impresora<br><small>Se abre solo al cobrar en efectivo (con Epson por red o RawBT).</small></span></label>
         <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="imp-sintildes"> <span>Quitar tildes y € <small>(sólo si salen símbolos raros)</small></span></label>
         <div id="imp-comandas" hidden style="border-top:1px solid #e3d8cc;padding-top:10px;display:flex;flex-direction:column;gap:8px">
           <b>Comandas en papel (sin pantalla en cocina)</b>
@@ -187,18 +234,26 @@
       document.body.appendChild(d);
       d.addEventListener('change', e => {
         if (e.target.name === 'imp') { try { localStorage.setItem(PREF, e.target.value); } catch (x) {} nota(); }
+        if (e.target.id === 'imp-ip') { guarda('op-imp-ip', e.target.value.trim()); nota(); }
         if (e.target.name === 'imp-papel') { guarda('op-imp-papel', e.target.value); pintaCSS(); }
         if (e.target.id === 'imp-cajon') guarda('op-imp-cajon', e.target.checked ? '1' : '0');
         if (e.target.id === 'imp-sintildes') guarda('op-imp-sintildes', e.target.checked ? '1' : '0');
         if (e.target.name === 'impc') { try { localStorage.setItem('op-imprimir-comanda', e.target.value); } catch (x) {} if (typeof opcionesImp.alCambiar === 'function') opcionesImp.alCambiar(); }
       });
+      d.querySelector('#imp-ip').addEventListener('input', e => { guarda('op-imp-ip', e.target.value.trim()); nota(); });
       d.querySelector('#imp-cajon-prueba').onclick = () => abrirCajon(false);
       d.querySelector('#imp-prueba').onclick = () => imprimir(`<div class="c g">ÓRALE PADRE</div><div class="c">Prueba de impresora</div><hr>
         <div class="l"><span><b>2×</b> Burrito de cochinita</span><span>19,80 €</span></div><div class="op">+ Guacamole</div><div class="nota">!! Sin cebolla</div>
         <hr><div class="l tot"><span>TOTAL</span><span>19,80 €</span></div><div class="c">Áéíóú ñ ¿¡ € · ${new Date().toLocaleString('es-ES')}</div>
         <div class="c peq">Papel ${papel()} mm · ${'1234567890'.repeat(5).slice(0, papel() === '58' ? 32 : 48)}</div>`);
     }
-    const nota = () => { d.querySelector('#imp-nota').textContent = modo() === 'rawbt' && !esAndroid ? 'Ojo: esta pantalla no es Android; RawBT sólo funciona en tablets Android.' : ''; };
+    const nota = () => {
+      d.querySelector('#imp-nota').textContent = modo() === 'rawbt' && !esAndroid ? 'Ojo: esta pantalla no es Android; RawBT sólo funciona en tablets Android.' : '';
+      d.querySelector('#imp-epson').hidden = modo() !== 'epson';
+      d.querySelector('#imp-epson').style.display = modo() === 'epson' ? 'flex' : 'none';
+      d.querySelector('#imp-ip-link').href = ipEpson() ? `https://${ipEpson()}/` : '#';
+    };
+    d.querySelector('#imp-ip').value = ipEpson();
     d.querySelectorAll('[name=imp]').forEach(r => { r.checked = r.value === modo(); }); nota();
     d.querySelectorAll('[name=imp-papel]').forEach(r => { r.checked = r.value === papel(); });
     d.querySelector('#imp-cajon').checked = conCajon(); d.querySelector('#imp-sintildes').checked = sinTildes();
