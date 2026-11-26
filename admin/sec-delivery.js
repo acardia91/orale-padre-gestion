@@ -22,7 +22,8 @@
   const PLAT = { uber: ['Uber Eats', '#06C167'], glovo: ['Glovo', '#FFC244'] };
   let rango = '7', filtroLocal = '', filas = [], resumenes = [], previas = [], LOCALES = [];
   /* ── Rentabilidad real: ajustes y coste de cada producto (escandallo) por nombre ── */
-  const AJ_DEF = { uber: { comision_pct: 30, envase_eur: 0.5 }, glovo: { comision_pct: 30, envase_eur: 0.5 }, coste_pct_sin_detalle: 30, margen_objetivo_pct: 25 };
+  const AJ_DEF = { uber: { comision_pct: 30, envase_eur: 0.5 }, glovo: { comision_pct: 30, envase_eur: 0.5 }, web: { envase_eur: 0.5 }, tarjeta_pct: 0, coste_pct_sin_detalle: 30, margen_objetivo_pct: 25 };
+  const mezclaAj = a => ({ ...AJ_DEF, ...(a || {}), uber: { ...AJ_DEF.uber, ...((a || {}).uber || {}) }, glovo: { ...AJ_DEF.glovo, ...((a || {}).glovo || {}) }, web: { ...AJ_DEF.web, ...((a || {}).web || {}) } });
   let AJ = AJ_DEF, costePorNombre = null;
   const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
   async function cargaCostes() {
@@ -57,7 +58,7 @@
     const dias = Math.round((new Date(h) - new Date(d)) / 86400000) + 1;
     const pd = new Date(d + 'T12:00'); pd.setDate(pd.getDate() - dias); const ph = new Date(d + 'T12:00'); ph.setDate(ph.getDate() - 1);
     try { [filas, resumenes, previas] = await Promise.all([api.deliveryEntre(d, h), api.resumenesDelivery(d, h), api.deliveryEntre(iso(pd), iso(ph)).catch(() => []),
-      api.ajustesDelivery ? api.ajustesDelivery().then(a => { AJ = { ...AJ_DEF, ...a, uber: { ...AJ_DEF.uber, ...(a.uber || {}) }, glovo: { ...AJ_DEF.glovo, ...(a.glovo || {}) } }; }).catch(() => {}) : null, cargaCostes()]); }
+      api.ajustesDelivery ? api.ajustesDelivery().then(a => { AJ = mezclaAj(a); }).catch(() => {}) : null, cargaCostes()]); }
     catch (ex) { $('#dl-kpis').innerHTML = `<p class="aviso">${esc(mensajeError(ex))}</p>`; return; }
     pinta(d, h);
   }
@@ -173,18 +174,24 @@
   }
   // Ajustes (sólo encargados; se guardan para todos)
   const dja = $('#dlg-dajustes');
-  $('#dl-ajustes').onclick = () => {
+  let trasGuardar = null;
+  async function abrirAjustes(cb) {
+    trasGuardar = cb || null;
+    try { AJ = mezclaAj(await api.ajustesDelivery()); } catch (e) {}   // siempre lo último guardado (también desde Informes)
+    $('#da-web-env').value = AJ.web.envase_eur; $('#da-tarjeta').value = AJ.tarjeta_pct;
     $('#da-uber-com').value = AJ.uber.comision_pct; $('#da-glovo-com').value = AJ.glovo.comision_pct;
     $('#da-uber-env').value = AJ.uber.envase_eur; $('#da-glovo-env').value = AJ.glovo.envase_eur;
     $('#da-coste').value = AJ.coste_pct_sin_detalle; $('#da-obj').value = AJ.margen_objetivo_pct; $('#da-error').hidden = true; dja.showModal();
-  };
+  }
+  $('#dl-ajustes').onclick = () => abrirAjustes(() => pinta());
   $('#da-ok').onclick = async () => {
     const n = id => { const v = parseFloat(String($(id).value).replace(',', '.')); return isNaN(v) ? null : v; };
     const d = { uber: { comision_pct: n('#da-uber-com'), envase_eur: n('#da-uber-env') }, glovo: { comision_pct: n('#da-glovo-com'), envase_eur: n('#da-glovo-env') },
+      web: { envase_eur: n('#da-web-env') }, tarjeta_pct: n('#da-tarjeta'),
       coste_pct_sin_detalle: n('#da-coste'), margen_objetivo_pct: n('#da-obj') };
-    if ([d.uber.comision_pct, d.uber.envase_eur, d.glovo.comision_pct, d.glovo.envase_eur, d.coste_pct_sin_detalle, d.margen_objetivo_pct].some(v => v == null || v < 0)) {
+    if ([d.uber.comision_pct, d.uber.envase_eur, d.glovo.comision_pct, d.glovo.envase_eur, d.web.envase_eur, d.tarjeta_pct, d.coste_pct_sin_detalle, d.margen_objetivo_pct].some(v => v == null || v < 0)) {
       $('#da-error').textContent = 'Rellena todos los campos con números.'; $('#da-error').hidden = false; return; }
-    try { await api.guardarAjustesDelivery(d); AJ = { ...AJ_DEF, ...d }; dja.close(); pinta(); }
+    try { await api.guardarAjustesDelivery(d); AJ = mezclaAj(d); dja.close(); if (trasGuardar) trasGuardar(); }
     catch (ex) { $('#da-error').textContent = mensajeError(ex); $('#da-error').hidden = false; }
   };
 
@@ -296,5 +303,5 @@
   window.OP.volcarDelivery = async datos => { const r = await api.guardarDelivery(datos.filas || [], datos.resumenes || [], datos.fuente || 'agente'); await cargar(); return r; };
 
   window.ADMIN = window.ADMIN || {};
-  window.ADMIN.delivery = { todos: true, async init(l, locales) { LOCALES = locales || []; await cargar(); }, mostrar: cargar };
+  window.ADMIN.delivery = { todos: true, async init(l, locales) { LOCALES = locales || []; await cargar(); }, mostrar: cargar, abrirAjustes };
 })();

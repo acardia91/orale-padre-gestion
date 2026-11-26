@@ -486,3 +486,7 @@ textarea{resize:vertical}
 .dl-rsub{margin:18px 0 6px;font-size:15px}
 .dos-campos{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 @media (max-width:600px){.dos-campos{grid-template-columns:1fr}}
+
+/* Informes · margen por canal */
+#in-mc td:first-child,#in-mcp td:first-child{min-width:150px}
+#in-mc td,#in-mcp td{vertical-align:top}

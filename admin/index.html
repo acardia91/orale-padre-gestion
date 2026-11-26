@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611261523">
+<link rel="stylesheet" href="admin.css?v=202611261646">
 </head>
 <body>
 
@@ -122,6 +122,15 @@
           <button class="b b-mini" type="button" id="in-csv">Descargar CSV</button></div></div>
       <div class="tabla-wrap"><table class="tabla" id="in-prods"></table></div>
       <p class="nota" id="in-prods-nota"></p>
+    </div>
+    <div class="panel" id="in-mc-panel">
+      <div class="panel-cab"><h2>Margen por canal: lo que os queda</h2>
+        <div class="botones"><button class="b b-mini" type="button" id="in-mc-ajustes">Ajustes</button></div></div>
+      <p class="nota" style="margin-top:0">Lo mismo vendido en sala, por la web, por Uber o por Glovo no deja lo mismo. Ventas sin IVA menos producto (escandallo), comisiones, anuncios y envases.</p>
+      <div class="tabla-wrap"><table class="tabla" id="in-mc"></table></div>
+      <h3 style="margin:18px 0 6px">Por producto: lo que os queda por unidad en cada canal</h3>
+      <div class="tabla-wrap"><table class="tabla" id="in-mcp"></table></div>
+      <p class="nota" id="in-mc-nota"></p>
     </div>
     <div class="dos-col">
       <div class="panel"><h2>Quién cobra</h2><div class="tabla-wrap"><table class="tabla" id="in-emp"></table></div></div>
@@ -764,13 +773,15 @@
 
 <dialog class="dlg" id="dlg-dajustes">
   <form method="dialog" class="form" style="min-width:min(460px,86vw)">
-    <h2>Ajustes de delivery</h2>
-    <p class="nota" style="margin-top:0">Sirven para calcular lo que os queda. La comisión sólo se usa los días que el agente no la trae.</p>
+    <h2>Ajustes de márgenes</h2>
+    <p class="nota" style="margin-top:0">Sirven para calcular lo que os queda en delivery y en Informes (margen por canal). La comisión de Uber y Glovo sólo se usa los días que el agente no la trae.</p>
     <div class="dos-campos">
       <label>Comisión Uber Eats (%)<input id="da-uber-com" type="number" min="0" max="60" step="0.5"></label>
       <label>Comisión Glovo (%)<input id="da-glovo-com" type="number" min="0" max="60" step="0.5"></label>
       <label>Envases por pedido Uber (€)<input id="da-uber-env" type="number" min="0" max="10" step="0.05"></label>
       <label>Envases por pedido Glovo (€)<input id="da-glovo-env" type="number" min="0" max="10" step="0.05"></label>
+      <label>Envases por pedido web para llevar (€)<input id="da-web-env" type="number" min="0" max="10" step="0.05"></label>
+      <label>Comisión del datáfono y pago online (%)<input id="da-tarjeta" type="number" min="0" max="5" step="0.05"></label>
       <label>Coste de producto si no hay detalle (%)<input id="da-coste" type="number" min="0" max="80" step="1"></label>
       <label>Margen que queréis sacar (%)<input id="da-obj" type="number" min="0" max="80" step="1"></label>
     </div>
@@ -828,26 +839,26 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611261523"></script>
-<script src="/pedir/acceso.js?v=202611261523"></script>
-<script src="/pedir/plano.js?v=202611261523"></script>
+<script src="/pedir/api.js?v=202611261646"></script>
+<script src="/pedir/acceso.js?v=202611261646"></script>
+<script src="/pedir/plano.js?v=202611261646"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611261523"></script>
-<script src="sec-plano.js?v=202611261523"></script>
-<script src="sec-resumen.js?v=202611261523"></script>
-<script src="sec-carta.js?v=202611261523"></script>
-<script src="sec-local.js?v=202611261523"></script>
-<script src="sec-pedidos.js?v=202611261523"></script>
-<script src="sec-reservas.js?v=202611261523"></script>
-<script src="sec-clientes.js?v=202611261523"></script>
-<script src="sec-control.js?v=202611261523"></script>
-<script src="sec-panel.js?v=202611261523"></script>
-<script src="sec-delivery.js?v=202611261523"></script>
-<script src="sec-promos.js?v=202611261523"></script>
-<script src="sec-informes.js?v=202611261523"></script>
-<script src="sec-resenas.js?v=202611261523"></script>
-<script src="sec-equipo.js?v=202611261523"></script>
-<script src="admin.js?v=202611261523"></script>
+<script src="/pedir/ticket.js?v=202611261646"></script>
+<script src="sec-plano.js?v=202611261646"></script>
+<script src="sec-resumen.js?v=202611261646"></script>
+<script src="sec-carta.js?v=202611261646"></script>
+<script src="sec-local.js?v=202611261646"></script>
+<script src="sec-pedidos.js?v=202611261646"></script>
+<script src="sec-reservas.js?v=202611261646"></script>
+<script src="sec-clientes.js?v=202611261646"></script>
+<script src="sec-control.js?v=202611261646"></script>
+<script src="sec-panel.js?v=202611261646"></script>
+<script src="sec-delivery.js?v=202611261646"></script>
+<script src="sec-promos.js?v=202611261646"></script>
+<script src="sec-informes.js?v=202611261646"></script>
+<script src="sec-resenas.js?v=202611261646"></script>
+<script src="sec-equipo.js?v=202611261646"></script>
+<script src="admin.js?v=202611261646"></script>
 </body>
 </html>
 
