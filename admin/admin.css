@@ -462,3 +462,16 @@ textarea{resize:vertical}
   .lateral nav a span{display:block;white-space:nowrap}
   .lateral nav a em{position:absolute;top:2px;right:6px;margin:0}
 }
+
+/* ── Panel: avisos pendientes (como el "Pendiente de revisión" de Uber) ── */
+.pn-avisos{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.pn-avisos:empty{display:none}
+.pn-av-tit{font-size:16px;display:flex;align-items:center;gap:8px;margin:0 0 2px}
+.pn-av-tit span{background:var(--mal);color:#fff;font-size:12px;font-weight:800;border-radius:99px;padding:1px 8px}
+.pn-av{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid;font-weight:600;font-size:14.5px;line-height:1.35}
+.pn-av > span{flex:1}
+.pn-av svg{width:20px;height:20px}
+.pn-av .b{flex:none;text-decoration:none;background:#fff}
+.pn-av-rojo{background:#FDECEA;border-color:#F3B9B3;color:#8E1B1B}
+.pn-av-ambar{background:var(--oro-cl);border-color:#EFD49A;color:#6B4A07}
+.pn-av-azul{background:#E3ECF6;border-color:#C3D5EA;color:#1E4468}

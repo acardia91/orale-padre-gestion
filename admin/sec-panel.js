@@ -160,5 +160,43 @@
 
   document.querySelectorAll('[data-prng]').forEach(b => b.onclick = () => { rango = b.dataset.prng; cargar(); });
   window.ADMIN = window.ADMIN || {};
-  window.ADMIN.panel = { todos: true, async init(l, locales) { LOCAL = l; LOCALES = locales || []; await cargar(); }, mostrar: cargar };
+  /* ── Avisos (como el "Pendiente de revisión" de Uber): lo que hay que arreglar, con su botón ── */
+  async function avisos() {
+    const ids = LOCAL === '*' ? LOCALES.map(l => l.id) : [LOCAL];
+    const varios = ids.length > 1; const hoy = iso(new Date());
+    const hace30 = new Date(Date.now() - 30 * 86400000).toISOString(), ahora = new Date(Date.now() + 60000).toISOString();
+    const L = [];
+    const pon = (nivel, txt, btn, href, foco) => L.push({ nivel, txt, btn, href, foco });
+    await Promise.all(ids.map(async id => {
+      const n = varios ? nombreLocal(id) + ': ' : '';
+      const ir = sec => (varios || id !== LOCAL ? `?local=${encodeURIComponent(id)}` : '') + '#' + sec;
+      const [loc, ag, caja, rs] = await Promise.all([api.local(id).catch(() => null), api.agotados(id).catch(() => null),
+        api.resumenCaja(id).catch(() => null), api.resenas(id, hace30, ahora).catch(() => [])]);
+      if (caja && caja.desde && iso(new Date(caja.desde)) < hoy && (caja.tickets || caja.entradas || caja.salidas))
+        pon('rojo', `${n}la caja no se cerró: sigue abierta desde el ${new Date(caja.desde).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' })}.`, 'Ver caja', ir('control'));
+      const malas = (rs || []).filter(r => r.nota <= 3 && r.estado !== 'resuelta').length;
+      if (malas) pon('rojo', `${n}${malas} ${malas === 1 ? 'reseña mala' : 'reseñas malas'} sin resolver (últimos 30 días).`, 'Responder', ir('resenas'));
+      if (loc && loc.acepta_pedidos === false) pon('ambar', `${n}pedidos online en pausa: la web no acepta pedidos para recoger.`, 'Activar', ir('local'), '#l-acepta');
+      if (ag && ag.size) pon('azul', `${n}${ag.size} ${ag.size === 1 ? 'producto agotado' : 'productos agotados'} ahora mismo.`, 'Ver carta', ir('carta'));
+    }));
+    try {
+      const res = await api.resumenesDelivery(iso(new Date(Date.now() - 20 * 86400000)), hoy);
+      const ult = (res || []).map(r => r.fecha).sort().pop();
+      const ayer = iso(new Date(Date.now() - 86400000));
+      if (!ult || ult < ayer) pon('ambar', `Uber y Glovo: sin datos ${ult ? 'desde el ' + new Date(ult + 'T12:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric' }) : 'todavía'}. El agente de las 10:30 necesita la sesión de este admin abierta en Chrome.`, 'Ver delivery', '#delivery');
+    } catch (e) {}
+    const orden = { rojo: 0, ambar: 1, azul: 2 }; L.sort((a, b) => orden[a.nivel] - orden[b.nivel]);
+    const ICO = { rojo: '<path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>', ambar: '<path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 8v4M12 16h.01"/>', azul: '<path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 16v-4M12 8h.01"/>' };
+    $('#pn-avisos').innerHTML = L.length ? `<h2 class="pn-av-tit">Pendiente de revisar <span>${L.length}</span></h2>` + L.map(a => `<div class="pn-av pn-av-${a.nivel}">
+      <svg viewBox="0 0 24 24" aria-hidden="true">${ICO[a.nivel]}</svg><span>${esc(a.txt.charAt(0).toUpperCase() + a.txt.slice(1))}</span>
+      <a class="b b-mini" href="${esc(a.href)}"${a.foco ? ` data-foco="${esc(a.foco)}"` : ''}>${a.btn}</a></div>`).join('') : '';
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('#pn-avisos a[href]'); if (!a) return;
+    if (a.dataset.foco) try { sessionStorage.setItem('op-admin-foco', a.dataset.foco); } catch (ex) {}
+    const h = a.getAttribute('href');
+    if (h.startsWith('?')) { e.preventDefault(); const loc = new URLSearchParams(h.split('#')[0]).get('local'); try { localStorage.setItem('op-admin-local', loc); } catch (ex) {} const q = new URLSearchParams(location.search); q.set('local', loc); location.href = location.pathname + '?' + q + '#' + h.split('#')[1]; }
+  });
+
+  window.ADMIN.panel = { todos: true, async init(l, locales) { LOCAL = l; LOCALES = locales || []; avisos(); await cargar(); }, mostrar() { avisos(); return cargar(); } };
 })();
