@@ -1335,6 +1335,11 @@
     $('#cz-abiertas').textContent = `Ojo: hay ${resumen.cuentas_abiertas} ${resumen.cuentas_abiertas === 1 ? 'cuenta abierta' : 'cuentas abiertas'} sin cobrar.`;
     $('#cz-contado').value = ''; $('#cz-retirado').value = ''; $('#cz-retirado').dataset.tocado = ''; $('#cz-notas').value = ''; $('#cz-error').hidden = true;
     $('#cz-pin').hidden = !esEncargado() || conEquipo;   // con equipo, los PIN se ponen en el admin
+    // Quién cierra: un encargado (dentro con su PIN o tecleándolo aquí). Y quién cerró la última vez.
+    $('#cz-pinv').value = ''; $('#cz-pinv-l').hidden = esEncargado();
+    { const yo = persona ? persona.nombre : ((SESION && SESION.email) || '').replace(/@.*/, '');
+      $('#cz-quien').textContent = `Cierra: ${esEncargado() ? yo : 'el encargado que ponga su PIN'}${persona && !esEncargado() ? ` · en el TPV: ${yo}` : ''}`;
+      if (api.ultimoCierre) api.ultimoCierre(LOCAL).then(u => { if (u) $('#cz-quien').textContent += ` · Último cierre: ${new Date(u.hasta).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}${u.cierra_nombre ? ' por ' + u.cierra_nombre : ''}`; }).catch(() => {}); }
     pintaCierre();
     const suma = f => tickets.filter(f).reduce((s, t) => s + t.total, 0);
     pintaTurno();
@@ -1381,14 +1386,16 @@
     if (ret > contado) return fallo('No puedes retirar más de lo que hay.');
     const d = contado - esperadoCaja(resumen);
     if (d !== 0 && $('#cz-notas').value.trim().length < 3) return fallo('La caja no cuadra: explica el descuadre en las notas.');
+    const pinCierre = $('#cz-pinv').value.trim();
+    if (!esEncargado() && !pinCierre) { $('#cz-pinv').focus(); return fallo('Hace falta el PIN de un encargado para cerrar la caja.'); }
     if (!confirm(`¿Cerrar la caja?\n\nEfectivo contado: ${euros(contado)}\nDescuadre: ${euros(d)}\nRetiras: ${euros(ret)}\nSe queda en el cajón: ${euros(contado - ret)}`)) return;
     const btn = $('#cz-ok'); btn.disabled = true;
     try {
-      const z = await api.cerrarCaja(LOCAL, contado, ret, $('#cz-notas').value.trim());
+      const z = await api.cerrarCaja(LOCAL, contado, ret, $('#cz-notas').value.trim(), pinCierre || null);
       $('#dlg-caja').close(); miraCaja(true); aviso('✓ Caja cerrada' + (z.descuadre ? ' con descuadre de ' + euros(z.descuadre) : ', cuadra'));
       OP.imprimir(`<div class="c g">CIERRE DE CAJA (Z)</div><div class="c">${esc(local.nombre)}</div>
         <div class="c">${new Date(z.desde).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}<br>a ${new Date(z.hasta).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}</div>
-        <div class="c">Cierra: ${esc((SESION && SESION.email) || '')}</div><hr>
+        <div class="c">Cierra: <b>${esc(z.cierra_nombre || (persona && persona.nombre) || (SESION && SESION.email) || '')}</b>${z.en_turno_nombre && z.en_turno_nombre !== z.cierra_nombre ? ` · en el TPV: ${esc(z.en_turno_nombre)}` : ''}</div><hr>
         <div class="l"><span>Tickets</span><span>${z.tickets}${z.primer_ticket ? ` (${esc(z.primer_ticket)} a ${esc(z.ultimo_ticket)})` : ''}</span></div>
         <div class="l"><span>Efectivo</span><span>${euros(z.efectivo)}</span></div>
         <div class="l"><span>Tarjeta</span><span>${euros(z.tarjeta)}</span></div>

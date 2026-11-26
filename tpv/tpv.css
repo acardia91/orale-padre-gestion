@@ -523,3 +523,5 @@ html,body{overflow:hidden;overscroll-behavior:none}
 #vista-app{height:100dvh}
 .sala,.prods,.tq-lineas,.cats,.caja-lista,.rc-lineas,.mesas.mini,.cb-items,.dlg{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 button,.b,a,.mesa,.prod{touch-action:manipulation}
+
+.cz-quien{margin:4px 0 0;font-size:13.5px;color:var(--tinta-2,#574548);font-weight:600}
