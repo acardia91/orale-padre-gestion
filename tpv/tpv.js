@@ -161,7 +161,7 @@
       [local, cuentas, agotados, mesas, hoy, rvs] = await conTiempo(Promise.all([api.local(LOCAL), api.cuentasAbiertas(LOCAL), api.agotados(LOCAL), api.mesas(LOCAL), api.pedidosDelDia(LOCAL),
         api.reservasEntre ? api.reservasEntre(LOCAL, d0.toISOString(), d1.toISOString()).catch(() => []) : []]), 15000);
       ponConexion(true);
-      pedidosHoy = hoy;
+      avisaListos(hoy); pedidosHoy = hoy;
       reservasHoy = (rvs || []).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
       web = hoy.filter(p => p.canal === 'web' && ['nuevo', 'preparando', 'listo'].includes(p.estado)).sort((a, b) => new Date(a.recogida) - new Date(b.recogida));
       avisaWebNuevos(); avisaQR(hoy); pintaPorImprimir();
@@ -177,6 +177,13 @@
   }
 
   /* ══ Aviso de pedido web nuevo: suena y sale un aviso (la primera carga no suena) ══ */
+  // Cuando cocina marca una comanda de sala como lista, la sala se entera (timbre + aviso).
+  let listosVistos = null;
+  function avisaListos(hoy) {
+    const ls2 = hoy.filter(p => p.canal === 'sala' && p.estado === 'listo');
+    if (listosVistos) { const nuevos = ls2.filter(p => !listosVistos.has(p.id)); if (nuevos.length) { if (!silencio) timbre(); aviso(`🍽 Listo para servir: ${nuevos.map(p => p.mesa + ' #' + p.numero).join(', ')}`); } }
+    listosVistos = new Set(ls2.map(p => p.id));
+  }
   let webVistos = null;
   function avisaWebNuevos() {
     const nuevos = web.filter(p => p.estado === 'nuevo');
@@ -389,11 +396,18 @@
     let impresora = null; try { impresora = localStorage.getItem('op-impresora'); } catch (e) {}
     if (!impresora) L.push({ id: 'impresora', nivel: 'azul', txt: 'Esta tablet aún no tiene impresora elegida. Si no vais a imprimir aquí, pulsa × y no vuelve a salir.', btn: 'Configurar', fn: () => $('#b-impresora').click(),
       cerrar: () => { try { localStorage.setItem('op-impresora', 'navegador'); } catch (e) {} } });
+    // Comandas de sala listas en cocina: a servir (verde, lo primero).
+    pedidosHoy.filter(p => p.canal === 'sala' && p.estado === 'listo' && cuentas.some(c => c.id === p.cuenta_id)).forEach(p => L.push({ id: 'listo-' + p.id, nivel: 'verde',
+      txt: `🍽 ${p.mesa}: comanda #${p.numero} lista para servir${p.listo_at ? ` (hace ${Math.max(0, Math.round((ahora - new Date(p.listo_at)) / 60000))} min)` : ''}.`, btn: 'Servida', fn: async () => {
+        try { await api.actualizarPedido(p.id, { estado: 'entregado', entregado_at: new Date().toISOString() }); p.estado = 'entregado'; pintaAvisos(true); recarga(); } catch (ex) { alert(mensajeError(ex)); } } }));
+    // Segundos en espera desde hace más de 20 min: recordatorio de marcharlos.
+    pedidosHoy.filter(p => p.canal === 'sala' && p.en_espera && p.estado === 'nuevo' && ahora - new Date(p.creado) > 20 * 60000).forEach(p => L.push({ id: 'espera-' + p.id, nivel: 'azul',
+      txt: `⏸ ${p.mesa}: comanda #${p.numero} en espera desde hace ${Math.round((ahora - new Date(p.creado)) / 60000)} min. ¿La marchamos?`, btn: '▶ Marchar', fn: () => marchar(p) }));
     const quietas = cuentas.filter(c => !(pendientes[c.id] || []).length && (totales[c.id] || 0) > 0)
       .map(c => ({ c, u: ultimoPedido(c) })).filter(x => x.u && ahora - x.u > 40 * 60000).sort((a, b) => a.u - b.u);
     quietas.slice(0, 3).forEach(({ c, u }) => L.push({ id: 'quieta-' + c.id + '-' + u, nivel: 'ambar', txt: `${c.nombre}: ${Math.round((ahora - u) / 60000)} min sin pedir. ¿Postre, café o la cuenta?`, btn: 'Abrir', fn: () => abrir(c) }));
     if (quietas.length > 3) L.push({ id: 'quietas-mas', nivel: 'ambar', txt: `Y ${quietas.length - 3} mesas más llevan un rato sin pedir.`, btn: 'Ver sala', fn: () => scrollTo({ top: $('#mesas').offsetTop - 80, behavior: 'smooth' }) });
-    const orden = { rojo: 0, ambar: 1, azul: 2 };
+    const orden = { verde: 0, rojo: 1, ambar: 2, azul: 3 };
     avisosAct = L.filter(a => !off.includes(a.id)).sort((a, b) => orden[a.nivel] - orden[b.nivel]);
     $('#t-avisos').innerHTML = avisosAct.map((a, i) => `<div class="av av-${a.nivel}"><span>${esc(a.txt)}</span><button type="button" class="b b-mini" data-av="${i}">${a.btn}</button><button type="button" class="av-x" data-avx="${i}" aria-label="Ocultar este aviso">×</button></div>`).join('');
     $('#t-avisos').hidden = !avisosAct.length;
@@ -416,6 +430,7 @@
       <strong>${esc(nombre)}</strong><small>${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}</small>
       ${m && m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : ''}
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
+      ${pedidosHoy.some(p => p.cuenta_id === c.id && p.estado === 'listo') ? '<span class="listo-chip">🍽 Listo</span>' : pedidosHoy.some(p => p.cuenta_id === c.id && p.en_espera && p.estado === 'nuevo') ? '<span class="espera-chip">⏸ En espera</span>' : ''}
       <span class="imp" data-total="${c.id}">${totales[c.id] != null ? euros(totales[c.id]) : '…'}</span></button>`;
   }
   let sumando = false, pedidosHoy = [];
@@ -611,9 +626,9 @@
   function pintaCuenta() {
     $('#c-nombre').textContent = cuenta.nombre;
     $('#c-info').textContent = `Abierta hace ${minutos(cuenta.abierta)} min${cuenta.comensales ? ` · ${cuenta.comensales} ${cuenta.comensales === 1 ? 'persona' : 'personas'}` : ''}${cuenta.para_llevar ? ' · para llevar' : ''}`;
-    const ESTADO = { nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
+    const ESTADO = { espera: '⏸ En espera', nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
     const enviados = pedidosCuenta.filter(p => !(p.estado === 'cancelado' && !p.lineas.length && !(p.anuladas || []).length)).sort((a, b) => a.numero - b.numero).map(p => `
-      <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span><span class="estado ${p.estado}">${ESTADO[p.estado]}</span></div>
+      <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</span>${p.en_espera && p.estado === 'nuevo' ? `<button type="button" class="b b-mini b-marchar" data-marchar="${p.id}">▶ Marchar</button>` : `<span class="estado ${p.estado}">${ESTADO[p.estado]}</span>`}</div>
       ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''} ${porCobrar(l) < 1 ? 'cobrada' : ''}" ${p.estado !== 'cancelado' && porCobrar(l) > 0 ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
         <div>${esc(l.nombre)}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.dto ? `<small class="dto">${l.dto === 100 ? 'Invitado' : '−' + l.dto + ' %'} · antes ${euros(l.unitario_original * l.cantidad)}</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
@@ -633,16 +648,18 @@
     if (tCob) $('#c-info').textContent += ` · cobrado ${euros(tCob)}`;
     const tPend = pend.reduce((s, l) => s + (idx.prod.has(l.producto) ? precioLinea(idx, l, enSala()) * l.cantidad : 0), 0);
     $('#c-total').textContent = euros(tEnv + tPend); { const nL = ((pedidosCuenta || []).flatMap(x => (x.lineas || [])).length) + (((pendientes[cuenta && cuenta.id] || [])).length); $('#c-hoja-txt').textContent = `Cuenta · ${nL} ${nL === 1 ? 'línea' : 'líneas'} · ${$('#c-total').textContent}`; }
-    if (enviando[cuenta.id]) { $('#c-enviar').textContent = 'Enviando…'; $('#c-enviar').disabled = true; }
+    if (enviando[cuenta.id]) { $('#c-enviar').textContent = 'Enviando…'; $('#c-enviar').disabled = true; $('#c-espera').disabled = true; }
     else {
       $('#c-enviar').textContent = pend.length ? `Enviar a cocina (${pend.reduce((s, l) => s + l.cantidad, 0)})` : 'Enviar a cocina';
       $('#c-enviar').disabled = !pend.length;
+      $('#c-espera').disabled = !pend.length;
     }
     $('#c-cobrar').disabled = !(tEnv + tPend);
     $('#c-repetir').hidden = !ultimaComanda();
     const el = $('#c-lineas'); el.scrollTop = el.scrollHeight;
   }
   $('#c-lineas').addEventListener('click', e => {
+    const mb = e.target.closest('[data-marchar]'); if (mb) { const p = pedidosCuenta.find(x => x.id === mb.dataset.marchar); if (p) marchar(p); return; }
     const env = e.target.closest('.ln.enviada[data-pid]');
     if (env) { abreQuitar(env.dataset.pid, +env.dataset.idx); return; }
     const t = e.target; const pend = pendientes[cuenta.id]; if (!pend) return;
@@ -691,19 +708,20 @@
     aviso(n ? `↻ ${n} ${n === 1 ? 'producto' : 'productos'} de la comanda #${p.numero} añadidos: revisa y envía${no.length ? ` · sin ${no.join(', ')} (agotado o no disponible)` : ''}` : 'Nada que repetir: está agotado o ya no está en la carta', !n);
   };
 
-  async function enviar() {
+  async function enviar(espera) {
+    espera = espera === true;
     const c = cuenta; const pend = pendientes[c.id] || []; if (!pend.length) return true;
     if (enviando[c.id]) return false;                 // ya va de camino: nada de comandas dobles
     enviando[c.id] = true;
     const n = pend.reduce((s, l) => s + l.cantidad, 0);
     try {
       pintaCuenta();
-      const r = await api.enviarComanda(c.id, pend.map(({ producto, cantidad, opciones, nota }) => ({ producto, cantidad, opciones, nota })), $('#c-nota').value.trim());
+      const r = await (espera ? api.enviarComandaEspera : api.enviarComanda).call(api, c.id, pend.map(({ producto, cantidad, opciones, nota }) => ({ producto, cantidad, opciones, nota })), $('#c-nota').value.trim());
       sumaTop(pend); delete pendientes[c.id]; guardaPend(); $('#c-nota').value = '';
-      aviso(`✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
+      aviso(espera ? `⏸ Comanda #${r.numero} en espera · ${c.nombre}: pulsa «▶ Marchar» cuando toque` : `✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
       const ps = await api.pedidosDeCuenta(c.id);
       if (cuenta && cuenta.id === c.id) pedidosCuenta = ps;
-      if (modoComanda() !== 'no') { const p = ps.find(x => x.id === r.pedido); if (p) { OP.imprimir(htmlComanda(p)); impresos.add(p.id); guardaImpresos(); } }
+      if (!espera && modoComanda() !== 'no') { const p = ps.find(x => x.id === r.pedido); if (p) { OP.imprimir(htmlComanda(p)); impresos.add(p.id); guardaImpresos(); } }
       return true;
     } catch (ex) {
       if (esDeRed(ex)) { ponConexion(false); aviso('✗ Sin conexión: no ha llegado a cocina. Queda guardado aquí; envíalo cuando vuelva la conexión.', true); }
@@ -712,7 +730,18 @@
     }
     finally { delete enviando[c.id]; if (cuenta && cuenta.id === c.id) pintaCuenta(); }
   }
-  $('#c-enviar').onclick = enviar;
+  $('#c-enviar').onclick = () => enviar();
+  $('#c-espera').onclick = () => enviar(true);
+  // Marchar: la comanda en espera pasa a cocina ahora (suena allí y, si se imprime, sale la comanda).
+  async function marchar(p) {
+    try {
+      await api.marcharPedido(p.id);
+      aviso(`▶ Marchando comanda #${p.numero} · ${p.mesa || p.cliente_nombre}`);
+      if (modoComanda() !== 'no') { OP.imprimir(htmlComanda({ ...p, notas: '▶ MARCHAR' + (p.notas ? ' · ' + p.notas : '') })); impresos.add(p.id); guardaImpresos(); }
+      if (cuenta) { pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta(); }
+      recarga();
+    } catch (ex) { aviso('✗ No se ha podido marchar: ' + mensajeError(ex), true); }
+  }
 
   /* ── Nota en una línea sin enviar (sin cebolla, salsa aparte…) ── */
   const dn = $('#dlg-nota'); let notaIdx = -1;

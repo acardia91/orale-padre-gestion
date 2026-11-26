@@ -479,3 +479,13 @@ a.b{text-decoration:none}
 .dk-teclas button.sel{background:var(--burdeos);border-color:var(--burdeos);color:#fff}
 .dk-teclas button:active{transform:scale(.96)}
 .b-otra{margin-top:10px;color:var(--nopal);border-color:#BFD9B8;background:var(--nopal-cl)}
+
+/* ── En espera, marchar y listo para servir ── */
+.tq-btns .b-espera{flex:0 0 auto;color:var(--prep);border-color:#C9CFD5;background:var(--prep-cl)}
+.b-marchar{background:var(--azul);border-color:var(--azul);color:#fff;font-weight:800}
+.av-verde{background:var(--nopal-cl);border-color:#BFD9B8;color:#1F5A23}
+.mesa .listo-chip,.mesa .espera-chip{display:inline-block;align-self:flex-start;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:99px}
+.mesa .listo-chip{background:var(--nopal);color:#fff;animation:parpadea 1s steps(2) 6}
+.mesa .espera-chip{background:var(--prep-cl);color:var(--prep)}
+.tq-btns{grid-template-columns:auto 1fr 1fr}
+.tq-btns .b-espera{padding-left:12px;padding-right:12px;font-size:14px}

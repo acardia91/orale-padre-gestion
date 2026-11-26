@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611261424">
+<link rel="stylesheet" href="tpv.css?v=202611261450">
 </head>
 <body>
 
@@ -120,6 +120,7 @@
         <label class="tq-nota"><span>Nota para cocina</span><input id="c-nota" maxlength="300" autocomplete="off" placeholder="Opcional"></label>
         <div class="tq-total"><span>Total</span><strong id="c-total">0,00 €</strong></div>
         <div class="tq-btns">
+          <button class="b b-espera" id="c-espera" type="button" title="Enviar en espera (los segundos): cocina lo ve pero no lo prepara hasta que pulses Marchar">⏸ En espera</button>
           <button class="b b-env" id="c-enviar" type="button">Enviar a cocina</button>
           <button class="b b-ok" id="c-cobrar" type="button">Cobrar</button>
         </div>
@@ -394,11 +395,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611261424"></script>
-<script src="/pedir/acceso.js?v=202611261424"></script>
+<script src="/pedir/api.js?v=202611261450"></script>
+<script src="/pedir/acceso.js?v=202611261450"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611261424"></script>
-<script src="/pedir/plano.js?v=202611261424"></script>
-<script src="tpv.js?v=202611261424"></script>
+<script src="/pedir/ticket.js?v=202611261450"></script>
+<script src="/pedir/plano.js?v=202611261450"></script>
+<script src="tpv.js?v=202611261450"></script>
 </body>
 </html>
