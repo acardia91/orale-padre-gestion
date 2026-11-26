@@ -1268,6 +1268,7 @@
     $('#cz-pin').hidden = !esEncargado() || conEquipo;   // con equipo, los PIN se ponen en el admin
     pintaCierre();
     const suma = f => tickets.filter(f).reduce((s, t) => s + t.total, 0);
+    pintaTurno();
     const iva = {}; tickets.forEach(t => t.desglose_iva.forEach(d => { iva[d.tipo] = iva[d.tipo] || { base: 0, cuota: 0 }; iva[d.tipo].base += d.base; iva[d.tipo].cuota += d.cuota; }));
     $('#cj-res').innerHTML = `
       <div><small>Tickets</small><b>${tickets.length}</b></div>
@@ -1282,6 +1283,27 @@
       <button class="b b-mini" type="button" data-t="${t.id}">Reimprimir</button></div>`).join('') || '<p class="vacio">Aún no hay tickets hoy.</p>';
     $('#dlg-caja').showModal();
   };
+  /* ── Resumen del turno: lo que el encargado quiere ver de un vistazo, sin abrir el admin ── */
+  function pintaTurno() {
+    const desdeT = new Date(resumen.desde);
+    const ts = tickets.filter(t => new Date(t.fecha) >= desdeT);
+    const total = ts.reduce((s, t) => s + t.total, 0);
+    const prop = (resumen.propinas_efectivo || 0) + (resumen.propinas_tarjeta || 0) + (resumen.propinas_online || 0);
+    const prods = {}; ts.forEach(t => (t.lineas || []).forEach(l => { prods[l.nombre] = (prods[l.nombre] || 0) + l.cantidad; }));
+    const top = Object.entries(prods).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    const horas = {}; ts.forEach(t => { const h = partesMadrid(new Date(t.fecha)).hh; horas[h] = (horas[h] || 0) + t.total; });
+    const mejor = Object.entries(horas).sort((a, b) => b[1] - a[1])[0];
+    const abiertas = cuentas.length, pendiente = cuentas.reduce((s, c) => s + (totales[c.id] || 0), 0);
+    $('#cj-turno').innerHTML = `<h3>Resumen del turno <small>desde ${desdeT.toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}</small></h3>
+      <div class="tn-kpis">
+        <div><small>Vendido</small><b>${euros(total)}</b></div>
+        <div><small>Tickets</small><b>${ts.length}</b><small>medio ${ts.length ? euros(Math.round(total / ts.length)) : '—'}</small></div>
+        <div><small>Propinas</small><b>${euros(prop)}</b></div>
+        <div><small>Mesas abiertas</small><b>${abiertas}</b><small>${abiertas ? 'por cobrar ' + euros(pendiente) : 'ninguna'}</small></div>
+        <div><small>Mejor hora</small><b>${mejor ? String(mejor[0]).padStart(2, '0') + ':00' : '—'}</b><small>${mejor ? euros(mejor[1]) : ''}</small></div>
+      </div>
+      ${top.length ? `<p class="tn-top"><b>Lo que más sale:</b> ${top.map(([n, c]) => `${esc(n)} <span>×${c}</span>`).join(' · ')}</p>` : ''}`;
+  }
   $('#cj-lista').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) OP.imprimir(OP.ticketFactura(tickets.find(t => t.id === b.dataset.t))); });
   $('#cz-ok').onclick = async () => {
     const contado = cent($('#cz-contado').value); const ret = cent($('#cz-retirado').value) || 0;

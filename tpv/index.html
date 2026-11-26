@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611261450">
+<link rel="stylesheet" href="tpv.css?v=202611261501">
 </head>
 <body>
 
@@ -28,6 +28,7 @@
     <label>Contraseña<input id="e-pass" type="password" autocomplete="current-password" required></label>
     <button class="b b-ok" type="submit">Entrar</button>
     <p class="e-error" id="e-error" role="alert" hidden></p>
+    <p class="e-ayuda"><a href="/tpv/?demo">Practicar sin tocar nada real</a> · modo prueba para aprender a usar el TPV</p>
   </form>
 </section>
 
@@ -351,6 +352,7 @@
 <dialog class="dlg dlg-ancho" id="dlg-caja">
   <form method="dialog">
     <h2>Caja</h2>
+    <section class="turno" id="cj-turno" aria-label="Resumen del turno"></section>
     <section class="cierre">
       <h3>Cierre de caja <small>desde <span id="cz-desde"></span></small></h3>
       <p class="err" id="cz-abiertas" hidden></p>
@@ -395,11 +397,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611261450"></script>
-<script src="/pedir/acceso.js?v=202611261450"></script>
+<script src="/pedir/api.js?v=202611261501"></script>
+<script src="/pedir/acceso.js?v=202611261501"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611261450"></script>
-<script src="/pedir/plano.js?v=202611261450"></script>
-<script src="tpv.js?v=202611261450"></script>
+<script src="/pedir/ticket.js?v=202611261501"></script>
+<script src="/pedir/plano.js?v=202611261501"></script>
+<script src="tpv.js?v=202611261501"></script>
 </body>
 </html>
