@@ -434,3 +434,31 @@ textarea{resize:vertical}
 .dl-sem div{display:grid;grid-template-columns:40px 1fr 80px;gap:10px;align-items:center;margin:6px 0;font-size:13.5px}
 .dl-sem div b{text-align:right;font-variant-numeric:tabular-nums}
 .dl-sem .top span:first-child{font-weight:800;color:var(--burdeos)}
+
+/* ── Panel: acciones rápidas (como Uber Eats Manager: icono, palabra y flecha) ── */
+.pn-arriba{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+.pn-arriba .pks{margin-top:18px}
+.rapidas{margin-top:18px;padding:16px 8px 8px}
+.rapidas h2{padding:0 10px;margin-bottom:6px}
+#pn-rapidas{display:flex;flex-direction:column}
+#pn-rapidas a{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;color:var(--tinta);text-decoration:none;font-weight:600;font-size:14.5px;line-height:1.25}
+#pn-rapidas a + a{border-top:1px solid var(--borde)}
+#pn-rapidas a:hover{background:var(--fondo)}
+#pn-rapidas a > span{flex:1}
+#pn-rapidas a > svg{width:16px;height:16px;color:var(--humo)}
+.ra-ico{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;flex:none}
+.ra-ico svg{width:19px;height:19px}
+.ra-oro{background:#FCEFD6;color:#9A6A12}.ra-azul{background:#E3ECF6;color:#2B5C8A}.ra-nopal{background:#E3F1E4;color:#2E7D32}
+.ra-burdeos{background:var(--burdeos-cl);color:var(--burdeos)}.ra-tinta{background:#EEE9E5;color:var(--tinta)}.ra-violeta{background:#EEE7F7;color:#6A3FA0}
+.resalta{outline:3px solid var(--oro);outline-offset:4px;border-radius:8px;transition:outline-color .3s}
+@media (max-width:1100px){.pn-arriba{grid-template-columns:1fr}.rapidas{margin-top:16px}}
+/* Móvil: el menú lateral pasa a una tira de icono + palabra que se desliza */
+@media (max-width:900px){
+  .lateral{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:8px;gap:2px}
+  .lateral::-webkit-scrollbar{display:none}
+  .lat-marca span{display:none}
+  .lateral nav{flex-wrap:nowrap;gap:2px}
+  .lateral nav a{position:relative;flex-direction:column;gap:3px;min-width:68px;padding:7px 6px;font-size:11px;line-height:1.15;text-align:center}
+  .lateral nav a span{display:block;white-space:nowrap}
+  .lateral nav a em{position:absolute;top:2px;right:6px;margin:0}
+}

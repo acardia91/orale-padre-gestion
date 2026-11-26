@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611260138">
+<link rel="stylesheet" href="admin.css?v=202611261248">
 </head>
 <body>
 
@@ -198,7 +198,23 @@
         <button class="b b-mini" type="button" data-prng="mes">Este mes</button>
       </div>
     </header>
-    <div class="pks" id="pn-kpis"></div>
+    <div class="pn-arriba">
+      <div class="pks" id="pn-kpis"></div>
+      <aside class="panel rapidas" aria-labelledby="ra-tit">
+        <h2 id="ra-tit">Acciones rápidas</h2>
+        <nav id="pn-rapidas">
+        <a href="#carta"><i class="ra-ico ra-oro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4zM4 9h16M9 9v11"/></svg></i><span>Marcar agotado o editar un producto</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#local" data-foco="#l-horario"><i class="ra-ico ra-azul"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2"/></svg></i><span>Cambiar el horario</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#local" data-foco="#l-acepta"><i class="ra-ico ra-nopal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM10 9v6M14 9v6"/></svg></i><span>Pausar o activar pedidos online</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#promos"><i class="ra-ico ra-burdeos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7 7h.01"/></svg></i><span>Crear una promoción</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#reservas"><i class="ra-ico ra-azul"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"/></svg></i><span>Ver las reservas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#local" data-foco="#l-qr-imprimir"><i class="ra-ico ra-tinta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></i><span>Imprimir los QR de las mesas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#usuarios" data-foco="#rc-email"><i class="ra-ico ra-violeta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7a4 4 0 11-3.9 4.9L3 20v-3h3v-3h3l1.1-1.1A4 4 0 0115 7zM16 8h.01"/></svg></i><span>Contraseña nueva para alguien del equipo</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="/tpv/" target="_blank" rel="noopener"><i class="ra-ico ra-burdeos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v12H3zM8 20h8M12 16v4"/></svg></i><span>Abrir el TPV</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="/comandas/" target="_blank" rel="noopener"><i class="ra-ico ra-burdeos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 13.9A4 4 0 017 6a5 5 0 0110 0 4 4 0 011 7.9V20H6zM6 17h12"/></svg></i><span>Abrir comandas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        </nav>
+      </aside>
+    </div>
     <p class="aviso aviso-suave" id="pn-sincoste" hidden></p>
     <div class="pn-fila">
       <div class="panel"><div class="panel-cab"><h2 id="pn-graf-tit">Ventas</h2><span class="ley-mini"><i></i>Sala y web <i class="d"></i>Delivery</span></div><div class="graf" id="pn-graf"></div></div>
@@ -786,26 +802,26 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611260138"></script>
-<script src="/pedir/acceso.js?v=202611260138"></script>
-<script src="/pedir/plano.js?v=202611260138"></script>
+<script src="/pedir/api.js?v=202611261248"></script>
+<script src="/pedir/acceso.js?v=202611261248"></script>
+<script src="/pedir/plano.js?v=202611261248"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611260138"></script>
-<script src="sec-plano.js?v=202611260138"></script>
-<script src="sec-resumen.js?v=202611260138"></script>
-<script src="sec-carta.js?v=202611260138"></script>
-<script src="sec-local.js?v=202611260138"></script>
-<script src="sec-pedidos.js?v=202611260138"></script>
-<script src="sec-reservas.js?v=202611260138"></script>
-<script src="sec-clientes.js?v=202611260138"></script>
-<script src="sec-control.js?v=202611260138"></script>
-<script src="sec-panel.js?v=202611260138"></script>
-<script src="sec-delivery.js?v=202611260138"></script>
-<script src="sec-promos.js?v=202611260138"></script>
-<script src="sec-informes.js?v=202611260138"></script>
-<script src="sec-resenas.js?v=202611260138"></script>
-<script src="sec-equipo.js?v=202611260138"></script>
-<script src="admin.js?v=202611260138"></script>
+<script src="/pedir/ticket.js?v=202611261248"></script>
+<script src="sec-plano.js?v=202611261248"></script>
+<script src="sec-resumen.js?v=202611261248"></script>
+<script src="sec-carta.js?v=202611261248"></script>
+<script src="sec-local.js?v=202611261248"></script>
+<script src="sec-pedidos.js?v=202611261248"></script>
+<script src="sec-reservas.js?v=202611261248"></script>
+<script src="sec-clientes.js?v=202611261248"></script>
+<script src="sec-control.js?v=202611261248"></script>
+<script src="sec-panel.js?v=202611261248"></script>
+<script src="sec-delivery.js?v=202611261248"></script>
+<script src="sec-promos.js?v=202611261248"></script>
+<script src="sec-informes.js?v=202611261248"></script>
+<script src="sec-resenas.js?v=202611261248"></script>
+<script src="sec-equipo.js?v=202611261248"></script>
+<script src="admin.js?v=202611261248"></script>
 </body>
 </html>
 

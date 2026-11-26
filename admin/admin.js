@@ -64,7 +64,19 @@
       else if (mod.mostrar) await mod.mostrar();
     } catch (e) { console.error(e); }
     window.scrollTo(0, 0);
+    // Acción rápida del Panel: lleva al campo concreto y lo resalta.
+    const foco = sessionStorage.getItem('op-admin-foco'); sessionStorage.removeItem('op-admin-foco');
+    const el = foco && document.querySelector(foco);
+    if (el && el.offsetParent) {
+      const caja = el.closest('label') || el;
+      setTimeout(() => { caja.scrollIntoView({ block: 'center', behavior: 'smooth' }); caja.classList.add('resalta'); try { el.focus({ preventScroll: true }); } catch (e) {} setTimeout(() => caja.classList.remove('resalta'), 2200); }, 150);
+    }
   }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('#pn-rapidas a[data-foco]'); if (!a) return;
+    try { sessionStorage.setItem('op-admin-foco', a.dataset.foco); } catch (ex) {}
+    if (location.hash === a.getAttribute('href')) { e.preventDefault(); ir(); }
+  });
 
   // Avisar antes de salir con cambios sin guardar en cualquier sección.
   window.addEventListener('beforeunload', e => {
