@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611261415">
+<link rel="stylesheet" href="tpv.css?v=202611261424">
 </head>
 <body>
 
@@ -77,6 +77,7 @@
 
   <!-- ── Sala ── -->
   <main class="sala" id="vista-sala">
+    <section class="t-avisos" id="t-avisos" aria-live="polite" hidden></section>
     <section class="recoger" id="recoger-sec" hidden>
       <h2 class="sub" style="margin-top:0">Para recoger · pedidos web de hoy <span class="n-recoger" id="n-recoger"></span></h2>
       <div class="mesas" id="recoger"></div>
@@ -103,6 +104,7 @@
       <button type="button" class="c-hoja" id="c-hoja" aria-label="Ver u ocultar la cuenta"><span id="c-hoja-txt">Cuenta</span><i aria-hidden="true">▲</i></button>
       <div class="tq-cab">
         <div><h2 id="c-nombre"></h2><small id="c-info"></small></div>
+        <button class="b b-mini" id="c-repetir" type="button" hidden title="Añadir otra vez todo lo de la última comanda (sin enviar, para revisar)">↻ Repetir ronda</button>
         <button class="b b-mini" id="c-menu" type="button" aria-haspopup="menu">⋯</button>
         <div class="menu" id="menu-cuenta" role="menu" hidden>
           <button type="button" role="menuitem" data-m="comensales"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 10a4 4 0 100-8 4 4 0 000 8M22 20v-2a4 4 0 00-3-3.9M16 2.1a4 4 0 010 7.8"/></svg>Comensales</button>
@@ -392,11 +394,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611261415"></script>
-<script src="/pedir/acceso.js?v=202611261415"></script>
+<script src="/pedir/api.js?v=202611261424"></script>
+<script src="/pedir/acceso.js?v=202611261424"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611261415"></script>
-<script src="/pedir/plano.js?v=202611261415"></script>
-<script src="tpv.js?v=202611261415"></script>
+<script src="/pedir/ticket.js?v=202611261424"></script>
+<script src="/pedir/plano.js?v=202611261424"></script>
+<script src="tpv.js?v=202611261424"></script>
 </body>
 </html>

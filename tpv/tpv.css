@@ -459,3 +459,23 @@ a.b{text-decoration:none}
 .menu button svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;color:var(--humo)}
 .menu .peligro svg{color:var(--mal)}
 @media (max-width:760px){ .b-ctrl .b.b-ico{min-width:60px;padding:6px 8px 5px;font-size:11.5px} .b-sep{display:none} }
+
+/* ── Avisos de la sala ── */
+.t-avisos{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
+.av{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-radius:12px;border:1px solid;font-weight:600;font-size:14.5px;line-height:1.3}
+.av > span{flex:1}
+.av .b{flex:none}
+.av-x{flex:none;width:34px;height:34px;border:0;background:none;font-size:22px;line-height:1;color:inherit;opacity:.6;border-radius:8px}
+.av-x:hover{opacity:1;background:rgba(0,0,0,.05)}
+.av-rojo{background:#FDECEA;border-color:#F3B9B3;color:#8E1B1B}
+.av-ambar{background:var(--oro-cl);border-color:#EFD49A;color:#6B4A07}
+.av-azul{background:var(--azul-cl);border-color:#C3D5EA;color:#1E4468}
+/* Más pedidos, repetir y teclado de cantidad */
+.cats button[data-cat="__top"]:not(.activa){border-color:var(--oro);color:#8a5f0c;background:var(--oro-cl)}
+#c-repetir{white-space:nowrap}
+.ln.pendiente output[data-cant]{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.dk-teclas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dk-teclas button{font:inherit;font-size:24px;font-weight:800;padding:16px 0;border:1px solid var(--borde-2);background:var(--blanco);border-radius:12px}
+.dk-teclas button.sel{background:var(--burdeos);border-color:var(--burdeos);color:#fff}
+.dk-teclas button:active{transform:scale(.96)}
+.b-otra{margin-top:10px;color:var(--nopal);border-color:#BFD9B8;background:var(--nopal-cl)}

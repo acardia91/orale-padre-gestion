@@ -363,8 +363,48 @@
     }
     const sueltas = cuentas.filter(c => !c.mesa_id);
     $('#sueltas').innerHTML = sueltas.map(c => tileCuenta(c, c.nombre)).join('') || '<p class="vacio">Ninguna abierta. Usa “+ Terraza”, “+ Barra” o “+ Para llevar”.</p>';
-    sumasSala();
+    sumasSala(); pintaAvisos();
   }
+
+  /* ── Avisos de la sala: lo que hay que mirar ya, cada uno con su botón para arreglarlo.
+     La × lo oculta hasta mañana en esta tablet. ── */
+  let cajaRes = null, tCaja = 0, avisosAct = [];
+  const hoyF = () => partesMadrid(new Date()).fecha;
+  const avisosOff = () => { const x = ls('op-tpv-avisos-off') || {}; return x.dia === hoyF() ? x.ids : []; };
+  async function miraCaja(forzar) {
+    if (!forzar && Date.now() - tCaja < 10 * 60000) return; tCaja = Date.now();
+    try { cajaRes = await api.resumenCaja(LOCAL); } catch (e) { cajaRes = null; }
+    if (!cuenta) pintaAvisos(true);
+  }
+  const ultimoPedido = c => { const ps = pedidosHoy.filter(p => p.cuenta_id === c.id && p.estado !== 'cancelado'); return ps.length ? Math.max(...ps.map(p => +new Date(p.creado))) : null; };
+  function pintaAvisos(sinCaja) {
+    if (!sinCaja) miraCaja();
+    const off = avisosOff(), L = [], ahora = Date.now();
+    if (cajaRes && cajaRes.desde && partesMadrid(new Date(cajaRes.desde)).fecha < hoyF() && (cajaRes.tickets || cajaRes.entradas || cajaRes.salidas))
+      L.push({ id: 'caja', nivel: 'rojo', txt: `La caja no se cerró: sigue abierta desde el ${new Date(cajaRes.desde).toLocaleDateString('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric' })}. Haz el cierre para que cuadre el efectivo.`, btn: 'Cerrar caja', fn: () => $('#b-caja').click() });
+    if (local && local.acepta_pedidos === false)
+      L.push({ id: 'online', nivel: 'ambar', txt: 'Pedidos online en pausa: la web no acepta pedidos para recoger.', btn: 'Activar', fn: async () => {
+        if (!confirm('¿Volver a aceptar pedidos online en la web?')) return;
+        try { await api.actualizarLocal(LOCAL, { acepta_pedidos: true }); await recarga(); aviso('✓ Pedidos online activados'); } catch (ex) { alert('No se ha podido: ' + mensajeError(ex) + '\nPídeselo a un encargado (admin → Local y horario).'); } } });
+    let impresora = null; try { impresora = localStorage.getItem('op-impresora'); } catch (e) {}
+    if (!impresora) L.push({ id: 'impresora', nivel: 'azul', txt: 'Esta tablet aún no tiene impresora elegida. Si no vais a imprimir aquí, pulsa × y no vuelve a salir.', btn: 'Configurar', fn: () => $('#b-impresora').click(),
+      cerrar: () => { try { localStorage.setItem('op-impresora', 'navegador'); } catch (e) {} } });
+    const quietas = cuentas.filter(c => !(pendientes[c.id] || []).length && (totales[c.id] || 0) > 0)
+      .map(c => ({ c, u: ultimoPedido(c) })).filter(x => x.u && ahora - x.u > 40 * 60000).sort((a, b) => a.u - b.u);
+    quietas.slice(0, 3).forEach(({ c, u }) => L.push({ id: 'quieta-' + c.id + '-' + u, nivel: 'ambar', txt: `${c.nombre}: ${Math.round((ahora - u) / 60000)} min sin pedir. ¿Postre, café o la cuenta?`, btn: 'Abrir', fn: () => abrir(c) }));
+    if (quietas.length > 3) L.push({ id: 'quietas-mas', nivel: 'ambar', txt: `Y ${quietas.length - 3} mesas más llevan un rato sin pedir.`, btn: 'Ver sala', fn: () => scrollTo({ top: $('#mesas').offsetTop - 80, behavior: 'smooth' }) });
+    const orden = { rojo: 0, ambar: 1, azul: 2 };
+    avisosAct = L.filter(a => !off.includes(a.id)).sort((a, b) => orden[a.nivel] - orden[b.nivel]);
+    $('#t-avisos').innerHTML = avisosAct.map((a, i) => `<div class="av av-${a.nivel}"><span>${esc(a.txt)}</span><button type="button" class="b b-mini" data-av="${i}">${a.btn}</button><button type="button" class="av-x" data-avx="${i}" aria-label="Ocultar este aviso">×</button></div>`).join('');
+    $('#t-avisos').hidden = !avisosAct.length;
+  }
+  $('#t-avisos').addEventListener('click', e => {
+    const b = e.target.closest('[data-av]'); if (b) { const a = avisosAct[+b.dataset.av]; if (a) a.fn(); return; }
+    const x = e.target.closest('[data-avx]'); if (!x) return;
+    const a = avisosAct[+x.dataset.avx]; if (!a) return;
+    if (a.cerrar) a.cerrar(); else ls('op-tpv-avisos-off', { dia: hoyF(), ids: [...avisosOff(), a.id] });
+    pintaAvisos(true);
+  });
   // Al girar la tablet o cambiar de tamaño, se repinta la sala (plano ↔ botones).
   let tRes = null, anchoPlano = innerWidth >= 700;
   addEventListener('resize', () => { clearTimeout(tRes); tRes = setTimeout(() => { if ((innerWidth >= 700) !== anchoPlano) { anchoPlano = innerWidth >= 700; if (!$('#vista-sala').hidden) pintaSala(); } }, 200); });
@@ -483,7 +523,7 @@
     $('#vista-sala').hidden = true; $('#vista-cuenta').hidden = false; $('#b-atras').hidden = false;
     $('#b-barra').hidden = $('#b-llevar').hidden = $('#b-terraza').hidden = true;
     $('#c-nota').value = ''; $('#buscar').value = ''; $('#buscar-x').hidden = true;
-    if (!catActiva) catActiva = visibles()[0]?.clave;
+    catActiva = topProductos().length >= 4 ? '__top' : (catActiva || visibles()[0]?.clave);   // al abrir, lo que más sale
     pintaProductos(); pintaCuenta();
   }
   function verSala() {
@@ -512,8 +552,22 @@
     const hoy = partesMadrid(new Date()).dow;
     return carta.categorias.filter(c => !c.oculta && c.solo !== fuera() && c.productos.some(id => vale(idx.prod.get(id))) && (!c.dias || c.dias.includes(hoy)));
   }
+  /* ── "★ Más pedidos": lo que más sale en este local, primero (se aprende de lo que se envía) ── */
+  const TOPK = () => 'op-tpv-top-' + LOCAL;
+  function sumaTop(lineas) {
+    const t = ls(TOPK()) || { dia: '', c: {} }; const hoy = hoyF();
+    if (t.dia !== hoy) { for (const k in t.c) { t.c[k] = Math.round(t.c[k] * 90) / 100; if (t.c[k] < 0.5) delete t.c[k]; } t.dia = hoy; }   // lo de días atrás pesa menos
+    lineas.forEach(l => { t.c[l.producto] = (t.c[l.producto] || 0) + l.cantidad; });
+    ls(TOPK(), t);
+  }
+  function topProductos() {
+    const c = { ...((ls(TOPK()) || {}).c || {}) };
+    if (Object.keys(c).length < 8) pedidosHoy.forEach(p => { if (p.estado !== 'cancelado') (p.lineas || []).forEach(l => { c[l.producto] = (c[l.producto] || 0) + l.cantidad / 2; }); });
+    return Object.entries(c).sort((a, b) => b[1] - a[1]).map(([id]) => id).filter(id => vale(idx.prod.get(id))).slice(0, 12);
+  }
   function pintaProductos() {
-    const cats = visibles();
+    const top = topProductos();
+    const cats = top.length >= 4 ? [{ clave: '__top', nombre: '★ Más pedidos', productos: top }, ...visibles()] : visibles();
     if (!cats.some(c => c.clave === catActiva)) catActiva = cats[0]?.clave;
     $('#cats').innerHTML = cats.map(c => `<button type="button" data-cat="${c.clave}" class="${c.clave === catActiva ? 'activa' : ''}">${esc(c.nombre)}</button>`).join('');
     const cat = cats.find(c => c.clave === catActiva);
@@ -569,7 +623,7 @@
     const pendHTML = pend.length ? `<div class="grupo-env"><span>Sin enviar</span></div>` + pend.map((l, i) => {
       const p = idx.prod.get(l.producto); const ops = nombreOps(l);
       return `<div class="ln pendiente">
-        <div class="ctl"><button type="button" data-menos="${i}" aria-label="Uno menos">−</button><output>${l.cantidad}</output><button type="button" data-mas="${i}" aria-label="Uno más">+</button></div>
+        <div class="ctl"><button type="button" data-menos="${i}" aria-label="Uno menos">−</button><output data-cant="${i}" role="button" title="Tocar para escribir la cantidad">${l.cantidad}</output><button type="button" data-mas="${i}" aria-label="Uno más">+</button></div>
         <div class="ln-txt" data-nota="${i}" role="button" title="Tocar para añadir una nota">${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : '<small class="add-nota">📝 Nota</small>'}</div>
         <span class="imp">${p ? euros(precioLinea(idx, l, enSala()) * l.cantidad) : ''}</span></div>`;
     }).join('') : '';
@@ -585,18 +639,57 @@
       $('#c-enviar').disabled = !pend.length;
     }
     $('#c-cobrar').disabled = !(tEnv + tPend);
+    $('#c-repetir').hidden = !ultimaComanda();
     const el = $('#c-lineas'); el.scrollTop = el.scrollHeight;
   }
   $('#c-lineas').addEventListener('click', e => {
     const env = e.target.closest('.ln.enviada[data-pid]');
     if (env) { abreQuitar(env.dataset.pid, +env.dataset.idx); return; }
     const t = e.target; const pend = pendientes[cuenta.id]; if (!pend) return;
+    const ct = t.closest('[data-cant]'); if (ct) { tecladoCantidad(+ct.dataset.cant); return; }
     const nt = t.closest('[data-nota]'); if (nt) { abreNota(+nt.dataset.nota); return; }
     if (t.dataset.mas) pend[t.dataset.mas].cantidad = Math.min(20, pend[t.dataset.mas].cantidad + 1);
     else if (t.dataset.menos) { pend[t.dataset.menos].cantidad--; if (pend[t.dataset.menos].cantidad < 1) pend.splice(t.dataset.menos, 1); }
     else return;
     guardaPend(); pintaCuenta();
   });
+
+  /* ── Cantidad de golpe: tocar el número abre un teclado (para 8 cervezas no hay que pulsar + siete veces) ── */
+  function tecladoCantidad(i) {
+    const l = (pendientes[cuenta.id] || [])[i]; if (!l) return;
+    let d = $('#dlg-cant');
+    if (!d) {
+      d = document.createElement('dialog'); d.id = 'dlg-cant'; d.className = 'dlg';
+      d.innerHTML = `<form method="dialog"><h2 id="dk-tit" style="margin:0 0 12px"></h2>
+        <div class="dk-teclas">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15].map(n => `<button type="button" data-n="${n}">${n}</button>`).join('')}</div>
+        <div class="dlg-pie" style="margin-top:12px"><button class="b" type="button" data-n="0" style="color:var(--mal)">Quitar</button><button class="b" value="cancel">Cancelar</button></div></form>`;
+      document.body.appendChild(d);
+      d.addEventListener('click', e => {
+        const b = e.target.closest('[data-n]'); if (!b) return;
+        const lista = pendientes[cuenta.id] || []; const L = lista[d._i];
+        if (L) { const n = +b.dataset.n; if (n) L.cantidad = n; else lista.splice(d._i, 1); guardaPend(); pintaCuenta(); }
+        d.close();
+      });
+    }
+    d._i = i; const p = idx.prod.get(l.producto);
+    d.querySelector('#dk-tit').textContent = `¿Cuántos? · ${p ? p.nombre : ''}`;
+    d.querySelectorAll('[data-n]').forEach(b => b.classList.toggle('sel', +b.dataset.n === l.cantidad));
+    d.showModal();
+  }
+
+  /* ── Repetir: otra ronda igual, u otro igual de un producto ya enviado ── */
+  const ultimaComanda = () => pedidosCuenta.filter(p => p.estado !== 'cancelado' && (p.lineas || []).length).sort((a, b) => b.numero - a.numero)[0];
+  function repiteLinea(l, cantidad) {
+    const p = idx.prod.get(l.producto);
+    if (!vale(p) || p.agotado || agotados.has(p.id)) return false;
+    anade({ producto: p.id, cantidad, opciones: (l.opciones || []).map(o => o.id), nota: l.nota || '' }); return true;
+  }
+  $('#c-repetir').onclick = () => {
+    const p = ultimaComanda(); if (!p) return;
+    const no = []; let n = 0;
+    p.lineas.forEach(l => { if (repiteLinea(l, l.cantidad)) n += l.cantidad; else no.push(l.nombre); });
+    aviso(n ? `↻ ${n} ${n === 1 ? 'producto' : 'productos'} de la comanda #${p.numero} añadidos: revisa y envía${no.length ? ` · sin ${no.join(', ')} (agotado o no disponible)` : ''}` : 'Nada que repetir: está agotado o ya no está en la carta', !n);
+  };
 
   async function enviar() {
     const c = cuenta; const pend = pendientes[c.id] || []; if (!pend.length) return true;
@@ -606,7 +699,7 @@
     try {
       pintaCuenta();
       const r = await api.enviarComanda(c.id, pend.map(({ producto, cantidad, opciones, nota }) => ({ producto, cantidad, opciones, nota })), $('#c-nota').value.trim());
-      delete pendientes[c.id]; guardaPend(); $('#c-nota').value = '';
+      sumaTop(pend); delete pendientes[c.id]; guardaPend(); $('#c-nota').value = '';
       aviso(`✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
       const ps = await api.pedidosDeCuenta(c.id);
       if (cuenta && cuenta.id === c.id) pedidosCuenta = ps;
@@ -1025,8 +1118,14 @@
     const p = pedidosCuenta.find(x => x.id === pid); const l = p && p.lineas[i]; if (!l) return;
     qAcc = { tipo: 'linea', pid, i };
     const pend = porCobrar(l);
-    prepQuitar('Quitar producto', `<b>${l.cantidad}× ${esc(l.nombre)}</b> · comanda #${p.numero} · ${euros(l.unitario * l.cantidad)}${l.dto ? ` <small class="dto">(${l.dto === 100 ? 'invitado' : '−' + l.dto + ' %'})</small>` : ''}<br><small>Ya se mandó a cocina: avisa en cocina si hay que pararlo.</small>`, pend > 1, pend);
+    prepQuitar('Quitar producto', `<b>${l.cantidad}× ${esc(l.nombre)}</b> · comanda #${p.numero} · ${euros(l.unitario * l.cantidad)}${l.dto ? ` <small class="dto">(${l.dto === 100 ? 'invitado' : '−' + l.dto + ' %'})</small>` : ''}<br><small>Ya se mandó a cocina: avisa en cocina si hay que pararlo.</small>
+      <br><button type="button" class="b b-mini b-otra" id="dq-otra">＋ Pedir otro igual</button>`, pend > 1, pend);
   }
+  dq.addEventListener('click', e => {
+    if (!e.target.closest('#dq-otra') || !qAcc || qAcc.tipo !== 'linea') return;
+    const p = pedidosCuenta.find(x => x.id === qAcc.pid); const l = p && p.lineas[qAcc.i]; dq.close();
+    if (l && repiteLinea(l, 1)) aviso(`＋ 1× ${l.nombre} añadido (sin enviar)`); else aviso('Ese producto está agotado o ya no está en la carta', true);
+  });
   function abreAnular() {
     const tot = pedidosCuenta.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
     qAcc = { tipo: 'cuenta' };
@@ -1166,7 +1265,7 @@
     const btn = $('#cz-ok'); btn.disabled = true;
     try {
       const z = await api.cerrarCaja(LOCAL, contado, ret, $('#cz-notas').value.trim());
-      $('#dlg-caja').close(); aviso('✓ Caja cerrada' + (z.descuadre ? ' con descuadre de ' + euros(z.descuadre) : ', cuadra'));
+      $('#dlg-caja').close(); miraCaja(true); aviso('✓ Caja cerrada' + (z.descuadre ? ' con descuadre de ' + euros(z.descuadre) : ', cuadra'));
       OP.imprimir(`<div class="c g">CIERRE DE CAJA (Z)</div><div class="c">${esc(local.nombre)}</div>
         <div class="c">${new Date(z.desde).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}<br>a ${new Date(z.hasta).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}</div>
         <div class="c">Cierra: ${esc((SESION && SESION.email) || '')}</div><hr>
