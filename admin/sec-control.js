@@ -51,7 +51,7 @@
           : ['lineas_pasadas', 'cuentas_juntadas'].includes(x.accion) ? `${esc(d.de)} → ${esc(d.a)} · ${d.unidades} uds.`
           : x.accion === 'cuenta_anulada' ? esc(d.mesa) : x.accion === 'precuenta' ? esc(d.mesa)
           : x.accion === 'pedido_cancelado' ? `#${d.numero} · ${esc(d.cliente || '')}${d.pagado ? ' · pagado online' : ''}`
-          : x.accion === 'cierre_caja' ? `Contado ${euros(d.contado || 0)} · esperado ${euros(d.esperado || 0)}` : x.accion === 'pin_fallido' ? esc(x.motivo || '') : '';
+          : x.accion === 'cierre_caja' ? `Contado ${euros(d.contado || 0)} · esperado ${euros(d.esperado || 0)}${d.cierra ? ' · cierra ' + esc(d.cierra) : ''}${d.en_turno && d.en_turno !== d.cierra ? ' (en el TPV: ' + esc(d.en_turno) + ')' : ''}` : x.accion === 'pin_fallido' ? esc(x.motivo || '') : '';
         const alarma = d.precuenta_impresa ? ' <span class="tag rojo">tras pre-cuenta</span>' : '';
         return `<tr><td>${fecha(x.cuando)}</td>${varios ? `<td>${esc(nombreLocal(x.local))}</td>` : ''}<td><span class="tag ${c}">${t}</span>${alarma}</td>
           <td>${det}</td><td class="num">${x.importe != null ? (x.accion === 'cierre_caja' ? 'descuadre ' : '') + euros(x.importe) : ''}</td>
