@@ -11,13 +11,16 @@
   const fecha = d => new Date(d).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   const css = document.createElement('style');
-  css.textContent = `
+  const cssTicket = () => `
     #ticket{display:none}
+    #dlg-impresora input[type=radio],#dlg-impresora input[type=checkbox]{width:20px;height:20px;min-width:20px;padding:0;margin:1px 0 0;flex:none;accent-color:#7C2430}
+    #dlg-impresora{max-height:92dvh;overflow:auto}
+    #dlg-impresora label{font-weight:500;color:inherit}
     @media print{
-      @page{size:80mm auto;margin:0}
+      @page{size:${papel()}mm auto;margin:0}
       html,body{background:#fff!important;color:#000!important;padding:0!important;margin:0!important}
       body > *:not(#ticket){display:none!important}
-      #ticket{display:block!important;width:72mm;margin:0 auto;padding:3mm 0 6mm;font:11pt/1.3 Arial,Helvetica,sans-serif;color:#000}
+      #ticket{display:block!important;width:${papel() === '58' ? 48 : 72}mm;margin:0 auto;padding:3mm 0 6mm;font:11pt/1.3 Arial,Helvetica,sans-serif;color:#000}
       #ticket .c{text-align:center}
       #ticket .g{font-size:15pt;font-weight:800}
       #ticket .num{font-size:38pt;font-weight:800;line-height:1}
@@ -38,24 +41,43 @@
   }
   /* ── Qué impresora usa esta tablet ── */
   const PREF = 'op-impresora';
-  const modo = () => { try { return localStorage.getItem(PREF) || 'navegador'; } catch (e) { return 'navegador'; } };
+  const lee = (k, def) => { try { return localStorage.getItem(k) || def; } catch (e) { return def; } };
+  const guarda = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const modo = () => lee(PREF, 'navegador');
+  const papel = () => lee('op-imp-papel', '80');            // 80 mm (48 letras) o 58 mm (32 letras)
+  const conCajon = () => lee('op-imp-cajon', '0') === '1';  // cajón portamonedas enchufado a la impresora
+  const sinTildes = () => lee('op-imp-sintildes', '0') === '1';
+  const pintaCSS = () => { css.textContent = cssTicket(); };
+  pintaCSS();
   const esAndroid = /Android/i.test(navigator.userAgent);
-  function imprimir(html) {
+  // opciones.cajon: abrir el cajón con este ticket (cobro en efectivo), si está activado en esta tablet.
+  function imprimir(html, opciones = {}) {
     caja().innerHTML = html;
     if (modo() === 'rawbt') {
-      if (esAndroid) return rawbt(caja());
+      if (esAndroid) return rawbt(caja(), !!opciones.cajon && conCajon());
       if (!imprimir.avisado) { imprimir.avisado = true; alert('RawBT sólo funciona en tablets Android. En este equipo se imprime con el navegador.'); }
     }
     window.print();
   }
 
-  /* ── Ticket → ESC/POS para RawBT (80 mm: 48 caracteres por línea) ── */
-  const COLS = 48;
+  /* ── Ticket → ESC/POS para RawBT (80 mm: 48 caracteres por línea · 58 mm: 32) ── */
+  let COLS = 48;
+  const PATADA = [0x1B, 0x70, 0x00, 0x19, 0xFA];   // abrir cajón (pin 2)
+  function abrirCajon(silencioso) {
+    if (!(modo() === 'rawbt' && esAndroid && conCajon())) {
+      if (!silencioso) alert('El cajón se abre a través de la impresora: elige RawBT, activa "Tengo cajón" y usa una tablet Android.');
+      return;
+    }
+    enviaRawbt([0x1B, 0x40, ...PATADA]);
+  }
   // Página de códigos PC858 (la de casi todas las térmicas ESC/POS): español y €.
   const CP = { 'á': 0xA0, 'é': 0x82, 'í': 0xA1, 'ó': 0xA2, 'ú': 0xA3, 'ñ': 0xA4, 'Ñ': 0xA5, 'ü': 0x81, 'Ü': 0x9A, '¿': 0xA8, '¡': 0xAD,
     '€': 0xD5, 'Á': 0xB5, 'É': 0x90, 'Í': 0xD6, 'Ó': 0xE0, 'Ú': 0xE9, 'º': 0xA7, 'ª': 0xA6, 'ç': 0x87, 'Ç': 0x80, '·': 0xFA, '×': 0x9E,
     'à': 0x85, 'è': 0x8A, 'ò': 0x95, '°': 0xF8 };
   const SUST = { '−': '-', '–': '-', '—': '-', '“': '"', '”': '"', '‘': "'", '’': "'", '…': '...', '\u00a0': ' ', '✓': 'OK', '!!': '!!' };
+  // Si la impresora saca símbolos raros en las tildes o el €: se quitan (antes de medir las líneas).
+  const limpia = txt => !sinTildes() ? txt : String(txt).replace(/€/g, 'EUR').replace(/×/g, 'x').replace(/[ñÑ]/g, m => m === 'ñ' ? '\u0001' : '\u0002').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0001/g, 'n').replace(/\u0002/g, 'N').replace(/[¿¡]/g, '').replace(/·/g, '-').replace(/[ºª°]/g, '.');
   function bytesDe(txt) {
     const out = [];
     for (const ch of String(txt)) {
@@ -83,10 +105,12 @@
   }
   function texto(el) {
     const c = el.cloneNode(true); c.querySelectorAll('br').forEach(b => b.replaceWith('\n')); c.querySelectorAll('svg').forEach(x => x.remove());
-    return c.textContent.split('\n').map(t => t.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
+    return limpia(c.textContent).split('\n').map(t => t.replace(/\s+/g, ' ').trim()).filter(Boolean).join('\n');
   }
-  function escpos(raiz) {
+  function escpos(raiz, cajon) {
+    COLS = papel() === '58' ? 32 : 48;
     const B = [0x1B, 0x40, 0x1B, 0x74, 19];          // iniciar · página PC858
+    if (cajon) B.push(...PATADA);
     const ESC = (...x) => B.push(...x);
     const estilo = (alinear, tam, negrita) => { ESC(0x1B, 0x61, alinear); ESC(0x1D, 0x21, tam); ESC(0x1B, 0x45, negrita ? 1 : 0); };
     const linea = t => { B.push(...bytesDe(t), 10); };
@@ -119,8 +143,9 @@
     estilo(0, 0, false); B.push(10, 10, 10, 10); ESC(0x1D, 0x56, 0x42, 0);   // avanzar y cortar
     return new Uint8Array(B);
   }
-  function rawbt(raiz) {
-    const b = escpos(raiz); let bin = ''; b.forEach(x => { bin += String.fromCharCode(x); });
+  function rawbt(raiz, cajon) { enviaRawbt(escpos(raiz, cajon)); }
+  function enviaRawbt(b) {
+    let bin = ''; b.forEach(x => { bin += String.fromCharCode(x); });
     location.href = 'intent:base64,' + btoa(bin) + '#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
   }
 
@@ -134,7 +159,21 @@
       d.innerHTML = `<form method="dialog" style="display:flex;flex-direction:column;gap:12px;min-width:min(420px,86vw)">
         <h2 style="margin:0">Impresora de esta tablet</h2>
         <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="navegador"> <span><b>Navegador</b><br><small>Sale el diálogo de imprimir (o directo si Chrome está en modo kiosco).</small></span></label>
-        <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="rawbt"> <span><b>RawBT (Android)</b><br><small>Directo a la térmica por Bluetooth, USB o red, sin diálogo. Instala la app <b>RawBT</b> desde Google Play, empareja la impresora en RawBT y elige "ESC/POS, 80 mm".</small></span></label>
+        <label style="display:flex;gap:10px;align-items:flex-start"><input type="radio" name="imp" value="rawbt"> <span><b>RawBT (Android) · recomendado</b><br><small>Directo a la térmica por Bluetooth, USB o red, sin diálogo.</small></span></label>
+        <details style="background:#f6f1eb;border-radius:10px;padding:8px 12px"><summary style="cursor:pointer;font-weight:700">Cómo dejarla funcionando (5 minutos)</summary>
+          <ol style="margin:8px 0 4px;padding-left:20px;font-size:13.5px;line-height:1.45">
+            <li>Enciende la impresora y conéctala: <b>Bluetooth</b> (emparéjala en Ajustes → Bluetooth de la tablet; el PIN suele ser 0000 o 1234), <b>USB</b> (cable a la tablet, con adaptador OTG) o <b>red</b> (cable a router/wifi; apunta su IP, sale al imprimir su hoja de prueba manteniendo FEED al encenderla).</li>
+            <li>En la tablet instala <b>RawBT</b> desde Google Play y ábrela.</li>
+            <li>En RawBT → Ajustes: <b>Conexión</b> = Bluetooth / USB / Red (IP y puerto 9100) y elige tu impresora. <b>Driver</b> = ESC/POS. <b>Papel</b> = el de tu impresora (80 o 58 mm).</li>
+            <li>Aquí arriba marca <b>RawBT</b> y abajo el ancho de papel.</li>
+            <li>Pulsa <b>Imprimir prueba</b>. La primera vez Android pregunta con qué abrirlo: elige RawBT y <b>"Siempre"</b>.</li>
+            <li>Si las tildes o el € salen raros, activa "Quitar tildes". Si tienes cajón enchufado a la impresora, activa "Tengo cajón" y prueba.</li>
+          </ol></details>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center"><b style="font-size:14px">Papel:</b>
+          <label style="display:flex;gap:6px"><input type="radio" name="imp-papel" value="80"> 80 mm</label>
+          <label style="display:flex;gap:6px"><input type="radio" name="imp-papel" value="58"> 58 mm</label></div>
+        <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="imp-cajon"> <span><b>Tengo cajón portamonedas</b> enchufado a la impresora<br><small>Se abre solo al cobrar en efectivo (sólo con RawBT).</small></span></label>
+        <label style="display:flex;gap:10px;align-items:flex-start"><input type="checkbox" id="imp-sintildes"> <span>Quitar tildes y € <small>(sólo si salen símbolos raros)</small></span></label>
         <div id="imp-comandas" hidden style="border-top:1px solid #e3d8cc;padding-top:10px;display:flex;flex-direction:column;gap:8px">
           <b>Comandas en papel (sin pantalla en cocina)</b>
           <label style="display:flex;gap:10px"><input type="radio" name="impc" value="no"> <span>No imprimir: hay pantalla de Comandas en cocina</span></label>
@@ -143,19 +182,26 @@
           <small>Lo que va a cocina o a barra se decide en admin → Carta. Los pedidos de la web y del QR se imprimen con el botón "🖨 Por imprimir".</small>
         </div>
         <p id="imp-nota" style="margin:0;font-size:13px"></p>
-        <div class="dlg-pie" style="display:flex;gap:8px;justify-content:flex-end"><button class="b" type="button" id="imp-prueba">Imprimir prueba</button><button class="b b-ok" value="ok">Listo</button></div>
+        <div class="dlg-pie" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="b" type="button" id="imp-cajon-prueba">Probar cajón</button><button class="b" type="button" id="imp-prueba">Imprimir prueba</button><button class="b b-ok" value="ok">Listo</button></div>
       </form>`;
       document.body.appendChild(d);
       d.addEventListener('change', e => {
         if (e.target.name === 'imp') { try { localStorage.setItem(PREF, e.target.value); } catch (x) {} nota(); }
+        if (e.target.name === 'imp-papel') { guarda('op-imp-papel', e.target.value); pintaCSS(); }
+        if (e.target.id === 'imp-cajon') guarda('op-imp-cajon', e.target.checked ? '1' : '0');
+        if (e.target.id === 'imp-sintildes') guarda('op-imp-sintildes', e.target.checked ? '1' : '0');
         if (e.target.name === 'impc') { try { localStorage.setItem('op-imprimir-comanda', e.target.value); } catch (x) {} if (typeof opcionesImp.alCambiar === 'function') opcionesImp.alCambiar(); }
       });
+      d.querySelector('#imp-cajon-prueba').onclick = () => abrirCajon(false);
       d.querySelector('#imp-prueba').onclick = () => imprimir(`<div class="c g">ÓRALE PADRE</div><div class="c">Prueba de impresora</div><hr>
         <div class="l"><span><b>2×</b> Burrito de cochinita</span><span>19,80 €</span></div><div class="op">+ Guacamole</div><div class="nota">!! Sin cebolla</div>
-        <hr><div class="l tot"><span>TOTAL</span><span>19,80 €</span></div><div class="c">Áéíóú ñ ¿¡ € · ${new Date().toLocaleString('es-ES')}</div>`);
+        <hr><div class="l tot"><span>TOTAL</span><span>19,80 €</span></div><div class="c">Áéíóú ñ ¿¡ € · ${new Date().toLocaleString('es-ES')}</div>
+        <div class="c peq">Papel ${papel()} mm · ${'1234567890'.repeat(5).slice(0, papel() === '58' ? 32 : 48)}</div>`);
     }
     const nota = () => { d.querySelector('#imp-nota').textContent = modo() === 'rawbt' && !esAndroid ? 'Ojo: esta pantalla no es Android; RawBT sólo funciona en tablets Android.' : ''; };
     d.querySelectorAll('[name=imp]').forEach(r => { r.checked = r.value === modo(); }); nota();
+    d.querySelectorAll('[name=imp-papel]').forEach(r => { r.checked = r.value === papel(); });
+    d.querySelector('#imp-cajon').checked = conCajon(); d.querySelector('#imp-sintildes').checked = sinTildes();
     d.querySelector('#imp-comandas').hidden = !opciones.comandas;
     d.querySelectorAll('[name=impc]').forEach(r => { r.checked = r.value === prefComanda(); });
     d.showModal();
@@ -237,5 +283,5 @@
   }
 
   const prefComanda = () => { try { return localStorage.getItem('op-imprimir-comanda') || 'no'; } catch (e) { return 'no'; } };
-  Object.assign(window.OP, { imprimir, ajustesImpresora, comandasPorPuesto, prefComanda, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, _escpos: escpos });
+  Object.assign(window.OP, { imprimir, abrirCajon, ajustesImpresora, comandasPorPuesto, prefComanda, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, _escpos: escpos });
 })();
