@@ -69,6 +69,7 @@
     if (!s.locales.length) { $('#e-error').textContent = 'Tu usuario no tiene ningún local asignado.'; $('#e-error').hidden = false; $('#vista-entrar').hidden = false; return; }
     if (!s.locales.includes(LOCAL)) LOCAL = s.locales[0];
     pref('local', LOCAL);
+    $('#p-ir-tpv').href = '/tpv/?local=' + encodeURIComponent(LOCAL);
     OP.selectorLocal($('#p-local'), s.locales, LOCAL, id => { pref('local', id); location.search = '?local=' + encodeURIComponent(id); });
     $('#vista-entrar').hidden = true; $('#vista-panel').hidden = false;
     carta = await api.carta(LOCAL);

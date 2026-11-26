@@ -147,3 +147,4 @@ input:focus,select:focus{outline:none;border-color:var(--burdeos);box-shadow:0 0
 .ped-sirve{font-size:12.5px;color:var(--humo);font-weight:700;align-self:center}
 .col[hidden]{display:none}
 @media (min-width:901px){body[data-vista="barra"] .columnas{grid-template-columns:repeat(2,minmax(0,1fr))}}
+a.b{text-decoration:none}
