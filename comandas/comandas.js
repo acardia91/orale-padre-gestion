@@ -29,7 +29,8 @@
     return p.estado;
   }
   const visibles = () => pedidos.filter(p => columna(p));
-  const porAceptar = () => pedidos.filter(p => columna(p) === 'nuevo');
+  const porAceptar = () => pedidos.filter(p => columna(p) === 'nuevo' && !p.en_espera);   // lo que está "en espera" no suena
+  const desde = p => p.marchado || p.creado;   // una comanda marchada cuenta desde que se marchó
   function pintaVista() {
     $('#p-puesto').value = vista;
     document.body.dataset.vista = vista || 'todo';
@@ -159,7 +160,7 @@
   const PAGO = { local: 'Paga al recoger', efectivo: 'Pagado · efectivo', tarjeta: 'Pagado · tarjeta', stripe: 'Pagado online' };
   function pinta() {
     if (!local) return;
-    const ord = (a, b) => new Date(a.recogida) - new Date(b.recogida) || a.numero - b.numero;
+    const ord = (a, b) => (a.en_espera ? 1 : 0) - (b.en_espera ? 1 : 0) || new Date(a.canal === 'sala' ? desde(a) : a.recogida) - new Date(b.canal === 'sala' ? desde(b) : b.recogida) || a.numero - b.numero;
     ['nuevo', 'preparando', 'listo'].forEach(est => {
       const l = pedidos.filter(p => columna(p) === est).sort(ord);
       $('#n-' + est).textContent = l.length;
@@ -189,13 +190,15 @@
   function tiempoCocina(p) {
     if (vista === 'barra') {          // en barra: esperando bebidas (ámbar 3, rojo 6) o bebidas listas sin servir
       const mm = d => Math.max(0, Math.floor((Date.now() - new Date(d)) / 60000));
-      if (columna(p) === 'nuevo') { const n = mm(p.creado); return { clase: n >= 6 ? 't-rojo' : n >= 3 ? 't-ambar' : '', txt: `esperando · ${n} min` }; }
+      if (p.en_espera) return { clase: '', txt: 'en espera: sala avisará cuando marche' };
+      if (columna(p) === 'nuevo') { const n = mm(desde(p)); return { clase: n >= 6 ? 't-rojo' : n >= 3 ? 't-ambar' : '', txt: `esperando · ${n} min` }; }
       const n = mm((p.puestos && p.puestos.barra) || p.listo_at || p.creado); return { clase: n >= 10 ? 't-rojo' : n >= 5 ? 't-ambar' : '', txt: `listas hace ${n} min` };
     }
+    if (p.en_espera) return { clase: '', txt: 'en espera: sala avisará cuando marche' };
     const prep = (local && local.minutos_prep) || 20, ya = Date.now(), m = d => Math.max(0, Math.floor((ya - new Date(d)) / 60000));
     if (p.canal !== 'sala' && p.estado !== 'listo' && new Date(p.recogida) - ya > prep * 60000) return { clase: '', txt: '' };
     let n, amb, roj, txt;
-    if (p.estado === 'nuevo') { n = m(p.creado); amb = 3; roj = 6; txt = `sin aceptar · ${n} min`; }
+    if (p.estado === 'nuevo') { n = m(desde(p)); amb = 3; roj = 6; txt = `sin aceptar · ${n} min`; }
     else if (p.estado === 'preparando') { n = m(p.aceptado || p.creado); amb = Math.max(1, prep - 5); roj = prep; txt = `preparando · ${n} min`; }
     else if (p.estado === 'listo') { n = m(p.listo_at || p.aceptado || p.creado); amb = 5; roj = 10; txt = `listo hace ${n} min`; }
     else return { clase: '', txt: '' };
@@ -203,7 +206,7 @@
   }
 
   function tarjeta(p) {
-    const rec = new Date(p.canal === 'sala' ? p.creado : p.recogida); const min = Math.round((rec - Date.now()) / 60000);
+    const rec = new Date(p.canal === 'sala' ? desde(p) : p.recogida); const min = Math.round((rec - Date.now()) / 60000);
     const cuando = p.canal === 'sala' ? `<small class="${-min >= 20 ? 'tarde' : ''}">hace ${-min} min</small>`
       : min < 0 ? `<small class="tarde">hace ${-min} min</small>` : `<small>en ${min} min</small>`;
     const t = tiempoCocina(p);
@@ -214,9 +217,15 @@
       boton = col === 'nuevo' ? ['barra-lista', '🍹 Bebidas listas'] : soloBarra ? ['entregar', p.canal === 'sala' ? 'Servido' : 'Entregar'] : null;
       atras = col === 'listo' && (barraLista(p) || soloBarra) ? 'barra-atras' : '';
     }
+    if (p.en_espera) { boton = null; atras = ''; }
     const otro = vista ? p.lineas.filter(l => puesto(l) !== vista).reduce((s2, l) => s2 + l.cantidad, 0) : 0;
-    const lineas = lineasDe(p);
-    return `<article class="ped ${p.estado} ${t.clase}" data-id="${p.id}">
+    // Plato a plato: cada línea se toca para marcarla hecha (se guarda en el pedido; la ven todas las pantallas).
+    const hechas = new Set(p.hechas || []);
+    const lineas = p.lineas.map((l, i) => ({ ...l, _i: i })).filter(l => !vista || puesto(l) === vista);
+    const todoHecho = lineas.length > 0 && lineas.every(l => hechas.has(l._i));
+    const marcha = p.marchado && Date.now() - new Date(p.marchado) < 15 * 60000;
+    return `<article class="ped ${p.estado} ${t.clase}${p.en_espera ? ' espera' : ''}" data-id="${p.id}">
+      ${p.en_espera ? '<p class="ped-espera">⏸ EN ESPERA · no preparar todavía</p>' : marcha ? '<p class="ped-marcha">▶ ¡MARCHA!</p>' : ''}
       <div class="ped-cab">
         <div class="ped-num">${p.numero}</div>
         <div class="ped-quien">${p.canal === 'sala'
@@ -224,7 +233,7 @@
           : `<strong>${esc(p.cliente_nombre)}</strong>${p.cliente_tel ? `<a href="tel:${esc(p.cliente_tel)}">${esc(p.cliente_tel)}</a>` : ''} · Web, para recoger`}</div>
         <div class="ped-hora"><b>${hhmm(rec)}</b>${cuando}</div>
       </div>
-      <ul class="ped-lineas">${lineas.map(l => `<li class="${!vista && puesto(l) === 'barra' ? 'de-barra' : ''}"><b>${l.cantidad}×</b>${!vista && puesto(l) === 'barra' ? '🍹 ' : ''}${esc(l.nombre)}
+      <ul class="ped-lineas">${lineas.map(l => `<li class="${!vista && puesto(l) === 'barra' ? 'de-barra' : ''}${hechas.has(l._i) ? ' hecha' : ''}" ${p.en_espera ? '' : `data-linea="${l._i}" data-id="${p.id}" role="button" title="Tocar para marcarlo hecho"`}><b>${l.cantidad}×</b>${!vista && puesto(l) === 'barra' ? '🍹 ' : ''}${esc(l.nombre)}
         ${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}
         ${l.nota ? `<small class="nota">⚠ ${esc(l.nota)}</small>` : ''}</li>`).join('')}
         ${(p.anuladas || []).filter(l => !vista || puesto(l) === vista).map(l => `<li class="quitada"><b>${l.cantidad}×</b>${esc(l.nombre)}<small class="nota">✕ QUITADO · ${esc(l.motivo || '')}</small></li>`).join('')}</ul>
@@ -237,13 +246,26 @@
         ${p.canal === 'sala' || vista === 'barra' ? '' : `<button class="lnk" data-acc="cancelar" data-id="${p.id}">Cancelar</button>`}
         <button class="b" data-acc="imprimir" data-id="${p.id}">Ticket</button>
         ${atras ? `<button class="b" data-acc="${atras}" data-id="${p.id}" title="Volver al paso anterior">↩</button>` : ''}
-        ${boton ? `<button class="b b-ok" data-acc="${boton[0]}" data-id="${p.id}">${boton[1]}</button>` : '<span class="ped-sirve">Lo sirve cocina</span>'}
+        ${boton ? `<button class="b b-ok${todoHecho && boton[0] === 'listo' ? ' parpadea' : ''}" data-acc="${boton[0]}" data-id="${p.id}">${boton[1]}</button>` : p.en_espera ? '<span class="ped-sirve">Esperando a sala</span>' : '<span class="ped-sirve">Lo sirve cocina</span>'}
       </div>
     </article>`;
   }
 
   /* ── Acciones ── */
   const ahora = () => new Date().toISOString();
+  document.addEventListener('click', async e => {
+    const li = e.target.closest('li[data-linea]'); if (!li) return;
+    const p = pedidos.find(x => x.id === li.dataset.id); if (!p) return;
+    const i = +li.dataset.linea; const set = new Set(p.hechas || []);
+    if (set.has(i)) set.delete(i); else set.add(i);
+    const antes = p.hechas; p.hechas = [...set].sort((a, b) => a - b);
+    const cambios = { hechas: p.hechas };
+    // Empezar a marcar platos de una comanda nueva es aceptarla.
+    if (p.estado === 'nuevo' && set.size && vista !== 'barra') Object.assign(cambios, { estado: 'preparando', aceptado: p.aceptado || ahora() });
+    pinta();
+    try { await api.actualizarPedido(p.id, cambios); if (cambios.estado) await recarga(); }
+    catch (ex) { p.hechas = antes; pinta(); alert('No se ha podido guardar. ¿Hay conexión?\n' + (ex.message || ex)); }
+  });
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-acc]'); if (!b) return;
     const p = pedidos.find(x => x.id === b.dataset.id); if (!p) return;
