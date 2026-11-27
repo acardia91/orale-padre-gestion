@@ -132,7 +132,7 @@
     const m = Math.min(90, Math.max(5, local.minutos_prep + d)); await api.actualizarLocal(LOCAL, { minutos_prep: m }); recarga();
   };
   $('#p-prep-menos').onclick = cambiaPrep(-5); $('#p-prep-mas').onclick = cambiaPrep(5);
-  $('#p-autoprint').checked = pref('autoprint') === '1';
+  $('#p-autoprint').checked = pref('autoprint') !== '0';   // por defecto, imprime al aceptar
   $('#p-autoprint').onchange = e => pref('autoprint', e.target.checked ? '1' : '0');
 
   /* ── Sonido: el navegador exige un toque antes de poder sonar ── */
@@ -360,6 +360,8 @@
   /* ── Ticket de cocina (no es factura) ── */
   function imprime(p) {
     const ls = lineasDe(p);
+    // Pantalla "Todo": dos tickets con corte, uno para cocina y otro para barra (si el pedido tiene de los dos).
+    if (!vista) { OP.imprimir(OP.comandasPorPuesto(p, local.nombre, carta, 'separada')); return; }
     OP.imprimir(OP.ticketComanda(vista ? { ...p, lineas: ls.length ? ls : p.lineas, notas: [vista === 'barra' ? 'BARRA' : 'COCINA', p.notas].filter(Boolean).join(' · ') } : p, local.nombre));
   }
 
