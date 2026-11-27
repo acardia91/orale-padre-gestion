@@ -196,9 +196,27 @@
   let listosVistos = null;
   function avisaListos(hoy) {
     const ls2 = hoy.filter(p => p.canal === 'sala' && p.estado === 'listo');
-    if (listosVistos) { const nuevos = ls2.filter(p => !listosVistos.has(p.id)); if (nuevos.length) { if (!silencio) timbre(); aviso(`🍽 Listo para servir: ${nuevos.map(p => p.mesa + ' #' + p.numero).join(', ')}`); } }
+    if (listosVistos) { const nuevos = ls2.filter(p => !listosVistos.has(p.id)); if (nuevos.length) {
+      const txt = `🍽 Listo para servir: ${nuevos.map(p => p.mesa + ' #' + p.numero).join(', ')}`;
+      if (!silencio) { timbre(); setTimeout(timbre, 650); }
+      try { if ('vibrate' in navigator) navigator.vibrate([250, 120, 250, 120, 400]); } catch (e) {}
+      aviso(txt); notifica('Listo para servir', nuevos.map(p => `${p.mesa} · comanda #${p.numero}`).join('\n'));
+    } }
     listosVistos = new Set(ls2.map(p => p.id));
   }
+  // Notificación del sistema (sirve con el móvil en el bolsillo si el TPV está abierto detrás).
+  function notifica(titulo, cuerpo) {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted' || !document.hidden) return;
+      const o = { body: cuerpo, icon: '/img/icon-192.png', tag: 'op-listo', renotify: true, vibrate: [250, 120, 250] };
+      if (navigator.serviceWorker) navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification(titulo, o) : new Notification(titulo, o)).catch(() => {});
+      else new Notification(titulo, o);
+    } catch (e) {}
+  }
+  // En el móvil (camarera), al primer toque se piden permisos de notificación una sola vez.
+  document.addEventListener('pointerdown', () => {
+    try { if (matchMedia('(max-width:760px)').matches && 'Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (e) {}
+  }, { once: true });
   let webVistos = null;
   function avisaWebNuevos() {
     const nuevos = web.filter(p => p.estado === 'nuevo');
@@ -623,6 +641,11 @@
   }
   function pintaProductos() {
     const top = topProductos();
+    // Fila fija de "rápidos": los 8 que más salen, a un toque, estés en la categoría que estés.
+    const rap = top.slice(0, 8).map(id => idx.prod.get(id)).filter(p => p && !p.agotado && !agotados.has(p.id));
+    const rq = $('#rapidos');
+    if (rq) { rq.hidden = rap.length < 4 || !!$('#buscar').value.trim();
+      ponHTML(rq, '<span class="rap-tit">⚡ Rápidos</span>' + rap.map(p => `<button type="button" data-prod="${p.id}" class="${p.grupos.length ? 'extras' : ''}">${esc(p.nombre.replace(/^(Burro|Nude|Taco|Quesadilla)\s+/i, ''))}</button>`).join('')); }
     const cats = top.length >= 4 ? [{ clave: '__top', nombre: '★ Más pedidos', productos: top }, ...visibles()] : visibles();
     if (!cats.some(c => c.clave === catActiva)) catActiva = cats[0]?.clave;
     $('#cats').innerHTML = cats.map(c => `<button type="button" data-cat="${c.clave}" class="${c.clave === catActiva ? 'activa' : ''}">${esc(c.nombre)}</button>`).join('');
@@ -645,12 +668,14 @@
   $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { catActiva = b.dataset.cat; $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); } });
   $('#buscar').addEventListener('input', () => { $('#buscar-x').hidden = !$('#buscar').value; pintaProductos(); });
   $('#buscar-x').onclick = () => { $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); $('#buscar').focus(); };
-  $('#prods').addEventListener('click', e => {
+  const tocaProd = e => {
     const b = e.target.closest('[data-prod]'); if (!b || b.disabled) return;
     const p = idx.prod.get(b.dataset.prod);
     if (p.grupos.length) abreExtras(p); else anade({ producto: p.id, cantidad: 1, opciones: [], nota: '' });
     if ($('#buscar').value) { $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); }
-  });
+  };
+  $('#prods').addEventListener('click', tocaProd);
+  if ($('#rapidos')) $('#rapidos').addEventListener('click', tocaProd);
 
   function anade(l) {
     const lista = pendientes[cuenta.id] = pendientes[cuenta.id] || [];
@@ -673,7 +698,7 @@
       ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''} ${porCobrar(l) < 1 ? 'cobrada' : ''}" ${p.estado !== 'cancelado' && porCobrar(l) > 0 ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
         <div>${esc(l.nombre)}${['nuevo', 'preparando', 'listo', 'entregado'].includes(p.estado) && !p.en_espera ? ((p.hechas || []).includes(i) || ['listo', 'entregado'].includes(p.estado) ? `<small class="ln-hecho">✓ ${p.estado === 'entregado' ? 'Servido' : 'Hecho en cocina'}</small>` : '<small class="ln-falta">⏳ En cocina</small>') : ''}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.dto ? `<small class="dto">${l.dto === 100 ? 'Invitado' : '−' + l.dto + ' %'} · antes ${euros(l.unitario_original * l.cantidad)}</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
-        <span class="imp">${euros(l.unitario * l.cantidad)}</span></div>`).join('')}
+        <span class="imp">${euros(l.unitario * l.cantidad)}</span>${p.estado !== 'cancelado' && idx.prod.get(l.producto) ? `<button type="button" class="ln-otra" data-otra="${p.id}:${i}" title="Añadir otra igual (queda sin enviar)" aria-label="Otra igual">+1</button>` : ''}</div>`).join('')}
       ${(p.anuladas || []).map(l => `<div class="ln quitada"><span class="cant-fija">${l.cantidad}×</span><div>${esc(l.nombre)}<small>Quitado: ${esc(l.motivo || '')}</small></div><span class="imp">−${euros(l.unitario * l.cantidad)}</span></div>`).join('')}`).join('');
     const pend = pendientes[cuenta.id] || [];
     const pendHTML = pend.length ? `<div class="grupo-env"><span>Sin enviar</span></div>` + pend.map((l, i) => {
@@ -704,6 +729,14 @@
     pintaCuenta._id = cuenta.id; pintaCuenta._n = nL;
   }
   $('#c-lineas').addEventListener('click', e => {
+    const ot = e.target.closest('[data-otra]');
+    if (ot) {
+      const [pid, i] = ot.dataset.otra.split(':'); const p = pedidosCuenta.find(x => x.id === pid); const l = p && p.lineas[+i]; if (!l) return;
+      const pr = idx.prod.get(l.producto);
+      if (!pr || !vale(pr) || pr.agotado || agotados.has(pr.id)) { aviso(`✗ ${l.nombre} no está disponible ahora`, true); return; }
+      anade({ producto: l.producto, cantidad: 1, opciones: (l.opciones || []).map(o => o.id).filter(Boolean), nota: l.nota || '' });
+      aviso(`+1 ${l.nombre} · queda en «Sin enviar»: pulsa Enviar`); return;
+    }
     const mb = e.target.closest('[data-marchar]'); if (mb) { const p = pedidosCuenta.find(x => x.id === mb.dataset.marchar); if (p) marchar(p); return; }
     const env = e.target.closest('.ln.enviada[data-pid]');
     if (env) { abreQuitar(env.dataset.pid, +env.dataset.idx); return; }

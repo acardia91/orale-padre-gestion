@@ -587,3 +587,14 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
   .plano-tpv{max-width:min(1400px, max(700px, calc((100dvh - 220px) * 1.8)))}
   #sub-barra,#sueltas{max-width:min(1400px, max(700px, calc((100dvh - 220px) * 1.8)));margin-inline:auto}
 }
+/* ⚡ Rápidos: los más pedidos a un toque */
+.rapidos-tpv{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:6px;scrollbar-width:none;align-items:center}
+.rapidos-tpv::-webkit-scrollbar{display:none}
+.rapidos-tpv .rap-tit{flex:none;font-size:12px;font-weight:800;color:#F07C1B;text-transform:uppercase;letter-spacing:.05em}
+.rapidos-tpv button{flex:none;border:2px solid #F07C1B;background:#FFF4EA;color:#7a3a05;border-radius:999px;padding:10px 16px;font:700 15px/1 system-ui,sans-serif;white-space:nowrap}
+.rapidos-tpv button.extras::after{content:' ⋯';opacity:.6}
+.rapidos-tpv button:active{transform:scale(.95);background:#F07C1B;color:#fff}
+/* +1 otra igual en lo ya enviado */
+.ln.enviada:has(.ln-otra){grid-template-columns:auto 1fr auto auto;align-items:center}
+.ln-otra{min-width:44px;height:36px;border:2px solid var(--burdeos);background:#fff;color:var(--burdeos);border-radius:10px;font:800 15px system-ui,sans-serif}
+.ln-otra:active{background:var(--burdeos);color:#fff}
