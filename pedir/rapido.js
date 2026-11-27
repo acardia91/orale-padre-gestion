@@ -22,7 +22,7 @@
     .salto small{display:block;font-size:11px;font-weight:700;opacity:.85;letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
     .salto:active{transform:scale(.95);background:#008F5B}
     .salto.yendo{opacity:.7}
-    @media (max-width:760px){ .salto{padding:11px 14px;font-size:16px;left:10px;bottom:10px} .salto svg{width:24px;height:24px} }
+    @media (max-width:760px){ .salto{padding:13px;border-radius:50%;left:10px;bottom:10px} .salto span{display:none} .salto svg{width:26px;height:26px} }
     body:has(#vista-entrar:not([hidden])) .salto, body:has(#bloqueo:not([hidden])) .salto{display:none}`;
   document.head.appendChild(css);
   const a = document.createElement('a'); a.className = 'salto'; a.href = destino();
