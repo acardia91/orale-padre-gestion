@@ -186,7 +186,8 @@
     catch (e) { console.warn(e); if (esDeRed(e)) ponConexion(false); return; }
     if ($('#t-local')) $('#t-local').textContent = local.nombre.replace(/^Órale Padre\s*/, '');
     $('#n-agotados').textContent = agotados.size || ''; $('#n-agotados').hidden = !agotados.size;
-    if (cuenta) {
+    if (cuenta && cuenta.borrador) { pintaProductos(); }
+    else if (cuenta) {
       const c = cuentas.find(x => x.id === cuenta.id);
       if (!c) { cuenta = null; verSala(); return; }      // la cobraron o anularon desde otro TPV
       cuenta = c; pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta(); pintaProductos();
@@ -269,7 +270,8 @@
      Al enviar desde el TPV se imprimen solas. Los pedidos que llegan solos (web y QR de mesa) esperan en
      "🖨 Por imprimir": un toque los imprime (cocina y barra por separado si así está) y pasan a "preparando". */
   const modoComanda = () => OP.prefComanda();
-  const htmlComanda = p => OP.comandasPorPuesto(p, local.nombre, carta, modoComanda() === 'separada' ? 'separada' : 'junta');
+  const esLlevar = p => !!((cuentas || []).find(c => c.id === p.cuenta_id) || (cuenta && cuenta.id === p.cuenta_id ? cuenta : {})).para_llevar;
+  const htmlComanda = p => OP.comandasPorPuesto({ ...p, llevar: esLlevar(p) }, local.nombre, carta, modoComanda() === 'separada' ? 'separada' : 'junta');
   let impresos = new Set((() => { try { const x = JSON.parse(localStorage.getItem('op-tpv-impresos')) || {}; return x.dia === partesMadrid(new Date()).fecha ? x.ids : []; } catch (e) { return []; } })());
   const guardaImpresos = () => { try { localStorage.setItem('op-tpv-impresos', JSON.stringify({ dia: partesMadrid(new Date()).fecha, ids: [...impresos].slice(-300) })); } catch (e) {} };
   // Marca en el pedido que su comanda ya salió en papel: así Comandas no la vuelve a imprimir al aceptar.
@@ -486,8 +488,8 @@
   $('#c-hoja').onclick = () => $('#vista-cuenta').classList.toggle('hoja-abierta');
   function tileCuenta(c, nombre, m) {
     const pend = (pendientes[c.id] || []).length;
-    return `<button class="mesa ocupada ${claseTiempo(c)}" type="button" data-cuenta="${c.id}">
-      <strong>${esc(nombre)}</strong><small>${m && c.mesa_id !== m.id ? `↔ unida a ${esc(c.nombre)}` : `${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}${(c.mesas_extra || []).length ? ` · +${c.mesas_extra.length}` : ''}`}</small>
+    return `<button class="mesa ocupada ${claseTiempo(c)}${c.para_llevar ? ' llevar' : ''}" type="button" data-cuenta="${c.id}">
+      ${c.para_llevar ? '<span class="chip-llevar">🛍 PARA LLEVAR</span>' : ''}<strong>${esc(nombre)}</strong><small>${m && c.mesa_id !== m.id ? `↔ unida a ${esc(c.nombre)}` : `${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}${(c.mesas_extra || []).length ? ` · +${c.mesas_extra.length}` : ''}`}</small>
       ${m && m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : ''}
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
       ${(() => { const t = tardaDe(c); return t ? `<span class="tarda-chip ${t.nivel}">⏱ ${t.min} min esperando</span>` : ''; })()}
@@ -548,6 +550,50 @@
   };
   $('#b-llevar').onclick = () => nuevaSuelta(true);
 
+  /* ── ⚡ Pedido rápido: se apunta ya, sin elegir nada; al enviar, cobrar o imprimir pregunta
+        si es para llevar, para tomar en barra o en una mesa, y entonces se crea la cuenta. ── */
+  $('#b-rapido').onclick = () => {
+    abrir({ id: 'rapido', borrador: true, nombre: '⚡ Pedido rápido', para_llevar: false, abierta: new Date().toISOString(), mesa_id: null });
+    aviso('⚡ Apunta el pedido. Al enviar o cobrar te pregunto si es para llevar, barra o mesa.');
+  };
+  function concretar() {
+    return new Promise(res => {
+      let d = document.getElementById('dlg-destino');
+      if (!d) { d = document.createElement('dialog'); d.id = 'dlg-destino'; d.className = 'dlg'; document.body.appendChild(d); }
+      const libres = mesas.filter(m => m.tipo !== 'deco' && !cuentaDeMesa(m.id));
+      d.innerHTML = `<form method="dialog"><h2>¿Para dónde es?</h2>
+        <label class="campo">Nombre del cliente (opcional)<input id="ds-nombre" maxlength="30" autocomplete="off" placeholder="Para llamarle cuando esté"></label>
+        <div class="ds-opc">
+          <button type="button" class="ds-b ds-llevar" data-ds="llevar">🛍<b>PARA LLEVAR</b></button>
+          <button type="button" class="ds-b ds-barra" data-ds="barra">🍺<b>TOMAR EN BARRA</b></button>
+          <button type="button" class="ds-b ds-mesa" data-ds="mesa" ${libres.length ? '' : 'disabled'}>🪑<b>EN UNA MESA</b></button>
+        </div>
+        <div class="mesas mini" id="ds-mesas" hidden>${libres.map(m => `<button type="button" class="mesa" data-dsm="${esc(m.id)}"><strong>${esc(m.nombre)}</strong></button>`).join('')}</div>
+        <p class="err" id="ds-err" hidden></p>
+        <div class="dlg-pie"><button class="b" value="cancel">Volver</button></div></form>`;
+      let hecho = false;
+      const crea = async (para_llevar, mesa_id) => {
+        if (hecho) return; hecho = true;
+        const nom = d.querySelector('#ds-nombre').value.trim();
+        try {
+          const c = await api.abrirCuenta({ local: LOCAL, mesa_id: mesa_id || null, para_llevar,
+            nombre: mesa_id ? null : (nom ? (para_llevar ? 'Llevar · ' : 'Barra · ') + nom : null) });
+          pendientes[c.id] = pendientes.rapido || []; delete pendientes.rapido; guardaPend();
+          cuenta = c; pedidosCuenta = []; $('#c-menu').hidden = false; if (c.mesa_id) atiende(c.mesa_id);
+          d.close(); pintaProductos(); pintaCuenta(); recarga();
+          aviso(`✓ ${c.nombre}${para_llevar ? ' · 🛍 para llevar' : ''}`); res(true);
+        } catch (ex) { hecho = false; const e = d.querySelector('#ds-err'); e.textContent = mensajeError(ex); e.hidden = false; }
+      };
+      d.onclick = e => {
+        const b = e.target.closest('[data-ds]');
+        if (b) { if (b.dataset.ds === 'mesa') { d.querySelector('#ds-mesas').hidden = false; return; } crea(b.dataset.ds === 'llevar'); return; }
+        const m = e.target.closest('[data-dsm]'); if (m) crea(false, m.dataset.dsm);
+      };
+      d.addEventListener('close', () => { if (!hecho) res(false); }, { once: true });
+      d.showModal();
+    });
+  }
+
   /* ══ Para recoger: cobrar y entregar pedidos web ══ */
   const drc = $('#dlg-recoger'); let pWeb = null;
   $('#recoger').addEventListener('click', e => {
@@ -595,7 +641,8 @@
 
   /* ══ Cuenta ══ */
   async function abrir(c) {
-    cuenta = c; if (c.mesa_id) atiende(c.mesa_id); pedidosCuenta = await api.pedidosDeCuenta(c.id);
+    cuenta = c; if (c.mesa_id) atiende(c.mesa_id); pedidosCuenta = c.borrador ? [] : await api.pedidosDeCuenta(c.id);
+    $('#b-rapido').hidden = true; $('#c-menu').hidden = !!c.borrador;
     $('#vista-sala').hidden = true; $('#vista-cuenta').hidden = false; $('#b-atras').hidden = false;
     $('#b-barra').hidden = $('#b-llevar').hidden = $('#b-terraza').hidden = true;
     $('#c-nota').value = ''; $('#buscar').value = ''; $('#buscar-x').hidden = true;
@@ -606,7 +653,7 @@
     $('#vista-cuenta').classList.remove('hoja-abierta');
     cuenta = null; $('#menu-cuenta').hidden = true;
     $('#vista-sala').hidden = false; $('#vista-cuenta').hidden = true; $('#b-atras').hidden = true;
-    $('#b-barra').hidden = $('#b-llevar').hidden = $('#b-terraza').hidden = false;
+    $('#b-barra').hidden = $('#b-llevar').hidden = $('#b-terraza').hidden = false; $('#b-rapido').hidden = false; $('#c-menu').hidden = false;
     pintaSala();
   }
   $('#b-atras').onclick = async () => {
@@ -793,6 +840,7 @@
 
   async function enviar(espera) {
     espera = espera === true;
+    if (cuenta && cuenta.borrador && !(await concretar())) return false;
     const c = cuenta; const pend = pendientes[c.id] || []; if (!pend.length) return true;
     if (enviando[c.id]) return false;                 // ya va de camino: nada de comandas dobles
     enviando[c.id] = true;
@@ -914,7 +962,8 @@
     api.registrarPrecuenta(cuenta.id, tot);
     aviso('🧾 Cuenta impresa · ' + euros(tot));
   }
-  $('#c-precuenta').onclick = precuenta;
+  $('#cj-ayuda').onclick = () => { if (OP.ayuda) OP.ayuda(); };
+  $('#c-precuenta').onclick = async () => { if (cuenta && cuenta.borrador && !(await concretar())) return; precuenta(); };
   /* ── Menú de la cuenta ── */
   $('#c-menu').onclick = () => { $('#menu-cuenta').hidden = !$('#menu-cuenta').hidden; };
   document.addEventListener('click', e => { if (!e.target.closest('#c-menu, #menu-cuenta')) $('#menu-cuenta').hidden = true; });

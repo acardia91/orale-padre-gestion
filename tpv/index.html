@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="tpv.css?v=202611271805">
+<link rel="stylesheet" href="tpv.css?v=202611271811">
 </head>
 <body>
 
@@ -67,6 +67,7 @@
       <button class="b b-ico b-nueva" id="b-terraza" type="button" title="Nueva cuenta: cliente de terraza que pide y paga en barra"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 019 9H3a9 9 0 019-9zM12 12v9M8 21h8"/></svg><span>Terraza</span></button>
       <button class="b b-ico b-nueva" id="b-barra" type="button" title="Nueva cuenta de barra"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l-1.5 17h-9zM6.5 8h11"/></svg><span>Barra</span></button>
       <button class="b b-ico b-nueva" id="b-llevar" type="button" title="Nueva cuenta para llevar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 016 0v2"/></svg><span>Llevar</span></button>
+      <button class="b b-ico b-rapido" id="b-rapido" type="button" title="Pedido rápido: apunta ya y al enviar o cobrar eliges si es para llevar, barra o mesa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><span>Rápido</span></button>
       <span class="b-sep" aria-hidden="true"></span>
       <button class="b b-ico" id="b-agotados" type="button" title="Marcar productos agotados"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM5.6 5.6l12.8 12.8"/></svg><span>Agotados</span><em class="cnt" id="n-agotados" hidden></em></button>
       <button class="b b-ico" id="b-caja" type="button" title="Caja: arqueo, movimientos y cierre"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h20v12H2zM12 15a3 3 0 100-6 3 3 0 000 6M6 12h.01M18 12h.01"/></svg><span>Caja</span></button>
@@ -369,7 +370,7 @@
 <!-- ── Caja del día ── -->
 <dialog class="dlg dlg-ancho" id="dlg-caja">
   <form method="dialog">
-    <h2>Caja</h2>
+    <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px">Caja <button type="button" class="b-ayuda-caja" id="cj-ayuda">❓ Cómo se hace</button></h2>
     <section class="turno" id="cj-turno" aria-label="Resumen del turno"></section>
     <section class="cierre">
       <h3>Cierre de caja <small>desde <span id="cz-desde"></span></small></h3>
@@ -417,13 +418,13 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611271805"></script>
-<script src="/pedir/acceso.js?v=202611271805"></script>
+<script src="/pedir/api.js?v=202611271811"></script>
+<script src="/pedir/acceso.js?v=202611271811"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611271805"></script>
-<script src="/pedir/plano.js?v=202611271805"></script>
-<script src="/pedir/ayuda.js?v=202611271805"></script>
-<script src="tpv.js?v=202611271805"></script>
-<script src="/pedir/rapido.js?v=202611271805"></script>
+<script src="/pedir/ticket.js?v=202611271811"></script>
+<script src="/pedir/plano.js?v=202611271811"></script>
+<script src="/pedir/ayuda.js?v=202611271811"></script>
+<script src="tpv.js?v=202611271811"></script>
+<script src="/pedir/rapido.js?v=202611271811"></script>
 </body>
 </html>
