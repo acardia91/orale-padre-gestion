@@ -248,3 +248,19 @@ button,.b,a,li[data-linea]{touch-action:manipulation}
 .ped-llevar.ped-uber{background:#000}
 .ped.plat-glovo{border-color:#E0A800 !important}
 .ped-llevar.ped-glovo{background:#FFC244;color:#2b2100}
+/* ══ Móvil: cabecera en dos filas finas (la segunda se desliza de lado), más sitio para las comandas ══ */
+@media (max-width:760px){
+  .barra{gap:6px 8px;padding:6px 10px}
+  .b-local strong{font-size:15px}
+  .barra .demo{font-size:10px;padding:3px 6px;margin-left:auto}
+  .b-ctrl{order:10;width:100%;flex-wrap:nowrap !important;overflow-x:auto;scrollbar-width:none;gap:5px;padding-bottom:2px;align-items:center}
+  .b-ctrl::-webkit-scrollbar{display:none}
+  .b-ctrl > *{flex:none}
+  .b-ctrl .b.b-ico{min-width:56px;padding:5px 6px 4px;font-size:10.5px}
+  .b-ctrl .b.b-ico svg{width:20px;height:20px}
+  .b-ctrl .prep{padding:2px 4px}
+  .b-ctrl .prep small{font-size:9.5px}
+  .b-ctrl .chk{font-size:12px;max-width:110px;line-height:1.15}
+  .puesto-sel{font-size:12px}
+  .puesto-sel select{font-size:13px;padding:6px 8px}
+}
