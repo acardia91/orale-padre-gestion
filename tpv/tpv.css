@@ -554,3 +554,20 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
 #un-mesas .mesa:disabled{opacity:.45}
 .b-unir{width:100%;margin:10px 0 0;font-weight:700}
 #ps-seguir-l{margin:4px 0 8px}
+
+/* ══ Tablet Android (Galaxy Tab A11+: 1280×800 horizontal / 800×1280 vertical) ══ */
+/* Botones de la cuenta: que nunca se salgan del panel (en vertical Cobrar quedaba cortado) */
+.tq-btns{grid-template-columns:auto minmax(0,1fr) minmax(0,1fr)}
+.tq-btns .b{min-width:0;white-space:normal;line-height:1.15;text-align:center}
+@media (min-width:761px) and (max-width:1024px){
+  .cuenta{grid-template-columns:minmax(0,1fr) minmax(300px,42%)}
+  .tq-btns .b{padding:15px 8px;font-size:16px}
+  .tq-btns .b-espera{padding:15px 8px;font-size:13px}
+  .b-sep{display:none}
+  .barra .t-quien{max-width:150px}
+}
+/* Horizontal: el plano entero a la vista, sin tener que bajar */
+@media (orientation:landscape) and (min-width:761px){
+  .plano-tpv{max-width:min(1200px, max(600px, calc((100dvh - 300px) * 1.6)));margin-inline:auto}
+  .zonas{display:flex;width:max-content;margin-inline:auto}
+}
