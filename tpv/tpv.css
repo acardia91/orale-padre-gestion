@@ -577,3 +577,13 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
 .e-volver{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;margin:-12px 0 -4px -8px;padding:8px 12px;border-radius:10px;font-weight:700;font-size:15px;color:var(--burdeos,#7C2430);text-decoration:none}
 .e-volver:hover,.e-volver:active{background:rgba(124,36,48,.08)}
 .bl-volver{display:block;width:max-content;margin:14px auto 0}
+/* "Barra y para llevar": bien visible bajo el plano */
+#sub-barra{display:flex;align-items:center;gap:10px;font-size:17px;letter-spacing:.03em;color:var(--burdeos);background:var(--blanco);border:2px solid var(--burdeos);border-left-width:8px;border-radius:12px;padding:12px 16px;margin:22px 0 12px}
+#sub-barra::before{content:'🍺';font-size:22px}
+#sueltas{padding:12px;border:2px dashed rgba(124,36,48,.35);border-radius:14px;background:rgba(124,36,48,.04)}
+#sueltas .vacio{font-size:15px;color:var(--tinta-2,#4a3f38);padding:6px 4px}
+/* Plano de mesas más grande */
+@media (orientation:landscape) and (min-width:761px){
+  .plano-tpv{max-width:min(1400px, max(700px, calc((100dvh - 220px) * 1.8)))}
+  #sub-barra,#sueltas{max-width:min(1400px, max(700px, calc((100dvh - 220px) * 1.8)));margin-inline:auto}
+}
