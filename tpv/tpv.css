@@ -546,3 +546,11 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
 .ln-falta{color:#8a5f0c!important;font-weight:700}
 .grupo-env b.g-ambar{color:#8a5f0c}
 .grupo-env b.g-rojo{color:var(--mal)}
+
+/* Unir mesas / taburetes */
+#un-mesas .un-zona{grid-column:1/-1;margin:8px 0 0;font-size:12px;font-weight:800;text-transform:uppercase;color:var(--humo)}
+#un-mesas .mesa.sel{background:var(--ocupada);border-color:var(--ocupada);color:#fff}
+#un-mesas .mesa.sel small,#un-mesas .mesa.sel strong{color:#fff}
+#un-mesas .mesa:disabled{opacity:.45}
+.b-unir{width:100%;margin:10px 0 0;font-weight:700}
+#ps-seguir-l{margin:4px 0 8px}

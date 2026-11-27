@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611262111">
+<link rel="stylesheet" href="tpv.css?v=202611270653">
 </head>
 <body>
 
@@ -111,6 +111,7 @@
           <button type="button" role="menuitem" data-m="comensales"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 10a4 4 0 100-8 4 4 0 000 8M22 20v-2a4 4 0 00-3-3.9M16 2.1a4 4 0 010 7.8"/></svg>Comensales</button>
           <button type="button" role="menuitem" data-m="mover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9l-3 3 3 3M19 9l3 3-3 3M2 12h20"/></svg>Cambiar de mesa</button>
           <button type="button" role="menuitem" data-m="pasar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10v12H4zM14 12h7M18 9l3 3-3 3"/></svg>Pasar productos a otra cuenta</button>
+          <button type="button" role="menuitem" data-m="unir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h7v8H3zM14 8h7v8h-7zM10 12h4"/></svg>Unir mesas o taburetes</button>
           <button type="button" role="menuitem" data-m="juntar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v5a4 4 0 004 4 4 4 0 014 4v5M16 3v5a4 4 0 01-4 4"/></svg>Juntar con otra mesa</button>
           <button type="button" role="menuitem" data-m="precuenta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h4"/></svg>Imprimir pre-cuenta</button>
           <button type="button" role="menuitem" data-m="anular" class="peligro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg>Anular cuenta</button>
@@ -297,6 +298,7 @@
     <h2>¿Cuántos son?</h2>
     <p class="nota-pin" id="pe-mesa"></p>
     <div class="pe-num" id="pe-num"></div>
+    <button class="b b-unir" type="button" id="pe-unir">＋ Ocupan más mesas o taburetes: unir</button>
     <div class="dlg-pie"><button class="b" value="cancel">Saltar</button><button class="b" type="button" id="pe-quitar" hidden>Sin apuntar</button></div>
   </form>
 </dialog>
@@ -341,10 +343,22 @@
       <div class="ps-lineas" id="ps-lineas"></div>
     </section>
     <p class="ps-info" id="ps-info"></p>
+    <label class="chk" id="ps-seguir-l" hidden><input type="checkbox" id="ps-seguir" checked> Siguen sentados juntos: esta mesa queda <b>unida</b> (no sale libre)</label>
     <div class="ps-cab"><strong id="ps-dest-tit">2 · ¿A qué cuenta?</strong></div>
     <div class="mesas mini" id="ps-destinos"></div>
     <p class="err" id="ps-error" role="alert" hidden></p>
     <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="ps-ok" disabled>Pasar</button></div>
+  </form>
+</dialog>
+
+<!-- ── Unir mesas o taburetes ── -->
+<dialog class="dlg dlg-ancho" id="dlg-unir">
+  <form method="dialog">
+    <h2 id="un-titulo">Unir mesas</h2>
+    <p class="nota">Toca las mesas o taburetes que ocupa el mismo grupo. Todas salen ocupadas y llevan a esta misma cuenta. Vuelve a tocar para separar.</p>
+    <div class="mesas mini" id="un-mesas"></div>
+    <p class="err" id="un-error" role="alert" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="un-ok">Guardar</button></div>
   </form>
 </dialog>
 
@@ -399,11 +413,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611262111"></script>
-<script src="/pedir/acceso.js?v=202611262111"></script>
+<script src="/pedir/api.js?v=202611270653"></script>
+<script src="/pedir/acceso.js?v=202611270653"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611262111"></script>
-<script src="/pedir/plano.js?v=202611262111"></script>
-<script src="tpv.js?v=202611262111"></script>
+<script src="/pedir/ticket.js?v=202611270653"></script>
+<script src="/pedir/plano.js?v=202611270653"></script>
+<script src="tpv.js?v=202611270653"></script>
 </body>
 </html>

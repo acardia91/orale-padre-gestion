@@ -294,6 +294,10 @@
     });
     return peor && peor.nivel ? peor : null;
   }
+  // Mesas unidas: una cuenta ocupa su mesa y las de mesas_extra (Mesa 3 + 4, taburetes juntos…).
+  const ocupa = (c, id) => c.mesa_id === id || (c.mesas_extra || []).includes(id);
+  const cuentaDeMesa = id => cuentas.find(c => ocupa(c, id));
+  const nombreMesa = id => (mesas.find(m => m.id === id) || {}).nombre || id;
   const claseTiempo = c => { const m = minutos(c.abierta); return c.para_llevar || !c.mesa_id ? '' : m >= 60 ? 't-ambar' : ''; };
   const totales = {};                     // total enviado de cada cuenta abierta
   /* ══ Reservas de hoy ══ */
@@ -315,7 +319,7 @@
   }
   async function sentar(r, mesaId) {
     try {
-      const abierta = cuentas.find(c => c.mesa_id === mesaId);
+      const abierta = cuentaDeMesa(mesaId);
       const c = abierta || await api.abrirCuenta({ local: LOCAL, mesa_id: mesaId, nombre: null, comensales: r.personas });
       await api.actualizarReserva(r.id, { estado: 'sentada', mesa_id: mesaId });
       $('#dlg-sentar').close(); aviso(`✓ ${r.nombre} sentados en ${(mesas.find(m => m.id === mesaId) || {}).nombre || 'mesa'}`);
@@ -329,10 +333,10 @@
     if (!s) return;
     rvSentar = reservasHoy.find(x => x.id === s.dataset.rvSentar);
     // Con mesa asignada y libre: directo. Si no, elegir mesa.
-    if (rvSentar.mesa_id && !cuentas.some(c => c.mesa_id === rvSentar.mesa_id)) return sentar(rvSentar, rvSentar.mesa_id);
+    if (rvSentar.mesa_id && !cuentaDeMesa(rvSentar.mesa_id)) return sentar(rvSentar, rvSentar.mesa_id);
     $('#st-titulo').textContent = `Sentar a ${rvSentar.nombre}`;
     $('#st-info').textContent = `${rvSentar.personas} personas · ${hhmm(rvSentar.fecha)}. Elige mesa:`;
-    $('#st-mesas').innerHTML = mesas.filter(m => m.tipo !== 'deco').map(m => { const oc = cuentas.some(c => c.mesa_id === m.id);
+    $('#st-mesas').innerHTML = mesas.filter(m => m.tipo !== 'deco').map(m => { const oc = !!cuentaDeMesa(m.id);
       return `<button class="mesa ${oc ? 'ocupada' : ''}" type="button" data-st="${esc(m.id)}" ${oc ? 'disabled' : ''}><strong>${esc(m.nombre)}</strong><small>${oc ? 'Ocupada' : (m.plazas ? m.plazas + ' pax' : 'Libre')}</small></button>`; }).join('');
     $('#dlg-sentar').showModal();
   });
@@ -378,16 +382,16 @@
       cont.className = 'plano-tpv';
       OP.plano.pintar(cont, deZona, { estado: m => {
         if (m.tipo === 'deco') return null;
-        const c = cuentas.find(x => x.mesa_id === m.id);
+        const c = cuentaDeMesa(m.id);
         const av = m.aviso ? ' llama' + (m.aviso.tipo === 'pagado' ? ' llama-pagado' : '') : '';
         if (!c) { const rv = reservaDeMesa(m.id); return { clase: av, sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : rv ? `Reserva ${hhmm(rv.fecha)}` : (m.plazas ? m.plazas + ' pax' : '') }; }
         const tt = tardaDe(c);
-        return { ocupada: true, clase: claseTiempo(c) + av + (tt ? ' tarda-' + tt.nivel : ''), sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : tt ? `⏱ ${tt.min}' esperando` : minutos(c.abierta) + ' min' + (c.comensales ? ` · ${c.comensales}p` : ''), imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
+        return { ocupada: true, clase: claseTiempo(c) + av + (tt ? ' tarda-' + tt.nivel : ''), sub: m.aviso ? AVISO_TXT[m.aviso.tipo] : c.mesa_id !== m.id ? `↔ ${c.nombre}` : tt ? `⏱ ${tt.min}' esperando` : minutos(c.abierta) + ' min' + (c.comensales ? ` · ${c.comensales}p` : ''), imp: totales[c.id] != null ? euros(totales[c.id]) : '', pendiente: (pendientes[c.id] || []).length > 0 };
       } });
     } else {
       cont.className = 'mesas';
       ponHTML(cont, deZona.filter(m => m.tipo !== 'deco').map(m => {
-        const c = cuentas.find(x => x.mesa_id === m.id);
+        const c = cuentaDeMesa(m.id);
         const rv = !c && reservaDeMesa(m.id);
         const av = m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : '';
         return c ? tileCuenta(c, m.nombre, m) : `<button class="mesa ${m.aviso && m.aviso.tipo === 'pagado' ? 'llama-pagado' : ''}" type="button" data-mesa="${esc(m.id)}"><strong>${esc(m.nombre)}</strong><small>${rv ? `<span class="rv-mesa">Reserva ${hhmm(rv.fecha)} · ${rv.personas}p</span>` : 'Libre'}</small>${av}</button>`;
@@ -456,7 +460,7 @@
   function tileCuenta(c, nombre, m) {
     const pend = (pendientes[c.id] || []).length;
     return `<button class="mesa ocupada ${claseTiempo(c)}" type="button" data-cuenta="${c.id}">
-      <strong>${esc(nombre)}</strong><small>${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}</small>
+      <strong>${esc(nombre)}</strong><small>${m && c.mesa_id !== m.id ? `↔ unida a ${esc(c.nombre)}` : `${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}${(c.mesas_extra || []).length ? ` · +${c.mesas_extra.length}` : ''}`}</small>
       ${m && m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : ''}
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
       ${(() => { const t = tardaDe(c); return t ? `<span class="tarda-chip ${t.nivel}">⏱ ${t.min} min esperando</span>` : ''; })()}
@@ -487,7 +491,7 @@
     const mesaId = m ? m.dataset.mesa : el ? el.dataset.el : null;
     if (!mesaId) return;
     const mesa = mesas.find(x => x.id === mesaId); if (!mesa || mesa.tipo === 'deco') return;
-    const abierta = cuentas.find(x => x.mesa_id === mesaId);
+    const abierta = cuentaDeMesa(mesaId);
     if (abierta) return abrir(abierta);
     if (mesa.aviso && ['pagado', 'error_pago'].includes(mesa.aviso.tipo)) {
       const t = mesa.aviso.tipo; atiende(mesaId); pintaSala();
@@ -655,7 +659,7 @@
   const nombreOps = l => l.opciones.map(oid => { for (const g of idx.grupos.values()) { const o = g.opciones.find(x => x.id === oid); if (o) return o.nombre; } return ''; });
   function pintaCuenta() {
     $('#c-nombre').textContent = cuenta.nombre;
-    $('#c-info').textContent = `Abierta hace ${minutos(cuenta.abierta)} min${cuenta.comensales ? ` · ${cuenta.comensales} ${cuenta.comensales === 1 ? 'persona' : 'personas'}` : ''}${cuenta.para_llevar ? ' · para llevar' : ''}`;
+    $('#c-info').textContent = `Abierta hace ${minutos(cuenta.abierta)} min${cuenta.comensales ? ` · ${cuenta.comensales} ${cuenta.comensales === 1 ? 'persona' : 'personas'}` : ''}${cuenta.para_llevar ? ' · para llevar' : ''}${(cuenta.mesas_extra || []).length ? ` · unida con ${cuenta.mesas_extra.map(nombreMesa).join(', ')}` : ''}`;
     const ESTADO = { espera: '⏸ En espera', nuevo: 'En cocina', preparando: 'Preparando', listo: 'Listo', entregado: 'Servido', cancelado: 'Cancelado' };
     const enviados = pedidosCuenta.filter(p => !(p.estado === 'cancelado' && !p.lineas.length && !(p.anuladas || []).length)).sort((a, b) => a.numero - b.numero).map(p => `
       <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}${['nuevo', 'preparando'].includes(p.estado) && !p.en_espera ? ` · <b class="${(Date.now() - new Date(p.marchado || p.creado)) / 60000 >= ESPERA_ROJO ? 'g-rojo' : (Date.now() - new Date(p.marchado || p.creado)) / 60000 >= ESPERA_AMBAR ? 'g-ambar' : ''}">${(p.hechas || []).length}/${p.lineas.length} hechos · ${Math.floor((Date.now() - new Date(p.marchado || p.creado)) / 60000)} min</b>` : ''}</span>${p.en_espera && p.estado === 'nuevo' ? `<button type="button" class="b b-mini b-marchar" data-marchar="${p.id}">▶ Marchar</button>` : `<span class="estado ${p.estado}">${ESTADO[p.estado]}</span>`}</div>
@@ -872,8 +876,9 @@
   $('#menu-cuenta').addEventListener('click', async e => {
     const m = e.target.dataset.m; if (!m) return; $('#menu-cuenta').hidden = true;
     if (m === 'precuenta') precuenta();
+    if (m === 'unir') abreUnir();
     if (m === 'mover') {
-      const libres = mesas.filter(x => x.tipo !== 'deco' && !cuentas.some(c => c.mesa_id === x.id));
+      const libres = mesas.filter(x => x.tipo !== 'deco' && !cuentaDeMesa(x.id));
       $('#mv-mesas').innerHTML = libres.map(x => `<button class="mesa" type="button" value="${esc(x.id)}"><strong>${esc(x.nombre)}</strong><small>${esc(x.zona)}</small></button>`).join('') || '<p class="vacio">No hay mesas libres.</p>';
       $('#dlg-mover').showModal();
     }
@@ -882,6 +887,29 @@
     if (m === 'pasar' || m === 'juntar') abrePasar(m);
   });
   /* ── Comensales: se preguntan al abrir una mesa (se puede saltar) y se cambian desde el menú ── */
+  /* ── Unir mesas o taburetes a esta cuenta (grupo grande, amigos en la barra) ── */
+  let unirSel = new Set();
+  function abreUnir() {
+    if (!cuenta || !cuenta.mesa_id) { alert('Sólo se pueden unir cuentas que están en una mesa o taburete.'); return; }
+    unirSel = new Set(cuenta.mesas_extra || []);
+    const principal = mesas.find(x => x.id === cuenta.mesa_id) || {};
+    const lista = mesas.filter(x => x.tipo !== 'deco' && x.id !== cuenta.mesa_id)
+      .sort((a, b) => (a.zona === principal.zona ? 0 : 1) - (b.zona === principal.zona ? 0 : 1) || String(a.zona).localeCompare(b.zona) || (a.orden || 0) - (b.orden || 0));
+    let zonaAnt = null;
+    $('#un-mesas').innerHTML = lista.map(x => { const otra = cuentas.find(c => c.id !== cuenta.id && ocupa(c, x.id));
+      const cab = x.zona !== zonaAnt ? `<p class="un-zona">${esc(x.zona)}</p>` : ''; zonaAnt = x.zona;
+      return cab + `<button class="mesa ${unirSel.has(x.id) ? 'sel' : ''}" type="button" data-un="${esc(x.id)}" ${otra ? 'disabled' : ''}><strong>${esc(x.nombre)}</strong><small>${otra ? 'Ocupada · ' + esc(otra.nombre) : unirSel.has(x.id) ? '✓ Unida' : 'Libre'}</small></button>`; }).join('');
+    $('#un-titulo').textContent = `Unir a ${cuenta.nombre}`; $('#un-error').hidden = true; $('#dlg-unir').showModal();
+  }
+  $('#un-mesas').addEventListener('click', e => { const b = e.target.closest('[data-un]'); if (!b || b.disabled) return;
+    const id = b.dataset.un; if (unirSel.has(id)) unirSel.delete(id); else unirSel.add(id);
+    b.classList.toggle('sel', unirSel.has(id)); b.querySelector('small').textContent = unirSel.has(id) ? '✓ Unida' : 'Libre'; });
+  $('#un-ok').onclick = async () => {
+    try { await api.unirMesas(cuenta.id, [...unirSel]); $('#dlg-unir').close(); await recarga();
+      aviso(unirSel.size ? `✓ ${cuenta.nombre} unida con ${[...unirSel].map(nombreMesa).join(', ')}` : '✓ Mesas separadas'); }
+    catch (ex) { $('#un-error').textContent = mensajeError(ex); $('#un-error').hidden = false; }
+  };
+  $('#pe-unir').onclick = () => { $('#dlg-pers').close(); abreUnir(); };
   function preguntaComensales(cambiar) {
     if (!cuenta || (!cambiar && (cuenta.comensales || !cuenta.mesa_id))) return;
     const mesa = mesas.find(x => x.id === cuenta.mesa_id);
@@ -918,8 +946,9 @@
     $('#ps-dest-tit').textContent = juntar ? '¿Con qué cuenta la juntas?' : '2 · ¿A qué cuenta?';
     $('#ps-info').textContent = juntar ? `Todo lo que falta por cobrar (${psLineas.reduce((s, l) => s + l.max, 0)} uds.) pasa a la cuenta que elijas y ${cuenta.mesa_id ? 'esta mesa queda libre' : 'esta cuenta se cierra'}.` : '';
     $('#ps-info').hidden = !juntar;
+    $('#ps-seguir-l').hidden = !juntar || !cuenta.mesa_id; $('#ps-seguir').checked = true;
     const otras = cuentas.filter(c => c.id !== cuenta.id && !!c.para_llevar === !!cuenta.para_llevar);
-    const libres = juntar || cuenta.para_llevar ? [] : mesas.filter(x => x.tipo !== 'deco' && !cuentas.some(c => c.mesa_id === x.id));
+    const libres = juntar || cuenta.para_llevar ? [] : mesas.filter(x => x.tipo !== 'deco' && !cuentaDeMesa(x.id));
     $('#ps-destinos').innerHTML = otras.map(c => `<button class="mesa ocupada" type="button" value="c:${esc(c.id)}"><strong>${esc(c.nombre)}</strong><small>Abierta · ${minutos(c.abierta)} min</small></button>`).join('')
       + libres.map(x => `<button class="mesa" type="button" value="m:${esc(x.id)}"><strong>${esc(x.nombre)}</strong><small>Libre · ${esc(x.zona)}</small></button>`).join('')
       || `<p class="vacio">No hay otra cuenta abierta${cuenta.para_llevar ? ' para llevar' : ''}.</p>`;
@@ -962,7 +991,10 @@
     try {
       let destId = psDest.slice(2);
       if (psModo === 'juntar') {
-        const r = await api.juntarCuentas(origen, destId);
+        const orig = cuenta; const r = await api.juntarCuentas(origen, destId);
+        // Siguen sentados juntos: la mesa de origen queda unida a la cuenta de destino (no aparece libre).
+        if ($('#ps-seguir').checked && orig.mesa_id) { const d0 = cuentas.find(c => c.id === destId);
+          if (d0 && d0.mesa_id) { try { await api.unirMesas(destId, [...new Set([...(d0.mesas_extra || []), orig.mesa_id, ...(orig.mesas_extra || [])])]); } catch (ex) { aviso('Juntada, pero no se ha podido unir la mesa: ' + mensajeError(ex), true); } } }
         pasaSinEnviar(origen, destId, (pendientes[origen] || []).map((l, i) => ({ i, q: l.cantidad })));
         delete pendientes[origen]; guardaPend();
         $('#dlg-pasar').close(); await recarga();
