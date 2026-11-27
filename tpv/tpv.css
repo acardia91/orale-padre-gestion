@@ -579,7 +579,7 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
 .bl-volver{display:block;width:max-content;margin:14px auto 0}
 /* "Barra y para llevar": bien visible bajo el plano */
 #sub-barra{display:flex;align-items:center;gap:10px;font-size:17px;letter-spacing:.03em;color:var(--burdeos);background:var(--blanco);border:2px solid var(--burdeos);border-left-width:8px;border-radius:12px;padding:12px 16px;margin:22px 0 12px}
-#sub-barra::before{content:'🍺';font-size:22px}
+#sub-barra::before{content:'🪑🛍️';font-size:20px;letter-spacing:2px}
 #sueltas{padding:12px;border:2px dashed rgba(124,36,48,.35);border-radius:14px;background:rgba(124,36,48,.04)}
 #sueltas .vacio{font-size:15px;color:var(--tinta-2,#4a3f38);padding:6px 4px}
 /* Plano de mesas más grande */
@@ -598,3 +598,7 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
 .ln.enviada:has(.ln-otra){grid-template-columns:auto 1fr auto auto;align-items:center}
 .ln-otra{min-width:44px;height:36px;border:2px solid var(--burdeos);background:#fff;color:var(--burdeos);border-radius:10px;font:800 15px system-ui,sans-serif}
 .ln-otra:active{background:var(--burdeos);color:#fff}
+/* SIN / EXTRA bien marcados en la cuenta */
+.ln small.op-sin{display:inline-block;margin-top:3px;padding:1px 8px;border-radius:6px;background:#C62828;color:#fff;font-weight:800;text-transform:uppercase;font-size:12.5px}
+.ln small.op-extra{display:inline-block;margin-top:3px;padding:1px 8px;border-radius:6px;background:#2E7D32;color:#fff;font-weight:800;font-size:12.5px}
+.ln small.op-sin,.ln small.op-extra{margin-right:4px}

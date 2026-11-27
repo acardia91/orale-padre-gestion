@@ -14,7 +14,8 @@
   // Mientras alguien toca o desliza, las recargas automáticas esperan (y se hacen al soltar).
   let tocando = false, tSuelta = null, recPendiente = false;
   const suelta = (ms) => { clearTimeout(tSuelta); tSuelta = setTimeout(() => { tocando = false; if (recPendiente) { recPendiente = false; recarga(); } }, ms); };
-  document.addEventListener('touchstart', () => { tocando = true; clearTimeout(tSuelta); }, { passive: true, capture: true });
+  // (si el sistema se traga el 'soltar', a los 4 s se da por suelto: la pantalla nunca se queda sin actualizar)
+  document.addEventListener('touchstart', () => { tocando = true; suelta(4000); }, { passive: true, capture: true });
   document.addEventListener('touchend', () => suelta(700), { passive: true, capture: true });
   document.addEventListener('touchcancel', () => suelta(700), { passive: true, capture: true });
   document.addEventListener('scroll', () => { if (tocando) suelta(700); }, { passive: true, capture: true });
@@ -85,6 +86,7 @@
     // Los avisos en vivo llegan a ráfagas: se agrupan para no repintar diez veces seguidas.
     let tRec = null; api.escuchar(LOCAL, () => { clearTimeout(tRec); tRec = setTimeout(recarga, 250); });
     setInterval(recarga, 30000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) recarga(); });
     setInterval(reloj, 15000); reloj();
   }
   /* ══ Equipo con PIN: cada persona entra con el suyo y todo queda a su nombre ══ */
@@ -648,7 +650,7 @@
       ponHTML(rq, '<span class="rap-tit">⚡ Rápidos</span>' + rap.map(p => `<button type="button" data-prod="${p.id}" class="${p.grupos.length ? 'extras' : ''}">${esc(p.nombre.replace(/^(Burro|Nude|Taco|Quesadilla)\s+/i, ''))}</button>`).join('')); }
     const cats = top.length >= 4 ? [{ clave: '__top', nombre: '★ Más pedidos', productos: top }, ...visibles()] : visibles();
     if (!cats.some(c => c.clave === catActiva)) catActiva = cats[0]?.clave;
-    $('#cats').innerHTML = cats.map(c => `<button type="button" data-cat="${c.clave}" class="${c.clave === catActiva ? 'activa' : ''}">${esc(c.nombre)}</button>`).join('');
+    $('#cats').innerHTML = cats.map(c => `<button type="button" data-cat="${c.clave}" class="${c.clave === catActiva ? 'activa' : ''}">${icoCat(c)}${esc(c.nombre)}</button>`).join('');
     const cat = cats.find(c => c.clave === catActiva);
     // Con algo escrito en el buscador se buscan en toda la carta (sin repetir); si no, la categoría elegida.
     const q = quitaAcentos($('#buscar').value.trim());
@@ -664,6 +666,9 @@
         <b>${esc(p.nombre)}</b><span>${ag ? 'Agotado' : euros(enSala() && Number.isInteger(p.precio_local) ? p.precio_local : p.precio)}</span></button>`;
     }).join(''));
   }
+  // SIN en rojo, EXTRA en verde, "Sin extras" no sale (igual que en Comandas y en el ticket).
+  const opTPV = n => { const c = OP.claseOpcion(n); return c === 'nada' ? '' : `<small class="op-${c}">${c === 'sin' ? '✕ ' : '+ '}${esc(n)}</small>`; };
+  const icoCat = c => c.clave === '__top' ? '' : OP.tipoDe(null, null, c.nombre + ' ' + (c.clave || '')).ico + ' ';
   const quitaAcentos = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   $('#cats').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (b) { catActiva = b.dataset.cat; $('#buscar').value = ''; $('#buscar-x').hidden = true; pintaProductos(); } });
   $('#buscar').addEventListener('input', () => { $('#buscar-x').hidden = !$('#buscar').value; pintaProductos(); });
@@ -697,7 +702,7 @@
       <div class="grupo-env"><span>Comanda #${p.numero} · ${new Date(p.creado).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })}${['nuevo', 'preparando'].includes(p.estado) && !p.en_espera ? ` · <b class="${(Date.now() - new Date(p.marchado || p.creado)) / 60000 >= ESPERA_ROJO ? 'g-rojo' : (Date.now() - new Date(p.marchado || p.creado)) / 60000 >= ESPERA_AMBAR ? 'g-ambar' : ''}">${(p.hechas || []).length}/${p.lineas.length} hechos · ${Math.floor((Date.now() - new Date(p.marchado || p.creado)) / 60000)} min</b>` : ''}</span>${p.en_espera && p.estado === 'nuevo' ? `<button type="button" class="b b-mini b-marchar" data-marchar="${p.id}">▶ Marchar</button>` : `<span class="estado ${p.estado}">${ESTADO[p.estado]}</span>`}</div>
       ${p.lineas.map((l, i) => `<div class="ln enviada ${p.estado === 'cancelado' ? 'cancelada' : ''} ${porCobrar(l) < 1 ? 'cobrada' : ''}" ${p.estado !== 'cancelado' && porCobrar(l) > 0 ? `data-pid="${p.id}" data-idx="${i}" title="Tocar para quitar"` : ''}>
         <span class="cant-fija">${l.cantidad}×</span>
-        <div>${esc(l.nombre)}${['nuevo', 'preparando', 'listo', 'entregado'].includes(p.estado) && !p.en_espera ? ((p.hechas || []).includes(i) || ['listo', 'entregado'].includes(p.estado) ? `<small class="ln-hecho">✓ ${p.estado === 'entregado' ? 'Servido' : 'Hecho en cocina'}</small>` : '<small class="ln-falta">⏳ En cocina</small>') : ''}${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.dto ? `<small class="dto">${l.dto === 100 ? 'Invitado' : '−' + l.dto + ' %'} · antes ${euros(l.unitario_original * l.cantidad)}</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
+        <div>${esc(l.nombre)}${['nuevo', 'preparando', 'listo', 'entregado'].includes(p.estado) && !p.en_espera ? ((p.hechas || []).includes(i) || ['listo', 'entregado'].includes(p.estado) ? `<small class="ln-hecho">✓ ${p.estado === 'entregado' ? 'Servido' : 'Hecho en cocina'}</small>` : '<small class="ln-falta">⏳ En cocina</small>') : ''}${l.opciones.map(o => `${opTPV(o.nombre)}`).join('')}${l.nota ? `<small>“${esc(l.nota)}”</small>` : ''}${l.dto ? `<small class="dto">${l.dto === 100 ? 'Invitado' : '−' + l.dto + ' %'} · antes ${euros(l.unitario_original * l.cantidad)}</small>` : ''}${l.pagadas ? `<small class="pagado">✓ ${l.pagadas === l.cantidad ? 'Cobrado' : l.pagadas + ' cobrado' + (l.pagadas > 1 ? 's' : '')}</small>` : ''}</div>
         <span class="imp">${euros(l.unitario * l.cantidad)}</span>${p.estado !== 'cancelado' && idx.prod.get(l.producto) ? `<button type="button" class="ln-otra" data-otra="${p.id}:${i}" title="Añadir otra igual (queda sin enviar)" aria-label="Otra igual">+1</button>` : ''}</div>`).join('')}
       ${(p.anuladas || []).map(l => `<div class="ln quitada"><span class="cant-fija">${l.cantidad}×</span><div>${esc(l.nombre)}<small>Quitado: ${esc(l.motivo || '')}</small></div><span class="imp">−${euros(l.unitario * l.cantidad)}</span></div>`).join('')}`).join('');
     const pend = pendientes[cuenta.id] || [];
@@ -705,7 +710,7 @@
       const p = idx.prod.get(l.producto); const ops = nombreOps(l);
       return `<div class="ln pendiente">
         <div class="ctl"><button type="button" data-menos="${i}" aria-label="Uno menos">−</button><output data-cant="${i}" role="button" title="Tocar para escribir la cantidad">${l.cantidad}</output><button type="button" data-mas="${i}" aria-label="Uno más">+</button></div>
-        <div class="ln-txt" data-nota="${i}" role="button" title="Tocar para añadir una nota">${esc(p ? p.nombre : '¿?')}${ops.map(o => `<small>+ ${esc(o)}</small>`).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : '<small class="add-nota">✂︎ Quitar / nota</small>'}</div>
+        <div class="ln-txt" data-nota="${i}" role="button" title="Tocar para añadir una nota">${esc(p ? p.nombre : '¿?')}${ops.map(o => opTPV(o)).join('')}${l.nota ? `<small class="nota">📝 ${esc(l.nota)}</small>` : '<small class="add-nota">✂︎ Quitar / nota</small>'}</div>
         <span class="imp">${p ? euros(precioLinea(idx, l, enSala()) * l.cantidad) : ''}</span></div>`;
     }).join('') : '';
     const cambiaL = ponHTML($('#c-lineas'), (enviados + pendHTML) || '<p class="vacio">Toca los productos de la carta para añadirlos.</p>');
