@@ -297,6 +297,12 @@
   function comandasPorPuesto(p, local, carta, modo) {
     const grupos = { cocina: [], barra: [] };
     p.lineas.forEach(l => grupos[modo === 'separada' && window.OP.puestoDe ? window.OP.puestoDe(carta, l.producto) : 'cocina'].push(l));
+    // Salsas y extras de lo que va a barra (p. ej. «Extra: Mayo chipotle» de un burrito) las prepara cocina:
+    // salen también en el ticket de cocina, indicando para qué producto son.
+    if (modo === 'separada') grupos.barra.forEach(l => {
+      const ex = (l.opciones || []).filter(o => /^extra|salsa/i.test(o.nombre || '') && !/^sin /i.test(o.nombre || ''));
+      if (ex.length) grupos.cocina.push({ cantidad: l.cantidad, nombre: 'Extras para ' + l.nombre + ' (barra)', opciones: ex, nota: '' });
+    });
     const usados = Object.entries(grupos).filter(([, ls]) => ls.length);
     if (modo !== 'separada' || usados.length < 2) return comanda(p, local);
     return usados.map(([k, ls]) => `<div class="puesto">${k === 'barra' ? 'BARRA' : 'COCINA'}</div>` + comanda({ ...p, lineas: ls }, local)

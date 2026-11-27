@@ -878,14 +878,14 @@
   }
 
   /* Puesto que prepara cada producto: 'cocina' o 'barra'. Manda el del producto; si no tiene,
-     el de su categoría; si tampoco, las categorías que se llaman "Bebidas" van a barra y el resto a cocina. */
+     el de su categoría; si tampoco, las categorías "Bebidas" y "Burritos" van a barra y el resto a cocina. */
   const cachePuestos = new WeakMap();
   function puestoDe(carta, productoId) {
     if (!carta) return 'cocina';
     let m = cachePuestos.get(carta);
     if (!m) {
       m = new Map();
-      (carta.categorias || []).forEach(c => { const pc = c.puesto || (/bebida/i.test((c.nombre || '') + ' ' + (c.clave || '')) ? 'barra' : 'cocina');
+      (carta.categorias || []).forEach(c => { const pc = c.puesto || (/bebida|burrito/i.test((c.nombre || '') + ' ' + (c.clave || '')) ? 'barra' : 'cocina');
         (c.productos || []).forEach(id => { if (!m.has(id)) m.set(id, pc); }); });
       (carta.productos || []).forEach(p => { if (p.puesto) m.set(p.id, p.puesto); });
       cachePuestos.set(carta, m);
