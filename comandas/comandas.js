@@ -281,6 +281,13 @@
     try { await api.actualizarPedido(p.id, cambios); if (cambios.estado) await recarga(); }
     catch (ex) { p.hechas = antes; pinta(); alert('No se ha podido guardar. ¿Hay conexión?\n' + (ex.message || ex)); }
   });
+  // Cambio al instante en pantalla y se guarda detrás; si falla, se deshace.
+  async function cambia(p, cambios) {
+    const antes = {}; Object.keys(cambios).forEach(k => { antes[k] = p[k]; });
+    Object.assign(p, cambios); pinta();
+    try { await api.actualizarPedido(p.id, cambios); }
+    catch (ex) { Object.assign(p, antes); pinta(); throw ex; }
+  }
   document.addEventListener('click', async e => {
     const b = e.target.closest('[data-acc]'); if (!b) return;
     const p = pedidos.find(x => x.id === b.dataset.id); if (!p) return;
@@ -288,30 +295,30 @@
     try {
       switch (b.dataset.acc) {
         case 'preparar':
-          await api.actualizarPedido(p.id, { estado: 'preparando', aceptado: ahora() });
+          await cambia(p, { estado: 'preparando', aceptado: ahora() });
           if ($('#p-autoprint').checked) imprime(p);
           break;
-        case 'listo': await api.actualizarPedido(p.id, { estado: 'listo', listo_at: ahora() }); break;
+        case 'listo': await cambia(p, { estado: 'listo', listo_at: ahora() }); break;
         case 'entregar': await entregar(p); break;
-        case 'atras': await api.actualizarPedido(p.id, { estado: { preparando: 'nuevo', listo: 'preparando' }[p.estado] }); break;
+        case 'atras': await cambia(p, { estado: { preparando: 'nuevo', listo: 'preparando' }[p.estado] }); break;
         case 'recuperar':
           if (!confirm(`¿Devolver el #${p.numero} (${p.canal === 'sala' ? p.mesa : p.cliente_nombre}) a «Listos para recoger»?`)) break;
-          await api.actualizarPedido(p.id, { estado: 'listo', entregado_at: null }); break;
+          await cambia(p, { estado: 'listo', entregado_at: null }); break;
         case 'barra-lista': {
           const cambios = { puestos: { ...(p.puestos || {}), barra: ahora() } };
           if (!tiene(p, 'cocina') && p.estado !== 'listo') Object.assign(cambios, { estado: 'listo', aceptado: p.aceptado || ahora(), listo_at: ahora() });
-          await api.actualizarPedido(p.id, cambios); break;
+          await cambia(p, cambios); break;
         }
         case 'barra-atras': {
           const pu = { ...(p.puestos || {}) }; delete pu.barra; const cambios = { puestos: pu };
           if (!tiene(p, 'cocina')) Object.assign(cambios, { estado: 'nuevo', listo_at: null });
-          await api.actualizarPedido(p.id, cambios); break;
+          await cambia(p, cambios); break;
         }
         case 'cancelar': await cancelar(p); break;
         case 'imprimir': case 'reimprimir': imprime(p); break;
         case 'ticket-pago': OP.imprimir(OP.ticketPrecuenta(`#${p.numero} · ${p.cliente_nombre || 'Para recoger'}`, p.lineas, p.total)); break;
       }
-      await recarga();
+      recarga();
     } catch (ex) { alert('No se ha podido guardar. ¿Hay conexión?\n' + (ex.message || ex)); }
     finally { b.disabled = false; }
   });
@@ -321,7 +328,7 @@
   }
   async function entregar(p) {
     if (p.pagado || p.canal === 'sala') {
-      await api.actualizarPedido(p.id, { estado: 'entregado', entregado_at: ahora() });
+      await cambia(p, { estado: 'entregado', entregado_at: ahora() });
       deshacer(`✓ #${p.numero} ${p.canal === 'sala' ? esc(p.mesa || '') : esc(p.cliente_nombre || '')} servido`, async () => { await api.actualizarPedido(p.id, { estado: 'listo', entregado_at: null }); await recarga(); });
       return;
     }
