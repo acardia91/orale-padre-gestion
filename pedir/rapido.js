@@ -6,7 +6,7 @@
   'use strict';
   const enTPV = location.pathname.startsWith('/tpv');
   const otra = enTPV ? '/comandas/' : '/tpv/';
-  const cacheOtra = (enTPV ? 'comandas' : 'tpv') + '-app-v2';
+  const cacheOtra = (enTPV ? 'comandas' : 'tpv') + '-app-v3';
   const q = new URLSearchParams(location.search);
   const destino = () => {
     let local = q.get('local'); try { local = local || (enTPV ? JSON.parse(localStorage.getItem('op-tpv-local')) : localStorage.getItem('op-cocina-local')); } catch (e) {}
