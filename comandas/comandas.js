@@ -296,7 +296,10 @@
       switch (b.dataset.acc) {
         case 'preparar':
           await cambia(p, { estado: 'preparando', aceptado: ahora() });
-          if ($('#p-autoprint').checked) imprime(p);
+          // Si el TPV ya la imprimió al enviarla, no sale otra vez.
+          if ($('#p-autoprint').checked && !(p.puestos && p.puestos.impreso)) {
+            imprime(p); api.actualizarPedido(p.id, { puestos: { ...(p.puestos || {}), impreso: ahora() } }).catch(() => {});
+          }
           break;
         case 'listo': await cambia(p, { estado: 'listo', listo_at: ahora() }); break;
         case 'entregar': await entregar(p); break;
