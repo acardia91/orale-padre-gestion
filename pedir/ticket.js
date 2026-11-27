@@ -36,6 +36,9 @@
       #ticket .k{font-size:17pt;font-weight:800;line-height:1.25;margin-top:1mm}
       #ticket .k2{font-size:13pt}
       #ticket .esp{height:4mm}
+      #ticket .sec{background:#000;color:#fff;text-align:center;font-weight:800;font-size:14pt;margin:3mm 0 2mm;padding:1mm 0}
+      #ticket .quita{display:inline-block;background:#000;color:#fff;font-weight:800;font-size:13pt;margin:0.5mm 0 0.5mm 5mm;padding:0 2mm}
+      #ticket .extra{padding-left:5mm;font-weight:800}
       #ticket .peq{font-size:8pt;word-break:break-all}
       #ticket .corte{break-after:page;page-break-after:always;height:0}
       #ticket .puesto{font-size:20pt;font-weight:800;text-align:center;border:2px solid #000;margin:0 0 2mm}
@@ -135,10 +138,17 @@
         continue;
       }
       if (cl.contains('esp')) { estilo(0, 0, false); B.push(10); continue; }   // línea en blanco
+      if (cl.contains('sec')) {                    // franja negra de título de bloque (doble alto, a todo lo ancho)
+        estilo(0, 0x01, true); const t = ' ' + texto(el) + ' '; const pad = Math.max(0, COLS - largo(t)); const iz = Math.floor(pad / 2);
+        B.push(10); B.push(0x1D, 0x42, 1); linea(' '.repeat(iz) + t + ' '.repeat(pad - iz)); B.push(0x1D, 0x42, 0); B.push(10); continue;
+      }
+      if (cl.contains('quita')) {                  // SIN … / notas: blanco sobre negro, doble alto
+        estilo(0, 0x01, true); partir(texto(el), COLS - 6).forEach(x => { B.push(32, 32, 32); B.push(0x1D, 0x42, 1); linea(' ' + x + ' '); B.push(0x1D, 0x42, 0); }); continue;
+      }
       const grande = cl.contains('num') ? 0x33 : cl.contains('g') || cl.contains('puesto') || cl.contains('k') ? 0x11 : cl.contains('tot') || cl.contains('k2') ? 0x01 : 0;
       const ancho = cl.contains('num') ? Math.floor(COLS / 4) : cl.contains('g') || cl.contains('puesto') || cl.contains('k') ? COLS / 2 : COLS;
       if (cl.contains('puesto')) { estilo(1, grande, true); B.push(0x1D, 0x42, 1); linea(' ' + texto(el) + ' '); B.push(0x1D, 0x42, 0); continue; }   // en negativo
-      const negrita = cl.contains('g') || cl.contains('k') || cl.contains('tot') || cl.contains('num') || cl.contains('nota') || !!el.querySelector(':scope > b:only-child');
+      const negrita = cl.contains('g') || cl.contains('k') || cl.contains('extra') || cl.contains('tot') || cl.contains('num') || cl.contains('nota') || !!el.querySelector(':scope > b:only-child');
       if (cl.contains('l') && el.children.length >= 2) {   // izquierda ……… derecha
         estilo(0, grande, negrita);
         const izq = texto(el.children[0]), der = texto(el.children[el.children.length - 1]);
@@ -273,21 +283,38 @@
     ${l.nota ? `<div class="nota">!! ${esc(l.nota)}</div>` : ''}`).join('');
 
   // Platos de la comanda: letra doble, opciones y notas a doble alto y un hueco entre platos (más fácil de leer en cocina).
-  const lineasCocina = lineas => lineas.map(l => `
+  // Con la carta: agrupadas por tipo (ENTRANTES, TACOS, BURRITOS… BEBIDAS) con una franja negra de título.
+  // Opciones: "SIN …" en negativo (blanco sobre negro), "+ EXTRA …" en negrita grande; "Sin extras" no sale.
+  const opcionCocina = o => {
+    const c = window.OP.claseOpcion ? window.OP.claseOpcion(o.nombre) : 'op';
+    if (c === 'nada') return '';
+    if (c === 'sin') return `<div class="quita">SIN ${esc(String(o.nombre).replace(/^(sin|no|quitar)\s*:?\s*/i, '').toUpperCase())}</div>`;
+    if (c === 'extra') return `<div class="extra k2">+ EXTRA ${esc(String(o.nombre).replace(/^(con\s+)?extra\s*:?\s*/i, '').toUpperCase())}</div>`;
+    return `<div class="op k2">+ ${esc(o.nombre)}</div>`;
+  };
+  const lineaCocina = l => `
     <div class="k">${l.cantidad}x ${esc(l.nombre)}</div>
-    ${(l.opciones || []).map(o => `<div class="op k2">+ ${esc(o.nombre)}</div>`).join('')}
-    ${l.nota ? `<div class="nota k2">!! ${esc(l.nota)}</div>` : ''}
-    <div class="esp"></div>`).join('');
+    ${(l.opciones || []).map(opcionCocina).join('')}
+    ${l.nota ? `<div class="quita">!! ${esc(l.nota)}</div>` : ''}
+    <div class="esp"></div>`;
+  function lineasCocina(lineas, carta) {
+    const OP = window.OP;
+    if (!carta || !OP.tipoDe) return lineas.map(lineaCocina).join('');
+    const grupos = new Map();
+    lineas.forEach(l => { const t = OP.tipoDe(carta, l.producto, l.nombre); if (!grupos.has(t)) grupos.set(t, []); grupos.get(t).push(l); });
+    return [...grupos.entries()].sort((a, b) => OP.ordenTipo(a[0]) - OP.ordenTipo(b[0]))
+      .map(([t, ls]) => `<div class="sec">${t.nom}</div>` + ls.map(lineaCocina).join('')).join('');
+  }
 
   /** Comanda para cocina: sin precios, letra grande. */
-  function comanda(p, local) {
+  function comanda(p, local, carta) {
     return `
       <div class="c"><b>ÓRALE PADRE · ${esc((local || '').replace(/^Órale Padre\s*/, '').toUpperCase())}</b></div>
       <div class="c g">${p.canal === 'sala' ? esc(p.mesa || 'SALA') : 'PARA RECOGER · WEB'}</div>
       <div class="c num">#${p.numero}</div>
       ${p.canal !== 'sala' ? `<div class="c"><b>${esc(p.cliente_nombre)}</b> · ${esc(p.cliente_tel || '')}</div>` : ''}
       <div class="c">${p.canal === 'sala' ? 'Marchada' : 'Recogida'}: <b>${fecha(p.canal === 'sala' ? p.creado : p.recogida).slice(-5)}</b></div>
-      <hr><div class="esp"></div>${lineasCocina(p.lineas)}
+      <hr>${lineasCocina(p.lineas, carta)}
       ${p.notas ? `<hr><div class="nota k2">NOTA: ${esc(p.notas)}</div>` : ''}
       <hr><div class="c peq">Comanda interna · no es factura</div>`;
   }
@@ -301,11 +328,11 @@
     // salen también en el ticket de cocina, indicando para qué producto son.
     if (modo === 'separada') grupos.barra.forEach(l => {
       const ex = (l.opciones || []).filter(o => /^extra|salsa/i.test(o.nombre || '') && !/^sin /i.test(o.nombre || ''));
-      if (ex.length) grupos.cocina.push({ cantidad: l.cantidad, nombre: 'Extras para ' + l.nombre + ' (barra)', opciones: ex, nota: '' });
+      if (ex.length) grupos.cocina.push({ producto: l.producto, cantidad: l.cantidad, nombre: 'Extras para ' + l.nombre + ' (barra)', opciones: ex, nota: '' });
     });
     const usados = Object.entries(grupos).filter(([, ls]) => ls.length);
-    if (modo !== 'separada' || usados.length < 2) return comanda(p, local);
-    return usados.map(([k, ls]) => `<div class="puesto">${k === 'barra' ? 'BARRA' : 'COCINA'}</div>` + comanda({ ...p, lineas: ls }, local)
+    if (modo !== 'separada' || usados.length < 2) return comanda(p, local, carta);
+    return usados.map(([k, ls]) => `<div class="puesto">${k === 'barra' ? 'BARRA' : 'COCINA'}</div>` + comanda({ ...p, lineas: ls }, local, carta)
       + `<div class="c peq">${k === 'barra' ? 'Lo de cocina va en el otro ticket' : 'Lo de barra va en el otro ticket'}</div>`).join('<div class="corte"></div>');
   }
 

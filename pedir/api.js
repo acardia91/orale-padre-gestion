@@ -893,6 +893,34 @@
     return m.get(productoId) || 'cocina';
   }
 
+  /* Tipo de producto por su categoría: icono en pantalla y bloque en el ticket de cocina.
+     El orden es el de salida en cocina: entrantes primero, bebidas al final. */
+  const TIPOS = [
+    { k: 'entrantes', re: /botana|entrante|nacho|alita|apachurr/i, ico: '🧀', nom: 'ENTRANTES' },
+    { k: 'tacos', re: /taco/i, ico: '🌮', nom: 'TACOS' },
+    { k: 'quesadillas', re: /quesadilla/i, ico: '🫓', nom: 'QUESADILLAS' },
+    { k: 'burritos', re: /burrito|burro/i, ico: '🌯', nom: 'BURRITOS' },
+    { k: 'bowls', re: /bowl|nude/i, ico: '🥗', nom: 'BOWLS' },
+    { k: 'combos', re: /combo|men[uú]/i, ico: '🍱', nom: 'COMBOS Y MENÚS' },
+    { k: 'postres', re: /postre/i, ico: '🍰', nom: 'POSTRES' },
+    { k: 'bebidas', re: /bebida/i, ico: '🥤', nom: 'BEBIDAS' },
+  ];
+  const OTRO = { k: 'otros', ico: '🍽️', nom: 'OTROS' };
+  const cacheTipos = new WeakMap();
+  function tipoDe(carta, productoId, nombre) {
+    let m = carta && cacheTipos.get(carta);
+    if (carta && !m) {
+      m = new Map();
+      (carta.categorias || []).forEach(c => { const t = TIPOS.find(x => x.re.test((c.nombre || '') + ' ' + (c.clave || '')));
+        if (t) (c.productos || []).forEach(id => { if (!m.has(id)) m.set(id, t); }); });
+      cacheTipos.set(carta, m);
+    }
+    return (m && m.get(productoId)) || TIPOS.find(x => x.re.test(nombre || '')) || OTRO;
+  }
+  const ordenTipo = t => { const i = TIPOS.indexOf(t); return i < 0 ? 98 : i; };
+  // "Sin cebolla" = quitar · "Extra: …" = añadir · "Sin extras" no dice nada (no se muestra).
+  const claseOpcion = n => /^sin extras?$/i.test(String(n || '').trim()) ? 'nada' : /^sin\b|^no\b|^quitar\b/i.test(String(n || '').trim()) ? 'sin' : /^extra|^con extra|^doble|^\+/i.test(String(n || '').trim()) ? 'extra' : 'op';
+
   window.OP = { api: DEMO ? demo : real, selectorLocal, DEMO, CONFIG, franjas, enHorario, hhmm, partesMadrid,
-                indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, lineasParteIgual, mensajeError, euros, puestoDe };
+                indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, lineasParteIgual, mensajeError, euros, puestoDe, tipoDe, ordenTipo, claseOpcion };
 })();
