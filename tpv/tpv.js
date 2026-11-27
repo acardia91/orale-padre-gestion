@@ -252,7 +252,9 @@
   const htmlComanda = p => OP.comandasPorPuesto(p, local.nombre, carta, modoComanda() === 'separada' ? 'separada' : 'junta');
   let impresos = new Set((() => { try { const x = JSON.parse(localStorage.getItem('op-tpv-impresos')) || {}; return x.dia === partesMadrid(new Date()).fecha ? x.ids : []; } catch (e) { return []; } })());
   const guardaImpresos = () => { try { localStorage.setItem('op-tpv-impresos', JSON.stringify({ dia: partesMadrid(new Date()).fecha, ids: [...impresos].slice(-300) })); } catch (e) {} };
-  const porImprimir = () => modoComanda() === 'no' ? [] : (pedidosHoy || []).filter(p => p.estado === 'nuevo' && !impresos.has(p.id)
+  // Marca en el pedido que su comanda ya salió en papel: así Comandas no la vuelve a imprimir al aceptar.
+  const marcaImpreso = p => api.actualizarPedido(p.id, { puestos: { ...(p.puestos || {}), impreso: new Date().toISOString() } }).catch(() => {});
+  const porImprimir = () => modoComanda() === 'no' ? [] : (pedidosHoy || []).filter(p => p.estado === 'nuevo' && !impresos.has(p.id) && !(p.puestos && p.puestos.impreso)
     && (p.canal === 'web' || (p.canal === 'sala' && p.persona === 'Cliente (QR)'))).sort((a, b) => a.numero - b.numero);
   function pintaPorImprimir() {
     const n = porImprimir().length;
@@ -264,7 +266,7 @@
     OP.imprimir(ps.map(htmlComanda).join('<div class="corte"></div>'));
     ps.forEach(p => impresos.add(p.id)); guardaImpresos(); pintaPorImprimir();
     const ahora = new Date().toISOString();
-    await Promise.allSettled(ps.map(p => api.actualizarPedido(p.id, { estado: 'preparando', aceptado: p.aceptado || ahora })));
+    await Promise.allSettled(ps.map(p => api.actualizarPedido(p.id, { estado: 'preparando', aceptado: p.aceptado || ahora, puestos: { ...(p.puestos || {}), impreso: ahora } })));
     aviso(`🖨 ${ps.length} ${ps.length === 1 ? 'comanda impresa' : 'comandas impresas'}: #${ps.map(p => p.numero).join(', #')}`);
     recarga();
   };
@@ -542,7 +544,7 @@
     $('#rc-entregado-l').hidden = pWeb.pagado; $('#rc-efectivo').hidden = $('#rc-tarjeta').hidden = pWeb.pagado; $('#rc-entregar').hidden = !pWeb.pagado;
     drc.showModal();
   });
-  $('#rc-comanda').onclick = () => { OP.imprimir(modoComanda() === 'no' ? OP.ticketComanda(pWeb, local.nombre) : htmlComanda(pWeb)); impresos.add(pWeb.id); guardaImpresos(); pintaPorImprimir(); };
+  $('#rc-comanda').onclick = () => { OP.imprimir(modoComanda() === 'no' ? OP.ticketComanda(pWeb, local.nombre) : htmlComanda(pWeb)); impresos.add(pWeb.id); guardaImpresos(); pintaPorImprimir(); marcaImpreso(pWeb); };
   // Sin pantalla en cocina, el TPV avisa al cliente de que ya puede pasar (le llega el aviso del pedido listo).
   $('#rc-listo').onclick = async () => {
     try { const ahora = new Date().toISOString();
@@ -764,7 +766,7 @@
       aviso(espera ? `⏸ Comanda #${r.numero} en espera · ${c.nombre}: pulsa «▶ Marchar» cuando toque` : `✓ Enviado a cocina · comanda #${r.numero} · ${n} ${n === 1 ? 'producto' : 'productos'} · ${c.nombre}`);
       const ps = await api.pedidosDeCuenta(c.id);
       if (cuenta && cuenta.id === c.id) pedidosCuenta = ps;
-      if (!espera && modoComanda() !== 'no') { const p = ps.find(x => x.id === r.pedido); if (p) { OP.imprimir(htmlComanda(p)); impresos.add(p.id); guardaImpresos(); } }
+      if (!espera && modoComanda() !== 'no') { const p = ps.find(x => x.id === r.pedido); if (p) { OP.imprimir(htmlComanda(p)); impresos.add(p.id); guardaImpresos(); marcaImpreso(p); } }
       return true;
     } catch (ex) {
       if (esDeRed(ex)) { ponConexion(false); aviso('✗ Sin conexión: no ha llegado a cocina. Queda guardado aquí; envíalo cuando vuelva la conexión.', true); }
@@ -780,7 +782,7 @@
     try {
       await api.marcharPedido(p.id);
       aviso(`▶ Marchando comanda #${p.numero} · ${p.mesa || p.cliente_nombre}`);
-      if (modoComanda() !== 'no') { OP.imprimir(htmlComanda({ ...p, notas: '▶ MARCHAR' + (p.notas ? ' · ' + p.notas : '') })); impresos.add(p.id); guardaImpresos(); }
+      if (modoComanda() !== 'no') { OP.imprimir(htmlComanda({ ...p, notas: '▶ MARCHAR' + (p.notas ? ' · ' + p.notas : '') })); impresos.add(p.id); guardaImpresos(); marcaImpreso(p); }
       if (cuenta) { pedidosCuenta = await api.pedidosDeCuenta(cuenta.id); pintaCuenta(); }
       recarga();
     } catch (ex) { aviso('✗ No se ha podido marchar: ' + mensajeError(ex), true); }
