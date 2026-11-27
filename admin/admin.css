@@ -495,3 +495,13 @@ textarea{resize:vertical}
 .rapidas-q{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .rapidas-q button{border:1px solid var(--linea,#DDD0C2);background:#fff;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
 .rapidas-q button.on{background:var(--burdeos);border-color:var(--burdeos);color:#fff}
+
+/* PIN del equipo: una fila por persona */
+.pines{display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow:auto;margin:10px 0}
+.pin-fila{display:grid;grid-template-columns:minmax(0,1fr) 150px 150px;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--borde);border-radius:10px}
+.pin-fila b{display:block}.pin-fila small{color:var(--humo,#7a6c6e);font-size:12px}
+.pin-fila input{font-size:18px;letter-spacing:.2em;text-align:center;padding:8px;border:1px solid var(--borde);border-radius:8px;width:100%;box-sizing:border-box;-webkit-text-security:disc}
+.pin-fila.ok{border-color:#BFD9B8;background:#F1F8EF}
+.pin-fila.mal{border-color:#F3B9B3;background:#FDECEA}
+@media (max-width:640px){.pin-fila{grid-template-columns:1fr 1fr}.pin-fila>div:first-child{grid-column:1/-1}}
+.b-pin{white-space:nowrap}

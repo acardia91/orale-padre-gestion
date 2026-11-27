@@ -20,7 +20,7 @@
       lista.map(e => `<tr class="${e.activo ? '' : 'apagado'}"><td><b>${esc(e.nombre)}</b><small>${esc(e.id)}${e.local_base ? ' · base ' + esc(e.local_base) : ''}</small></td>
         <td>${e.rol === 'encargado' ? '<span class="tag verde">Encargado</span>' : '<span class="tag gris">Empleado</span>'}</td>
         <td>${(e.locales || []).map(l => `<span class="tag">${esc(LOC[l] || l)}</span>`).join('') || '<small>ninguno</small>'}</td>
-        <td>${e.tiene_pin ? '✓' : '<span class="tag rojo">Sin PIN</span>'}</td>
+        <td>${e.tiene_pin ? `<button class="b b-mini b-pin" type="button" data-pin="${esc(e.id)}">✓ Cambiar PIN</button>` : `<button class="b b-mini b-ok b-pin" type="button" data-pin="${esc(e.id)}">🔑 Poner PIN</button>`}</td>
         <td>${e.email ? esc(e.email) : '—'}${e.email && e.rol === 'encargado' ? `<small>${e.con_usuario ? 'tiene acceso al panel' : 'sin acceso al panel'}</small>` : ''}</td>
         <td>${fecha(e.ultima_entrada)}</td>
         <td><button class="b b-mini" type="button" data-eq="${esc(e.id)}">Editar</button></td></tr>`).join('') + '</tbody>'
@@ -104,6 +104,45 @@
     } catch (ex) { err(mensajeError(ex)); }
   }
 
+
+  /* ── PIN: a una persona o a todo el equipo de una vez ── */
+  let pinIds = [];
+  function abrirPines(ids) {
+    const gente = (ids ? lista.filter(e => ids.includes(e.id)) : lista.filter(e => e.activo));
+    if (!gente.length) { alert('Aún no hay nadie en el equipo. Pulsa "+ Persona" primero.'); return; }
+    pinIds = gente.map(e => e.id);
+    $('#pn-titulo').textContent = ids ? `PIN de ${gente[0].nombre}` : 'PIN de todo el equipo';
+    $('#pn-filas').innerHTML = gente.map(e => `<div class="pin-fila" data-fila="${esc(e.id)}"><div><b>${esc(e.nombre)}</b>
+        <small>${e.rol === 'encargado' ? 'Encargado' : 'Empleado'} · ${(e.locales || []).map(l => esc(LOC[l] || l)).join(', ') || 'sin local'} · ${e.tiene_pin ? 'ya tiene PIN' : '<b style="display:inline;color:#8E1B1B">sin PIN</b>'}</small></div>
+        <input data-p1 inputmode="numeric" maxlength="8" autocomplete="off" placeholder="PIN nuevo" aria-label="PIN nuevo de ${esc(e.nombre)}">
+        <input data-p2 inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Repítelo" aria-label="Repite el PIN de ${esc(e.nombre)}"></div>`).join('');
+    $('#pn-filas').querySelectorAll('input').forEach(i => { i.oninput = () => { i.value = i.value.replace(/\D/g, ''); i.closest('.pin-fila').classList.remove('mal', 'ok'); $('#pn-err').hidden = true; }; });
+    $('#pn-err').hidden = true; $('#dlg-pines').showModal();
+    const pri = $('#pn-filas input'); if (pri) pri.focus();
+  }
+  async function guardarPines() {
+    const err = t => { $('#pn-err').textContent = t; $('#pn-err').hidden = false; };
+    const cambios = [], problemas = [];
+    $('#pn-filas').querySelectorAll('.pin-fila').forEach(f => {
+      const e = lista.find(x => x.id === f.dataset.fila); const a = f.querySelector('[data-p1]').value, b = f.querySelector('[data-p2]').value;
+      f.classList.remove('mal', 'ok'); if (!a && !b) return;
+      if (!/^[0-9]{4,8}$/.test(a)) { f.classList.add('mal'); problemas.push(`${e.nombre}: el PIN tiene que tener de 4 a 8 cifras.`); return; }
+      if (a !== b) { f.classList.add('mal'); problemas.push(`${e.nombre}: los dos PIN no coinciden.`); return; }
+      f.classList.add('ok'); cambios.push({ e, pin: a });
+    });
+    cambios.forEach((x, i) => cambios.slice(i + 1).forEach(y => { if (x.pin === y.pin && (x.e.locales || []).some(l => (y.e.locales || []).includes(l))) problemas.push(`${x.e.nombre} y ${y.e.nombre} tienen el mismo PIN y comparten local: cambia uno.`); }));
+    if (problemas.length) return err(problemas.join(' '));
+    if (!cambios.length) return err('Escribe al menos un PIN (y repítelo).');
+    $('#pn-guardar').disabled = true;
+    try {
+      await api.guardarEquipo(cambios.map(({ e, pin }) => ({ id: e.id, nombre: e.nombre, email: e.email || null, rol: e.rol, local_base: e.local_base || '',
+        locales: e.locales || [], activo: e.activo !== false, pin })));
+      $('#dlg-pines').close(); await cargar();
+      $('#eq-ok').textContent = `✓ PIN guardado a ${cambios.map(c => c.e.nombre).join(', ')}. Ya pueden entrar en el TPV con él.`; $('#eq-ok').hidden = false;
+      setTimeout(() => { $('#eq-ok').hidden = true; }, 10000);
+    } catch (ex) { err(mensajeError(ex)); } finally { $('#pn-guardar').disabled = false; }
+  }
+
   if ($('#eq-lista')) {
     $('#eq-importar').onclick = () => { $('#eq-imp-err').hidden = true; $('#eq-previa').innerHTML = ''; $('#eq-guardar-imp').disabled = true; $('#dlg-eq-imp').showModal(); };
     $('#eq-revisar').onclick = revisar;
@@ -111,7 +150,12 @@
     $('#eq-guardar-imp').onclick = guardarImport;
     $('#dlg-eq-imp').addEventListener('close', () => { $('#eq-texto').value = ''; previa = []; $('#eq-previa').innerHTML = ''; });
     $('#eq-nuevo').onclick = () => abrir(null);
-    $('#eq-lista').addEventListener('click', e => { const b = e.target.closest('[data-eq]'); if (b) abrir(b.dataset.eq); });
+    $('#eq-lista').addEventListener('click', e => {
+      const p = e.target.closest('[data-pin]'); if (p) return abrirPines([p.dataset.pin]);
+      const b = e.target.closest('[data-eq]'); if (b) abrir(b.dataset.eq); });
+    $('#eq-pines').onclick = () => abrirPines(null);
+    $('#pn-guardar').onclick = guardarPines;
+    $('#dlg-pines').addEventListener('close', () => { $('#pn-filas').innerHTML = ''; pinIds = []; });   // que los PIN no se queden en pantalla
     $('#eq-guardar').onclick = guardarUna;
   }
 

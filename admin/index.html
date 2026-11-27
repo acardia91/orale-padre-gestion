@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611270713">
+<link rel="stylesheet" href="admin.css?v=202611271422">
 </head>
 <body>
 
@@ -227,6 +227,7 @@
         <a href="#promos"><i class="ra-ico ra-burdeos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8zM7 7h.01"/></svg></i><span>Crear una promoción</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
         <a href="#reservas"><i class="ra-ico ra-azul"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"/></svg></i><span>Ver las reservas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
         <a href="#local" data-foco="#l-qr-imprimir"><i class="ra-ico ra-tinta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg></i><span>Imprimir los QR de las mesas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="#usuarios" data-foco="#eq-pines"><i class="ra-ico ra-violeta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7a4 4 0 11-3.9 4.9L3 20v-3h3v-3h3l1.1-1.1A4 4 0 0115 7zM16 8h.01"/></svg></i><span>PIN del equipo para el TPV</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
         <a href="#usuarios" data-foco="#rc-email"><i class="ra-ico ra-violeta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 7a4 4 0 11-3.9 4.9L3 20v-3h3v-3h3l1.1-1.1A4 4 0 0115 7zM16 8h.01"/></svg></i><span>Contraseña nueva para alguien del equipo</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
         <a href="/tpv/" target="_blank" rel="noopener"><i class="ra-ico ra-burdeos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18v12H3zM8 20h8M12 16v4"/></svg></i><span>Abrir el TPV</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
         <a href="/comandas/" target="_blank" rel="noopener"><i class="ra-ico ra-burdeos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 13.9A4 4 0 017 6a5 5 0 0110 0 4 4 0 011 7.9V20H6zM6 17h12"/></svg></i><span>Abrir comandas</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
@@ -565,8 +566,8 @@
     <p class="aviso" id="u-error" role="alert" hidden></p>
     <div class="panel">
       <div class="panel-cab"><h2>Equipo del TPV (entran con PIN)</h2>
-        <div class="botones"><button class="b b-mini" type="button" id="eq-nuevo">+ Persona</button>
-          <button class="b b-mini b-ok" type="button" id="eq-importar">Importar lista</button></div></div>
+        <div class="botones"><button class="b b-mini b-ok" type="button" id="eq-pines">🔑 Poner PIN a todos</button><button class="b b-mini" type="button" id="eq-nuevo">+ Persona</button>
+          <button class="b b-mini" type="button" id="eq-importar">Importar lista</button></div></div>
       <p class="nota">El TPV de cada local se queda abierto con la cuenta del local y cada persona entra tecleando su PIN: todo lo que hace queda a su nombre. Un empleado necesita el PIN de un encargado para quitar productos o anular cuentas. Los PIN se guardan cifrados: nadie los puede ver, sólo cambiarlos.</p>
       <p class="aviso-ok" id="eq-ok" hidden></p>
       <div class="tabla-wrap"><table class="tabla" id="eq-lista"></table></div>
@@ -852,6 +853,15 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
     <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b" type="button" id="eq-revisar">Revisar</button><button class="b b-ok" type="button" id="eq-guardar-imp" disabled>Guardar</button></div>
   </form>
 </dialog>
+<dialog class="dlg dlg-ancho" id="dlg-pines">
+  <form method="dialog" onsubmit="return false" autocomplete="off">
+    <h2 id="pn-titulo">PIN del equipo</h2>
+    <p class="nota" style="margin-top:-6px">Cada persona entra en el TPV tecleando su PIN (4 a 8 cifras). Escribe uno nuevo a quien quieras; <b>en blanco = se queda como está</b>. Los PIN se guardan cifrados: después nadie los puede ver, solo cambiarlos. Díselos en persona.</p>
+    <div class="pines" id="pn-filas"></div>
+    <p class="aviso" id="pn-err" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="pn-guardar">Guardar PIN</button></div>
+  </form>
+</dialog>
 <dialog class="dlg" id="dlg-eq">
   <form method="dialog" id="f-eq">
     <h2 id="eq-titulo">Persona</h2>
@@ -868,28 +878,28 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611270713"></script>
-<script src="/pedir/acceso.js?v=202611270713"></script>
-<script src="/pedir/plano.js?v=202611270713"></script>
+<script src="/pedir/api.js?v=202611271422"></script>
+<script src="/pedir/acceso.js?v=202611271422"></script>
+<script src="/pedir/plano.js?v=202611271422"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611270713"></script>
-<script src="/pedir/factura.js?v=202611270713"></script>
-<script src="sec-plano.js?v=202611270713"></script>
-<script src="sec-resumen.js?v=202611270713"></script>
-<script src="sec-facturas.js?v=202611270713"></script>
-<script src="sec-carta.js?v=202611270713"></script>
-<script src="sec-local.js?v=202611270713"></script>
-<script src="sec-pedidos.js?v=202611270713"></script>
-<script src="sec-reservas.js?v=202611270713"></script>
-<script src="sec-clientes.js?v=202611270713"></script>
-<script src="sec-control.js?v=202611270713"></script>
-<script src="sec-panel.js?v=202611270713"></script>
-<script src="sec-delivery.js?v=202611270713"></script>
-<script src="sec-promos.js?v=202611270713"></script>
-<script src="sec-informes.js?v=202611270713"></script>
-<script src="sec-resenas.js?v=202611270713"></script>
-<script src="sec-equipo.js?v=202611270713"></script>
-<script src="admin.js?v=202611270713"></script>
+<script src="/pedir/ticket.js?v=202611271422"></script>
+<script src="/pedir/factura.js?v=202611271422"></script>
+<script src="sec-plano.js?v=202611271422"></script>
+<script src="sec-resumen.js?v=202611271422"></script>
+<script src="sec-facturas.js?v=202611271422"></script>
+<script src="sec-carta.js?v=202611271422"></script>
+<script src="sec-local.js?v=202611271422"></script>
+<script src="sec-pedidos.js?v=202611271422"></script>
+<script src="sec-reservas.js?v=202611271422"></script>
+<script src="sec-clientes.js?v=202611271422"></script>
+<script src="sec-control.js?v=202611271422"></script>
+<script src="sec-panel.js?v=202611271422"></script>
+<script src="sec-delivery.js?v=202611271422"></script>
+<script src="sec-promos.js?v=202611271422"></script>
+<script src="sec-informes.js?v=202611271422"></script>
+<script src="sec-resenas.js?v=202611271422"></script>
+<script src="sec-equipo.js?v=202611271422"></script>
+<script src="admin.js?v=202611271422"></script>
 </body>
 </html>
 
