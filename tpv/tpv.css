@@ -571,3 +571,4 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
   .plano-tpv{max-width:min(1200px, max(600px, calc((100dvh - 300px) * 1.6)));margin-inline:auto}
   .zonas{display:flex;width:max-content;margin-inline:auto}
 }
+.e-pin-ayuda{margin:2px 0 0;padding:10px 12px;border-radius:10px;background:var(--azul-cl,#E8F0F8);color:#1E4468;font-size:13px;line-height:1.4}
