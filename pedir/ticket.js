@@ -133,7 +133,7 @@
       if (cl.contains('corte')) { estilo(0, 0, false); B.push(10, 10, 10, 10); ESC(0x1D, 0x56, 0x42, 0); continue; }   // cortar y seguir
       if (el.dataset && el.dataset.qr) {          // QR (valorar el ticket)
         estilo(1, 0, false); const d = bytesDe(el.dataset.qr); const n = d.length + 3;
-        ESC(0x1D, 0x28, 0x6B, 4, 0, 0x31, 0x41, 0x32, 0); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x43, 6); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x45, 0x30);
+        ESC(0x1D, 0x28, 0x6B, 4, 0, 0x31, 0x41, 0x32, 0); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x43, Math.min(12, +el.dataset.qrt || 6)); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x45, 0x30);
         ESC(0x1D, 0x28, 0x6B, n & 255, n >> 8, 0x31, 0x50, 0x30, ...d); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x51, 0x30); B.push(10);
         continue;
       }
@@ -243,7 +243,7 @@
           <small>Lo que va a cocina o a barra se decide en admin → Carta. Los pedidos de la web y del QR se imprimen con el botón "🖨 Por imprimir".</small>
         </div>
         <p id="imp-nota" style="margin:0;font-size:13px"></p>
-        <div class="dlg-pie" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="b" type="button" id="imp-cajon-prueba">Probar cajón</button><button class="b" type="button" id="imp-prueba">Imprimir prueba</button><button class="b b-ok" value="ok">Listo</button></div>
+        <div class="dlg-pie" style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="b" type="button" id="imp-cajon-prueba">Probar cajón</button><button class="b" type="button" id="imp-prueba">Imprimir prueba</button>${opciones.local ? '<button class="b" type="button" id="imp-qr-pedir" title="Imprime un QR que lleva a la carta para pedir desde el móvil">🖨 QR para pedir</button>' : ''}<button class="b b-ok" value="ok">Listo</button></div>
       </form>`;
       document.body.appendChild(d);
       d.addEventListener('change', e => {
@@ -256,6 +256,7 @@
       });
       d.querySelector('#imp-ip').addEventListener('input', e => { guarda('op-imp-ip', e.target.value.trim()); nota(); });
       d.querySelector('#imp-cajon-prueba').onclick = () => abrirCajon(false);
+      const bq = d.querySelector('#imp-qr-pedir'); if (bq) bq.onclick = () => qrPedir(typeof opcionesImp.local === 'function' ? opcionesImp.local() : opcionesImp.local);
       d.querySelector('#imp-prueba').onclick = () => imprimir(`<div class="c g">ÓRALE PADRE</div><div class="c">Prueba de impresora</div><hr>
         <div class="l"><span><b>2×</b> Burrito de cochinita</span><span>19,80 €</span></div><div class="op">+ Guacamole</div><div class="nota">!! Sin cebolla</div>
         <hr><div class="l tot"><span>TOTAL</span><span>19,80 €</span></div><div class="c">Áéíóú ñ ¿¡ € · ${new Date().toLocaleString('es-ES')}</div>
@@ -384,9 +385,20 @@
     return '<div class="c peq">¿Qué tal? Cuéntanoslo en<br><b>oralepadre.com/opinion</b><br>¿Factura con NIF? Pídela en el local</div>';
   }
 
+  // QR para PEDIR en la ticketera: lleva a la carta publicada ahora (www.oralepadre.com/pedir) para pegarlo en barra, ventana o mesas.
+  function qrPedir(local) {
+    const url = 'https://www.oralepadre.com/pedir/?local=' + encodeURIComponent(local || 'tomares');
+    let svg = '';
+    if (window.qrcode) { try { const q = window.qrcode(0, 'M'); q.addData(url); q.make(); svg = q.createSvgTag({ cellSize: 6, margin: 0 }); } catch (e) {} }
+    return imprimir(`<div class="esp"></div><div class="c k">PIDE AQUÍ</div><div class="esp"></div>
+      <div class="c">Escanea, elige y pide</div><div class="c">desde tu móvil</div><div class="esp"></div>
+      <div class="c" data-qr="${esc(url)}" data-qrt="9">${svg}</div><div class="esp"></div>
+      <div class="c g">oralepadre.com/pedir</div><div class="c peq">Órale Padre · ${esc(local || '')}</div><div class="esp"></div>`);
+  }
+
   // Comandas en papel al enviar a cocina: si este equipo tiene una térmica (Epson por red o RawBT) y nadie ha
   // elegido otra cosa, se imprime una comanda con todo. Con pantalla de Comandas en cocina, elegir "No imprimir".
   const prefComanda = () => { const def = modo() === 'epson' || modo() === 'rawbt' ? 'separada' : 'no';   // por defecto: un ticket para cocina y otro para barra
     try { return localStorage.getItem('op-imprimir-comanda') || def; } catch (e) { return def; } };
-  Object.assign(window.OP, { imprimir, abrirCajon, ajustesImpresora, comandasPorPuesto, prefComanda, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, _escpos: escpos });
+  Object.assign(window.OP, { imprimir, abrirCajon, ajustesImpresora, comandasPorPuesto, prefComanda, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, imprimirQrPedir: qrPedir, _escpos: escpos });
 })();
