@@ -2,6 +2,11 @@
 (function () {
   'use strict';
   const { api, DEMO, indexar, precioLinea, mensajeError, euros, partesMadrid, calculaTicket } = window.OP;
+
+  // Al salir: si estaba en modo prueba (?demo), se quita de la dirección; si no, volvería a entrar en la demo.
+  function fueraDeSesion() { if (DEMO) location.replace(location.pathname); else location.reload(); }
+  { const d = document.getElementById('t-demo'); if (d && DEMO) { d.textContent = 'DEMO · salir'; d.title = 'Salir del modo prueba'; d.style.cursor = 'pointer';
+    d.onclick = () => { if (confirm('¿Salir del modo prueba? Después podrás entrar con tu usuario.')) location.replace(location.pathname); }; } }
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // Repintar sólo si ha cambiado: rehacer la lista mientras se desliza el dedo corta el scroll en la tablet.
@@ -56,7 +61,7 @@
     try { entrar(await api.entrar($('#e-email').value.trim(), $('#e-pass').value)); }
     catch (ex) { $('#e-error').textContent = 'Email o contraseña incorrectos.'; $('#e-error').hidden = false; }
   });
-  $('#b-salir').onclick = async () => { if (confirm('¿Cerrar sesión en este TPV?')) { await api.salir(); location.reload(); } };
+  $('#b-salir').onclick = async () => { if (confirm(DEMO ? '¿Salir del modo prueba? Después podrás entrar con tu usuario.' : '¿Cerrar sesión en este TPV?')) { await api.salir(); fueraDeSesion(); } };
 
   async function entrar(s) {
     SESION = s;
@@ -125,7 +130,7 @@
     else if (e.key === 'Backspace') { pin = pin.slice(0, -1); pintaPin(); }
     else if (e.key === 'Enter') probarPin();
   });
-  $('#bl-salir').onclick = async () => { if (confirm('¿Cerrar la sesión de este TPV? Para volver a abrirlo hará falta el email y la contraseña del local.')) { await api.salir(); location.reload(); } };
+  $('#bl-salir').onclick = async () => { if (confirm('¿Cerrar la sesión de este TPV? Para volver a abrirlo hará falta el email y la contraseña del local.')) { await api.salir(); fueraDeSesion(); } };
   $('#t-quien').onclick = () => {
     if (!conEquipo) return;
     if (Object.values(pendientes).some(l => l.length) && !confirm('Hay productos sin enviar a cocina. ¿Cambiar de persona igualmente?')) return;
