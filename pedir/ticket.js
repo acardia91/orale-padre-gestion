@@ -307,12 +307,12 @@
   }
 
   // Para llevar: cuenta marcada así en el TPV, pedido de la web, o cuenta llamada "Llevar …".
-  const esLlevarP = p => !!p.llevar || p.canal !== 'sala' || /^llevar\b/i.test(p.mesa || p.cliente_nombre || '');
+  const esLlevarP = p => !!p.llevar || p.canal !== 'sala' || /^(llevar|uber|glovo)\b/i.test(p.mesa || p.cliente_nombre || '');
   /** Comanda para cocina: sin precios, letra grande. */
   function comanda(p, local, carta) {
     return `
       <div class="c"><b>ÓRALE PADRE · ${esc((local || '').replace(/^Órale Padre\s*/, '').toUpperCase())}</b></div>
-      ${esLlevarP(p) ? '<div class="puesto">PARA LLEVAR</div>' : ''}
+      ${(() => { const pl = window.OP.plataformaDe && window.OP.plataformaDe(p.mesa || p.cliente_nombre); return pl ? `<div class="puesto">${pl === 'uber' ? 'UBER EATS' : 'GLOVO'}</div>` : esLlevarP(p) ? '<div class="puesto">PARA LLEVAR</div>' : ''; })()}
       <div class="c g">${p.canal === 'sala' ? esc(p.mesa || 'SALA') : 'PEDIDO WEB'}</div>
       <div class="c num">#${p.numero}</div>
       ${p.canal !== 'sala' ? `<div class="c"><b>${esc(p.cliente_nombre)}</b> · ${esc(p.cliente_tel || '')}</div>` : ''}

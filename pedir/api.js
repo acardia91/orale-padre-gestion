@@ -524,6 +524,10 @@
       return Object.values(m).sort((a, b) => b.total - a.total);
     },
     async clienteActual() { return null; }, async pedirCodigo() { throw new Error('DEMO: en modo demo no hay cuentas'); },
+    async cerrarPlataforma(cuentaId, plataforma) {
+      const cs = lee(K.cuentas, []); const c = cs.find(x => x.id === cuentaId);
+      Object.assign(c, { estado: 'plataforma', cerrada: new Date().toISOString() }); guarda(K.cuentas, cs); avisa();
+    },
     async anularCuenta(cuentaId, motivo) {
       const cs = lee(K.cuentas, []); const c = cs.find(x => x.id === cuentaId);
       Object.assign(c, { estado: 'anulada', cerrada: new Date().toISOString(), motivo_anulacion: motivo }); guarda(K.cuentas, cs);
@@ -757,6 +761,7 @@
     async pasarLineas(origen, destino, items) { return ok(await cliente().rpc('pasar_lineas', { p_origen: origen, p_destino: destino, p_items: items })); },
     async juntarCuentas(origen, destino) { return ok(await cliente().rpc('juntar_cuentas', { p_origen: origen, p_destino: destino })); },
     async unirMesas(cuenta, ids) { return ok(await cliente().rpc('unir_mesas', { p_cuenta: cuenta, p_mesas: ids })); },
+    async cerrarPlataforma(cuenta, plataforma) { ok(await cliente().rpc('cerrar_plataforma', { p_cuenta: cuenta, p_plataforma: plataforma })); },
     async anularCuenta(cuenta, motivo, pin) { ok(await cliente().rpc('anular_cuenta', { p_cuenta: cuenta, p_motivo: motivo, p_pin: pin || null })); },
     // ── Control: productos quitados, clave de encargado, pre-cuentas, cierre de caja ──
     async anularLinea(pedido, indice, cantidad, motivo, pin) {
@@ -905,6 +910,8 @@
     { k: 'postres', re: /postre/i, ico: '🍰', nom: 'POSTRES' },
     { k: 'bebidas', re: /bebida/i, ico: '🥤', nom: 'BEBIDAS' },
   ];
+  // Uber Eats / Glovo: se reconocen por el nombre de la cuenta o del pedido ("Uber · 1234").
+  const plataformaDe = t => /^uber\b/i.test(String(t || '').trim()) ? 'uber' : /^glovo\b/i.test(String(t || '').trim()) ? 'glovo' : '';
   const OTRO = { k: 'otros', ico: '🍽️', nom: 'OTROS' };
   const cacheTipos = new WeakMap();
   function tipoDe(carta, productoId, nombre) {
@@ -922,5 +929,5 @@
   const claseOpcion = n => /^sin extras?$/i.test(String(n || '').trim()) ? 'nada' : /^sin\b|^no\b|^quitar\b/i.test(String(n || '').trim()) ? 'sin' : /^extra|^con extra|^doble|^\+/i.test(String(n || '').trim()) ? 'extra' : 'op';
 
   window.OP = { api: DEMO ? demo : real, selectorLocal, DEMO, CONFIG, franjas, enHorario, hhmm, partesMadrid,
-                indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, lineasParteIgual, mensajeError, euros, puestoDe, tipoDe, ordenTipo, claseOpcion };
+                indexar, precioLinea, fotoLineas, calculaTicket, descuentoPromo, lineasParteIgual, mensajeError, euros, puestoDe, tipoDe, ordenTipo, claseOpcion, plataformaDe };
 })();
