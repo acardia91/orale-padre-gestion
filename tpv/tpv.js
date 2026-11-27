@@ -489,7 +489,7 @@
   function tileCuenta(c, nombre, m) {
     const pend = (pendientes[c.id] || []).length;
     return `<button class="mesa ocupada ${claseTiempo(c)}${c.para_llevar ? ' llevar' : ''}" type="button" data-cuenta="${c.id}">
-      ${c.para_llevar ? '<span class="chip-llevar">🛍 PARA LLEVAR</span>' : ''}<strong>${esc(nombre)}</strong><small>${m && c.mesa_id !== m.id ? `↔ unida a ${esc(c.nombre)}` : `${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}${(c.mesas_extra || []).length ? ` · +${c.mesas_extra.length}` : ''}`}</small>
+      ${OP.plataformaDe(c.nombre) ? `<span class="chip-llevar chip-${OP.plataformaDe(c.nombre)}">🛵 ${OP.plataformaDe(c.nombre) === 'uber' ? 'UBER EATS' : 'GLOVO'}</span>` : c.para_llevar ? '<span class="chip-llevar">🛍 PARA LLEVAR</span>' : ''}<strong>${esc(nombre)}</strong><small>${m && c.mesa_id !== m.id ? `↔ unida a ${esc(c.nombre)}` : `${minutos(c.abierta)} min${c.comensales ? ` · ${c.comensales}p` : ''}${c.para_llevar ? ' · llevar' : ''}${(c.mesas_extra || []).length ? ` · +${c.mesas_extra.length}` : ''}`}</small>
       ${m && m.aviso ? `<span class="llama">${AVISO_TXT[m.aviso.tipo] || ''}</span>` : ''}
       ${pend ? `<span class="aviso">${pend} sin enviar</span>` : ''}
       ${(() => { const t = tardaDe(c); return t ? `<span class="tarda-chip ${t.nivel}">⏱ ${t.min} min esperando</span>` : ''; })()}
@@ -556,6 +556,8 @@
     abrir({ id: 'rapido', borrador: true, nombre: '⚡ Pedido rápido', para_llevar: false, abierta: new Date().toISOString(), mesa_id: null });
     aviso('⚡ Apunta el pedido. Al enviar o cobrar te pregunto si es para llevar, barra o mesa.');
   };
+  // Uber Eats y Glovo: de momento apagado (en Tomares van con sus propias tablets). Poner true para usarlo.
+  const CON_PLATAFORMAS = false;
   function concretar() {
     return new Promise(res => {
       let d = document.getElementById('dlg-destino');
@@ -567,17 +569,20 @@
           <button type="button" class="ds-b ds-llevar" data-ds="llevar">🛍<b>PARA LLEVAR</b></button>
           <button type="button" class="ds-b ds-barra" data-ds="barra">🍺<b>TOMAR EN BARRA</b></button>
           <button type="button" class="ds-b ds-mesa" data-ds="mesa" ${libres.length ? '' : 'disabled'}>🪑<b>EN UNA MESA</b></button>
+          ${CON_PLATAFORMAS ? `<button type="button" class="ds-b ds-uber" data-ds="uber">🛵<b>UBER EATS</b></button>
+          <button type="button" class="ds-b ds-glovo" data-ds="glovo">🛵<b>GLOVO</b></button>` : ''}
         </div>
         <div class="mesas mini" id="ds-mesas" hidden>${libres.map(m => `<button type="button" class="mesa" data-dsm="${esc(m.id)}"><strong>${esc(m.nombre)}</strong></button>`).join('')}</div>
         <p class="err" id="ds-err" hidden></p>
         <div class="dlg-pie"><button class="b" value="cancel">Volver</button></div></form>`;
       let hecho = false;
-      const crea = async (para_llevar, mesa_id) => {
+      const crea = async (para_llevar, mesa_id, plat) => {
         if (hecho) return; hecho = true;
-        const nom = d.querySelector('#ds-nombre').value.trim();
+        let nom = d.querySelector('#ds-nombre').value.trim();
+        if (plat) { const P = plat === 'uber' ? 'Uber' : 'Glovo'; nom = nom || String(new Date().toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' })); }
         try {
           const c = await api.abrirCuenta({ local: LOCAL, mesa_id: mesa_id || null, para_llevar,
-            nombre: mesa_id ? null : (nom ? (para_llevar ? 'Llevar · ' : 'Barra · ') + nom : null) });
+            nombre: mesa_id ? null : plat ? (plat === 'uber' ? 'Uber · ' : 'Glovo · ') + nom : (nom ? (para_llevar ? 'Llevar · ' : 'Barra · ') + nom : null) });
           pendientes[c.id] = pendientes.rapido || []; delete pendientes.rapido; guardaPend();
           cuenta = c; pedidosCuenta = []; $('#c-menu').hidden = false; if (c.mesa_id) atiende(c.mesa_id);
           d.close(); pintaProductos(); pintaCuenta(); recarga();
@@ -586,7 +591,8 @@
       };
       d.onclick = e => {
         const b = e.target.closest('[data-ds]');
-        if (b) { if (b.dataset.ds === 'mesa') { d.querySelector('#ds-mesas').hidden = false; return; } crea(b.dataset.ds === 'llevar'); return; }
+        if (b) { const v = b.dataset.ds; if (v === 'mesa') { d.querySelector('#ds-mesas').hidden = false; return; }
+          if (v === 'uber' || v === 'glovo') { crea(true, null, v); return; } crea(v === 'llevar'); return; }
         const m = e.target.closest('[data-dsm]'); if (m) crea(false, m.dataset.dsm);
       };
       d.addEventListener('close', () => { if (!hecho) res(false); }, { once: true });
@@ -774,6 +780,7 @@
       $('#c-espera').disabled = !pend.length;
     }
     $('#c-cobrar').disabled = !(tEnv + tPend);
+    $('#c-cobrar').textContent = cuenta && !cuenta.borrador && OP.plataformaDe(cuenta.nombre) ? '🛵 Entregado al rider' : 'Cobrar';
     $('#c-repetir').hidden = !ultimaComanda();
     // Bajar al final sólo al abrir la cuenta o si hay líneas nuevas (no en cada recarga: si no, salta mientras miras arriba).
     const el = $('#c-lineas'); const nL = el.querySelectorAll('.ln').length;
@@ -1218,6 +1225,15 @@
   $('#cb-partes').addEventListener('input', () => { if (modo === 'partes') pintaModo(); recalcula(); });
   const promoSel = () => promos.find(p => p.id === $('#cb-promo').value) || null;
   $('#c-cobrar').onclick = async () => {
+    const plat = cuenta && !cuenta.borrador && OP.plataformaDe(cuenta.nombre);
+    if (plat) {   // Uber / Glovo: lo cobra la plataforma; aquí sólo se da por entregado (sin ticket ni caja)
+      if ((pendientes[cuenta.id] || []).length) { if (!confirm('Hay productos sin enviar. ¿Enviarlos a cocina primero?')) return; if (!(await enviar())) return; }
+      const P = plat === 'uber' ? 'Uber Eats' : 'Glovo';
+      if (!confirm(`¿${cuenta.nombre}: entregado al repartidor de ${P}?\nLo cobra ${P}: no se hace ticket ni entra en la caja.`)) return;
+      try { await api.cerrarPlataforma(cuenta.id, plat); aviso(`🛵 ${cuenta.nombre} entregado a ${P}`); verSala(); recarga(); }
+      catch (ex) { alert(mensajeError(ex)); }
+      return;
+    }
     if ((pendientes[cuenta.id] || []).length) {
       if (!confirm('Hay productos sin enviar a cocina. ¿Enviarlos ahora y cobrar?')) return;
       if (!(await enviar())) return;

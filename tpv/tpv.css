@@ -626,3 +626,11 @@ button.t-quien:active{background:#8E63C9;color:#fff;transform:scale(.97)}
 #dlg-destino .ds-b:active{transform:scale(.96)}
 /* Ayuda en la caja */
 .b-ayuda-caja{border:0;background:#F07C1B;color:#fff;font:800 14px system-ui,sans-serif;padding:9px 14px;border-radius:10px}
+/* Uber Eats (negro) y Glovo (amarillo) */
+.chip-uber{background:#000 !important;color:#fff}
+.chip-glovo{background:#FFC244 !important;color:#2b2100}
+.mesa.llevar:has(.chip-uber){border-color:#000 !important;background:#F2F2F2 !important}
+.mesa.llevar:has(.chip-glovo){border-color:#E0A800 !important;background:#FFF7DD !important}
+#dlg-destino .ds-opc{grid-template-columns:repeat(3,1fr)}
+#dlg-destino .ds-uber{background:#000;border-color:#000;color:#fff}
+#dlg-destino .ds-glovo{background:#FFC244;border-color:#E0A800;color:#2b2100}
