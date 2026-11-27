@@ -128,7 +128,8 @@
     #dlg-ayuda .ay-faq summary::after{content:'+';color:#7C2430;font-size:20px;line-height:1}
     #dlg-ayuda .ay-faq[open] summary::after{content:'−'}
     #dlg-ayuda .ay-faq p{margin:0;padding:0 14px 13px}
-    #dlg-ayuda .ay-paso{display:block;width:100%;margin:12px 0 4px;padding:14px;border:0;border-radius:12px;background:#7C2430;color:#fff;font:800 16px system-ui,sans-serif}
+    #dlg-ayuda .ay-paso{display:block;width:100%;margin:12px 0 4px;padding:16px;border:0;border-radius:12px;background:#F07C1B;color:#fff;font:800 17px system-ui,sans-serif;box-shadow:0 4px 14px rgba(240,124,27,.45);animation:ay-latido 2s ease-in-out infinite}
+    @keyframes ay-latido{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
     #dlg-ayuda .ay-nota{background:#fff1d6;border-radius:10px;padding:10px 12px;font-size:14.5px;margin:10px 0 0}`;
   document.head.appendChild(css);
 

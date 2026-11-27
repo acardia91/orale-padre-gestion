@@ -356,7 +356,7 @@
 
   // Comandas en papel al enviar a cocina: si este equipo tiene una térmica (Epson por red o RawBT) y nadie ha
   // elegido otra cosa, se imprime una comanda con todo. Con pantalla de Comandas en cocina, elegir "No imprimir".
-  const prefComanda = () => { const def = modo() === 'epson' || modo() === 'rawbt' ? 'junta' : 'no';
+  const prefComanda = () => { const def = modo() === 'epson' || modo() === 'rawbt' ? 'separada' : 'no';   // por defecto: un ticket para cocina y otro para barra
     try { return localStorage.getItem('op-imprimir-comanda') || def; } catch (e) { return def; } };
   Object.assign(window.OP, { imprimir, abrirCajon, ajustesImpresora, comandasPorPuesto, prefComanda, ticketComanda: comanda, ticketPrecuenta: precuenta, ticketFactura: factura, _escpos: escpos });
 })();
