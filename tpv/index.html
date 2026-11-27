@@ -15,13 +15,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="tpv.css?v=202611271426">
+<link rel="stylesheet" href="tpv.css?v=202611271428">
 </head>
 <body>
 
 <!-- ── Entrar ── -->
 <section class="entrar" id="vista-entrar" hidden>
   <form id="form-entrar">
+    <a class="e-volver" href="/">‹ Volver al inicio</a>
     <img src="/img/logo-tinta.png" alt="Órale Padre" width="160">
     <h1>TPV</h1>
     <label>Email<input id="e-email" type="email" autocomplete="username" required></label>
@@ -47,6 +48,7 @@
       <button type="button" data-d="7">7</button><button type="button" data-d="8">8</button><button type="button" data-d="9">9</button>
       <button type="button" data-d="borrar" aria-label="Borrar">⌫</button><button type="button" data-d="0">0</button><button type="button" data-d="ok" class="ok">Entrar</button>
     </div>
+    <a class="e-volver bl-volver" href="/">‹ Volver al inicio</a>
     <button type="button" class="bl-salir" id="bl-salir">Cerrar la sesión de este TPV</button>
   </div>
 </div>
@@ -414,11 +416,11 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611271426"></script>
-<script src="/pedir/acceso.js?v=202611271426"></script>
+<script src="/pedir/api.js?v=202611271428"></script>
+<script src="/pedir/acceso.js?v=202611271428"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611271426"></script>
-<script src="/pedir/plano.js?v=202611271426"></script>
-<script src="tpv.js?v=202611271426"></script>
+<script src="/pedir/ticket.js?v=202611271428"></script>
+<script src="/pedir/plano.js?v=202611271428"></script>
+<script src="tpv.js?v=202611271428"></script>
 </body>
 </html>
