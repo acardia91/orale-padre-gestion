@@ -143,12 +143,126 @@
     ver(k); if (!dlg.open) dlg.showModal();
   }
 
-  // Botón en la barra de arriba, junto a Salir.
+  /* ── Recorrido guiado: oscurece la pantalla, enmarca cada botón y lo explica con una flecha ── */
+  const PASOS = {
+    sala: [
+      ['#t-quien', 'Quién está en el TPV', 'Aquí sale tu nombre. Todo lo que hagas queda a tu nombre. Si otra persona va a usar la tablet, <b>tócalo</b> y que meta su PIN.'],
+      ['#mesas', 'Las mesas', '<b>Toca una mesa libre</b> para abrirle la cuenta. Las ocupadas salen en color con el total y los minutos.'],
+      ['#zonas', 'Zonas', 'Cambia entre Sala, Terraza y Barra para ver sus mesas.'],
+      ['#b-barra', 'Clientes sin mesa', '<b>Terraza</b>, <b>Barra</b> y <b>Llevar</b> crean una cuenta nueva sin mesa (pide y paga en barra, o para llevar).'],
+      ['#rv-sec', 'Reservas de hoy', 'Cuando llegue una reserva, <b>tócala</b> para sentarla. «+ Reserva» para apuntar una por teléfono.'],
+      ['#recoger-sec', 'Para recoger', 'Pedidos de la web de hoy. Tócalos para verlos o entregarlos.'],
+      ['#b-agotados', 'Agotados', 'Si se acaba algo, márcalo aquí: desaparece de la web, del QR y del TPV.'],
+      ['#b-porimprimir', 'Por imprimir', 'Hay comandas de la web o del QR sin imprimir. Tócalo para sacarlas.'],
+      ['#b-caja', 'Caja', 'Tickets de hoy (reimprimir), meter o sacar dinero del cajón y el <b>cierre de caja</b> del encargado.'],
+      ['#b-impresora', 'Impresora', 'Configurar la ticketera o hacer una <b>impresión de prueba</b> si no imprime.'],
+      ['#b-ir-comandas', 'Comandas', 'Abre la pantalla de cocina, para ver cómo van los pedidos.'],
+      ['#b-salir', 'Salir', 'Cierra la sesión de esta tablet. Normalmente no hace falta: para cambiar de persona toca tu nombre.'],
+    ],
+    cuenta: [
+      ['#c-nombre', 'La cuenta', 'Mesa o cliente, minutos abierta y personas.'],
+      ['#buscar', 'Buscar', 'Escribe parte del nombre para encontrar un producto rápido.'],
+      ['#cats', 'Categorías', 'O elige la categoría de la carta.'],
+      ['#prods', 'Productos', '<b>Toca un producto</b> para añadirlo. Si tiene opciones (salsa, punto…), te las pide.'],
+      ['#c-lineas', 'Lo que lleva la mesa', 'Lo nuevo se ajusta con <b>− / +</b>. Lo ya enviado: <b>tócalo</b> para quitarlo, descontarlo o invitar (pide motivo y PIN de encargado).'],
+      ['#c-nota', 'Nota para cocina', 'Alergias o cambios («sin cebolla»). Sale en la comanda.'],
+      ['#c-espera', 'En espera', 'Para los segundos: cocina los ve pero no los hace hasta que pulses <b>▶ Marchar</b>.'],
+      ['#c-enviar', 'Enviar a cocina', 'Manda lo nuevo a cocina y barra. Lo ya enviado no se repite.'],
+      ['#c-menu', 'Más opciones', 'Comensales, cambiar de mesa, pasar productos a otra cuenta, unir mesas, juntar cuentas o anular.'],
+      ['#c-precuenta', 'Imprimir cuenta', 'Para que el cliente vea lo que debe antes de pagar.'],
+      ['#c-cobrar', 'Cobrar', 'Todo, por productos o a partes iguales. <b>Efectivo</b> (te dice el cambio) o <b>tarjeta</b> (cobra antes en el datáfono). Al confirmar, la mesa queda libre.'],
+      ['#b-atras', 'Volver a la sala', 'La cuenta se queda guardada; puedes volver cuando quieras.'],
+    ],
+    comandas: [
+      ['#p-sonido', 'Sonido', 'Al empezar el turno, <b>actívalo</b>. Si no, no suena cuando llega una comanda.'],
+      ['[data-col="nuevo"]', '1 · Nuevos', 'Aquí llegan las comandas (suena). Pulsa <b>Aceptar y preparar</b>.'],
+      ['#col-preparando', '2 · Preparando', 'Mientras cocinas, <b>toca cada plato</b> cuando esté hecho y se tacha. Con todo hecho, pulsa <b>¡Listo!</b> (parpadea).'],
+      ['[data-col="listo"]', '3 · Listos', 'Cuando sale del pase: <b>Servido</b> (sala) o <b>Entregar</b> (web). Si te equivocas, sale <b>Deshacer</b> 10 segundos.'],
+      ['#p-puesto', 'Qué ve esta pantalla', 'Todo, sólo cocina o sólo barra.'],
+      ['#p-prep', 'Espera web', 'Minutos que ve el cliente de la web. Súbelos con <b>+</b> si hay mucho lío.'],
+      ['#p-online', 'Pedidos web', 'Tócalo para <b>pausar</b> la web si cocina no puede más. Acuérdate de volver a activarlo.'],
+      ['#p-agotados', 'Agotados', 'Marca lo que se acaba: desaparece de la web y del TPV.'],
+      ['#p-autoprint', 'Imprimir al aceptar', 'Marcado: sale el ticket de cocina al aceptar cada comanda.'],
+      ['#p-impresora', 'Impresora', 'Configurar la ticketera o hacer una impresión de prueba.'],
+    ],
+  };
+  const css2 = document.createElement('style');
+  css2.textContent = `
+    .b.b-ayuda{background:#7C2430!important;color:#fff!important;border-color:#7C2430!important;min-width:76px}
+    .b.b-ayuda svg{width:34px!important;height:34px!important;stroke:#fff!important;fill:none}
+    .b.b-ayuda span{color:#fff!important;font-weight:800}
+    .tour-velo{position:fixed;inset:0;z-index:9990}
+    .tour-marco{position:fixed;z-index:9991;border:4px solid #E8B04B;border-radius:14px;box-shadow:0 0 0 9999px rgba(15,8,4,.66);pointer-events:none;transition:all .25s ease}
+    .tour-caja{position:fixed;z-index:9992;width:min(380px,calc(100vw - 24px));background:#fffaf4;color:#1d1a17;border-radius:16px;padding:16px 18px 14px;box-shadow:0 12px 40px rgba(0,0,0,.4);font:16px/1.45 system-ui,sans-serif;transition:top .25s,left .25s}
+    .tour-caja small{color:#7C2430;font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.5px}
+    .tour-caja h4{margin:2px 0 6px;font-size:19px}
+    .tour-caja p{margin:0 0 12px}
+    .tour-caja .tour-bts{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+    .tour-caja button{border:1px solid #d9cbbd;background:#fff;border-radius:10px;padding:10px 14px;font:700 15px system-ui,sans-serif;color:#1d1a17}
+    .tour-caja button.sig{background:#7C2430;border-color:#7C2430;color:#fff}
+    .tour-caja .tour-x{border:0;background:none;color:#7a6a5c;padding:10px 4px;font-weight:600;text-decoration:underline}
+    .tour-flecha{position:absolute;width:0;height:0;border:12px solid transparent}
+    .tour-caja.abajo .tour-flecha{top:-24px;border-bottom-color:#fffaf4}
+    .tour-caja.arriba .tour-flecha{bottom:-24px;border-top-color:#fffaf4}`;
+  document.head.appendChild(css2);
+  const visto = el => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 4 && r.height > 4 && getComputedStyle(el).visibility !== 'hidden' && el.closest('[hidden]') === null; };
+  let tour = null;
+  function cierraTour() { if (!tour) return; tour.nodos.forEach(n => n.remove()); removeEventListener('resize', tour.pon); tour = null; }
+  function empiezaTour(clave) {
+    cierraTour();
+    const pasos = PASOS[clave].map(([sel, t, txt]) => {
+      const el = sel === '#p-prep' ? document.getElementById('p-prep')?.closest('div,span.prep,label') || document.getElementById('p-prep') : sel === '#p-autoprint' ? document.getElementById('p-autoprint')?.closest('label') : document.querySelector(sel);
+      return { el, t, txt };
+    }).filter(p => visto(p.el));
+    if (!pasos.length) { ver(actual()); dlg.showModal(); return; }
+    const velo = document.createElement('div'); velo.className = 'tour-velo';
+    const marco = document.createElement('div'); marco.className = 'tour-marco';
+    const caja = document.createElement('div'); caja.className = 'tour-caja'; caja.setAttribute('role', 'dialog'); caja.setAttribute('aria-live', 'polite');
+    document.body.append(velo, marco, caja);
+    let i = 0;
+    const pon = () => {
+      const p = pasos[i]; const r = p.el.getBoundingClientRect(); const m = 6;
+      Object.assign(marco.style, { left: r.left - m + 'px', top: r.top - m + 'px', width: r.width + 2 * m + 'px', height: r.height + 2 * m + 'px' });
+      const ult = i === pasos.length - 1;
+      caja.innerHTML = `<span class="tour-flecha"></span><small>Paso ${i + 1} de ${pasos.length}</small><h4>${p.t}</h4><p>${p.txt}</p>
+        <div class="tour-bts"><button type="button" class="tour-x">Salir</button><span style="display:flex;gap:8px">${i ? '<button type="button" class="ant">‹ Atrás</button>' : ''}
+        <button type="button" class="sig">${ult ? 'Terminar ✓' : 'Siguiente ›'}</button></span></div>
+        ${ult ? '<div style="margin-top:10px;text-align:center"><button type="button" class="todo" style="border:0;background:none;color:#7C2430;text-decoration:underline;padding:4px">Ver el protocolo completo por escrito</button></div>' : ''}`;
+      const W = innerWidth, H = innerHeight, cw = caja.offsetWidth, ch = caja.offsetHeight;
+      const abajo = r.bottom + m + 18 + ch < H || r.top - m - 18 - ch < 0;
+      let top = abajo ? r.bottom + m + 16 : r.top - m - 16 - ch;
+      if (top + ch > H - 8) top = Math.max(8, H - ch - 8);   // elemento muy alto (columnas): la caja dentro de la pantalla
+      const cx = r.left + r.width / 2; const left = Math.min(Math.max(12, cx - cw / 2), W - cw - 12);
+      caja.className = 'tour-caja ' + (abajo ? 'abajo' : 'arriba'); Object.assign(caja.style, { top: top + 'px', left: left + 'px' });
+      caja.querySelector('.tour-flecha').style.left = Math.min(Math.max(14, cx - left - 12), cw - 38) + 'px';
+      caja.querySelector('.sig').focus();
+    };
+    const ir = n => { i = n; pasos[i].el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); requestAnimationFrame(pon); };
+    caja.addEventListener('click', e => {
+      if (e.target.closest('.sig')) { if (i < pasos.length - 1) ir(i + 1); else cierraTour(); }
+      else if (e.target.closest('.ant')) ir(i - 1);
+      else if (e.target.closest('.tour-x')) cierraTour();
+      else if (e.target.closest('.todo')) { cierraTour(); ver(actual()); dlg.showModal(); }
+    });
+    velo.onclick = () => { if (i < pasos.length - 1) ir(i + 1); else cierraTour(); };
+    tour = { nodos: [velo, marco, caja], pon }; addEventListener('resize', pon);
+    ir(0);
+  }
+  addEventListener('keydown', e => { if (tour && e.key === 'Escape') cierraTour(); });
+  function guia() {
+    if (!enTPV) return empiezaTour('comandas');
+    const k = actual();
+    if (k === 'sala' || k === 'cuenta') return empiezaTour(k);
+    abrir();
+  }
+
+  // Botón grande burdeos con un sombrero, en la barra de arriba junto a Salir.
+  const SOMBRERO = '<svg viewBox="0 0 24 24" aria-hidden="true" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 14.2C7 8.5 9 5 12 5s5 3.5 4.8 9.2"/><path d="M7.2 14.2c1.4.6 3 .9 4.8.9s3.4-.3 4.8-.9"/><path d="M7.2 12.4c-3.2.5-5.2 1.5-5.2 2.6 0 1.9 4.5 3.5 10 3.5s10-1.6 10-3.5c0-1.1-2-2.1-5.2-2.6"/><path d="M8.7 10.6c2.1.6 4.5.6 6.6 0"/></svg>';
   const salir = document.getElementById(enTPV ? 'b-salir' : 'p-salir');
   if (salir) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'b b-ico b-ayuda'; b.title = 'Cómo se usa esta pantalla';
-    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18zM9.5 9a2.5 2.5 0 015 .5c0 1.7-2.5 2-2.5 4M12 17h.01"/></svg><span>Ayuda</span>';
-    b.onclick = abrir; salir.parentNode.insertBefore(b, salir);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'b b-ico b-ayuda'; b.title = 'Cómo funciona esta pantalla (paso a paso)';
+    b.innerHTML = SOMBRERO + '<span>Ayuda</span>';
+    b.onclick = guia; salir.parentNode.insertBefore(b, salir);
   }
   // En Cobrar y Caja (ventanas encima), un "?" redondo abajo a la derecha.
   if (enTPV) ['dlg-cobrar', 'dlg-caja'].forEach(id => {
