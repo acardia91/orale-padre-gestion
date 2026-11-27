@@ -91,6 +91,9 @@
     // Los avisos en vivo llegan a ráfagas (un cobro cambia varias comandas a la vez): se agrupan en una sola recarga.
     let tRec = null; api.escuchar(LOCAL, () => { clearTimeout(tRec); tRec = setTimeout(recarga, 300); });
     setInterval(recarga, 30000);          // red de seguridad si se cae el tiempo real
+    // Al volver a la pantalla (tablet que se durmió) o al volver internet: al día al momento.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) recarga(); });
+    addEventListener('online', () => recarga());
     setInterval(() => { reloj(); pinta(); }, 20000);
     reloj();
   }
@@ -104,7 +107,8 @@
   }
   async function recargaYa() {
     try {
-      [local, pedidos, agotados] = await Promise.all([api.local(LOCAL), api.pedidosDelDia(LOCAL), api.agotados(LOCAL)]);
+      const tope = new Promise((_, no) => setTimeout(() => no(new Error('tiempo de espera agotado')), 15000));
+      [local, pedidos, agotados] = await Promise.race([Promise.all([api.local(LOCAL), api.pedidosDelDia(LOCAL), api.agotados(LOCAL)]), tope]);
     } catch (e) { console.warn('recarga', e); return; }
     const nuevos = porAceptar().filter(p => !vistos.has(p.id));
     nuevos.forEach(p => vistos.add(p.id));
@@ -247,8 +251,8 @@
           : `<strong>${esc(p.cliente_nombre)}</strong>${p.cliente_tel ? `<a href="tel:${esc(p.cliente_tel)}">${esc(p.cliente_tel)}</a>` : ''} · Web, para recoger`}</div>
         <div class="ped-hora"><b>${hhmm(rec)}</b>${cuando}</div>
       </div>
-      <ul class="ped-lineas">${lineas.map(l => `<li class="${!vista && puesto(l) === 'barra' ? 'de-barra' : ''}${hechas.has(l._i) ? ' hecha' : ''}" ${p.en_espera ? '' : `data-linea="${l._i}" data-id="${p.id}" role="button" title="Tocar para marcarlo hecho"`}><b>${l.cantidad}×</b>${!vista && puesto(l) === 'barra' ? '🍹 ' : ''}${esc(l.nombre)}
-        ${l.opciones.map(o => `<small>+ ${esc(o.nombre)}</small>`).join('')}
+      <ul class="ped-lineas">${lineas.map(l => `<li class="${!vista && puesto(l) === 'barra' ? 'de-barra' : ''}${hechas.has(l._i) ? ' hecha' : ''}" ${p.en_espera ? '' : `data-linea="${l._i}" data-id="${p.id}" role="button" title="Tocar para marcarlo hecho"`}><b>${l.cantidad}×</b><i class="ico">${OP.tipoDe(carta, l.producto, l.nombre).ico}</i>${esc(l.nombre)}
+        ${l.opciones.map(opPantalla).join('')}
         ${l.nota ? `<small class="nota">⚠ ${esc(l.nota)}</small>` : ''}</li>`).join('')}
         ${(p.anuladas || []).filter(l => !vista || puesto(l) === vista).map(l => `<li class="quitada"><b>${l.cantidad}×</b>${esc(l.nombre)}<small class="nota">✕ QUITADO · ${esc(l.motivo || '')}</small></li>`).join('')}</ul>
       ${otro ? `<p class="ped-otro">+ ${otro} ${vista === 'barra' ? 'en cocina' : 'en barra'}${vista === 'cocina' && tiene(p, 'barra') ? (barraLista(p) ? ' · ✓ listas' : ' · pendientes') : ''}</p>` : ''}
@@ -267,6 +271,9 @@
   }
 
   /* ── Acciones ── */
+  // Opciones en pantalla: SIN en rojo, EXTRA en verde, "Sin extras" no sale.
+  const opPantalla = o => { const c = OP.claseOpcion(o.nombre); if (c === 'nada') return '';
+    return `<small class="op-${c}">${c === 'sin' ? '✕ ' : '+ '}${esc(o.nombre)}</small>`; };
   const ahora = () => new Date().toISOString();
   document.addEventListener('click', async e => {
     const li = e.target.closest('li[data-linea]'); if (!li) return;
@@ -365,7 +372,7 @@
     const ls = lineasDe(p);
     // Pantalla "Todo": dos tickets con corte, uno para cocina y otro para barra (si el pedido tiene de los dos).
     if (!vista) { OP.imprimir(OP.comandasPorPuesto(p, local.nombre, carta, 'separada')); return; }
-    OP.imprimir(OP.ticketComanda(vista ? { ...p, lineas: ls.length ? ls : p.lineas, notas: [vista === 'barra' ? 'BARRA' : 'COCINA', p.notas].filter(Boolean).join(' · ') } : p, local.nombre));
+    OP.imprimir(OP.ticketComanda(vista ? { ...p, lineas: ls.length ? ls : p.lineas, notas: [vista === 'barra' ? 'BARRA' : 'COCINA', p.notas].filter(Boolean).join(' · ') } : p, local.nombre, carta));
   }
 
   /* ── Agotados ── */

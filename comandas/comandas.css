@@ -235,3 +235,9 @@ button,.b,a,li[data-linea]{touch-action:manipulation}
 .e-volver{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;margin:-12px 0 -4px -8px;padding:8px 12px;border-radius:10px;font-weight:700;font-size:15px;color:var(--burdeos,#7C2430);text-decoration:none}
 .e-volver:hover,.e-volver:active{background:rgba(124,36,48,.08)}
 .bl-volver{display:block;width:max-content;margin:14px auto 0}
+/* Iconos por tipo y SIN / EXTRA bien marcados (menos errores) */
+.ped-lineas .ico{font-style:normal;margin-right:6px}
+.ped-lineas small.op-sin{display:inline-block;margin:3px 0 0 30px;padding:2px 9px;border-radius:6px;background:#C62828;color:#fff;font-weight:800;text-transform:uppercase;font-size:14px}
+.ped-lineas small.op-extra{display:inline-block;margin:3px 0 0 30px;padding:2px 9px;border-radius:6px;background:#2E7D32;color:#fff;font-weight:800;font-size:14px}
+.ped-lineas small.op-sin + small, .ped-lineas small.op-extra + small{margin-top:3px}
+.ped-lineas .nota{display:inline-block;margin:3px 0 0 30px;padding:2px 9px;border-radius:6px;background:#FFE08A;color:#5a3a00 !important;font-weight:800}
