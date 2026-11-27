@@ -211,3 +211,22 @@ button,.b,a,li[data-linea]{touch-action:manipulation}
 .ped.t-rojo .ped-tiempo{font-weight:800}
 .ped.t-rojo .ped-tiempo::before{content:"⚠ RETRASO · "}
 .ped.t-ambar .ped-tiempo{font-weight:700}
+
+/* ══ Tablet Android (Galaxy Tab A11+: 1280×800 horizontal / 800×1280 vertical) ══ */
+/* Horizontal: la barra en una sola fila para dejar más alto a las comandas */
+@media (min-width:761px) and (max-width:1366px){
+  .barra{gap:8px;padding:8px 12px}
+  .b-local{padding:3px 10px 3px 3px}
+  .b-ctrl{gap:5px}
+  .b-ctrl .b.b-ico{min-width:62px;padding:6px 8px 5px;font-size:11.5px}
+  .prep button{width:32px}
+  .prep span{min-width:56px}
+  .chk{font-size:12.5px;max-width:96px;line-height:1.15}
+  .columnas{gap:10px;padding:10px 10px 80px}
+}
+/* Vertical: las tres columnas a la vista (antes se apilaban y había que bajar mucho) */
+@media (min-width:700px) and (max-width:900px){
+  .columnas{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 8px 80px}
+  .col{padding:6px}
+  .col h2{font-size:12.5px;padding:4px 4px 10px}
+}
