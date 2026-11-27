@@ -243,6 +243,7 @@
       <div class="dias" title="Días en que se puede pedir (ninguno marcado = todos)">${DIAS.map((d, j) => `<label><input type="checkbox" data-kd="${i}" value="${j + 1}" ${c.dias && c.dias.includes(j + 1) ? 'checked' : ''}><span>${d}</span></label>`).join('')}</div>
       <select data-ks="${i}" aria-label="Dónde se vende" title="Dónde se vende esta categoría"><option value="">Todos los canales</option><option value="recoger" ${c.solo === 'recoger' ? 'selected' : ''}>Sólo recoger</option><option value="local" ${c.solo === 'local' ? 'selected' : ''}>Sólo en el local</option></select>
       <select data-kp="${i}" aria-label="Quién lo prepara" title="Quién prepara esta categoría (pantalla de Comandas)"><option value="">${/bebida/i.test(c.nombre + ' ' + c.clave) ? 'Barra (por defecto)' : 'Cocina (por defecto)'}</option><option value="cocina" ${c.puesto === 'cocina' ? 'selected' : ''}>Cocina</option><option value="barra" ${c.puesto === 'barra' ? 'selected' : ''}>Barra</option></select>
+      <label class="chk" title="Sale la primera en la carta del QR, en grande y con fotos"><input type="checkbox" data-kdest="${i}" ${c.destacada ? 'checked' : ''}> ★ Destacada</label>
       <label class="chk"><input type="checkbox" data-ko="${i}" ${c.oculta ? 'checked' : ''}> Oculta</label>
       <button type="button" class="b b-mini b-mal" data-kx="${i}">Eliminar</button></div>`).join('');
   }
@@ -256,6 +257,7 @@
       c.dias = dias.length && dias.length < 7 ? dias : null; marca();
     }
     if (t.dataset.ko) { carta.categorias[t.dataset.ko].oculta = t.checked || undefined; pintaCategorias(); marca(); }
+    if (t.dataset.kdest) { carta.categorias[t.dataset.kdest].destacada = t.checked || undefined; marca(); }
     if (t.dataset.ks) { carta.categorias[t.dataset.ks].solo = t.value || undefined; marca(); }
     if (t.dataset.kp) { carta.categorias[t.dataset.kp].puesto = t.value || undefined; marca(); }
   });
