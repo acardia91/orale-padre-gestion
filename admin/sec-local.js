@@ -122,8 +122,7 @@
     $('#u-lista').innerHTML = cab + '<tbody>' + (con.map(fila).join('') || `<tr><td colspan="${LOCALES_U.length + 2}" class="nota">Nadie tiene acceso todavía.</td></tr>`) + '</tbody>';
     $('#u-sin-cab').hidden = !sin.length;
     $('#u-sin').innerHTML = sin.length ? cab + '<tbody>' + sin.map(fila).join('') + '</tbody>' : '';
-    const cambiables = con.filter(u => !u.interna);
-    $('#rc-email').innerHTML = '<option value="">¿A quién?</option>' + cambiables.map(u => `<option value="${esc(u.email)}">${esc(u.email)}</option>`).join('');
+    $('#rc-email').innerHTML = '<option value="">¿A quién?</option>' + con.map(u => `<option value="${esc(u.email)}">${esc(u.email)}${u.interna ? ' (también app interna)' : ''}</option>`).join('');
     $('#u-locales').innerHTML = LOCALES_U.map(l => `<label class="chk-local"><input type="checkbox" value="${esc(l.id)}" ${l.id === LOCAL ? 'checked' : ''}> ${esc(corto(l.nombre))}</label>`).join('');
   }
   const alCambiar = async e => {
@@ -155,7 +154,7 @@
       $('#u-email').value = ''; $('#u-pass').value = '';
       const donde = locs.map(l => corto((LOCALES_U.find(x => x.id === l) || {}).nombre)).join(', ');
       aviso(creado ? `Listo: ${email} ya puede entrar en ${donde} como ${ROLES[rol]} con la contraseña que has puesto (que la cambie al entrar).`
-                   : `Listo: ${email} ya tiene acceso a ${donde} como ${ROLES[rol]} (entra con su contraseña de siempre).`, true);
+                   : `Listo: ${email} ya tiene acceso a ${donde} como ${ROLES[rol]}. Ya tenía usuario, así que entra con su contraseña de siempre` + (pw ? ' (la que has escrito NO se ha guardado: cámbiasela abajo, en «Poner contraseña nueva»).' : '.'), true);
     } catch (ex) { aviso(mensajeError(ex)); }
     finally { btn.disabled = false; }
     cargarUsuarios();
@@ -168,7 +167,7 @@
     if (a !== b) return di('Las dos contraseñas no coinciden.');
     const u = usuarios.find(x => x.email === email);
     const local = LOCALES_U.map(l => l.id).find(l => u && u.roles[l]) || LOCAL;
-    if (!confirm(`¿Poner esta contraseña nueva a ${email}? La de antes deja de valer.`)) return;
+    if (!confirm(`¿Poner esta contraseña nueva a ${email}? La de antes deja de valer.` + (u && u.interna ? '\n\nOjo: esta persona también usa la app interna; la contraseña cambia también allí (es la misma cuenta).' : ''))) return;
     const btn = $('#rc-ok'); btn.disabled = true;
     try { await api.cambiarClaveDe(local, email, a); $('#rc-1').value = $('#rc-2').value = ''; di(`Hecho: ${email} ya entra con la contraseña nueva. Díselo en persona.`, true); }
     catch (ex) { di(mensajeError(ex)); }
