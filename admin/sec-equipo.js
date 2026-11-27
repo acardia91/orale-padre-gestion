@@ -21,7 +21,8 @@
         <td>${e.rol === 'encargado' ? '<span class="tag verde">Encargado</span>' : '<span class="tag gris">Empleado</span>'}</td>
         <td>${(e.locales || []).map(l => `<span class="tag">${esc(LOC[l] || l)}</span>`).join('') || '<small>ninguno</small>'}</td>
         <td>${e.tiene_pin ? `<button class="b b-mini b-pin" type="button" data-pin="${esc(e.id)}">✓ Cambiar PIN</button>` : `<button class="b b-mini b-ok b-pin" type="button" data-pin="${esc(e.id)}">🔑 Poner PIN</button>`}</td>
-        <td>${e.email ? esc(e.email) : '—'}${e.email && e.rol === 'encargado' ? `<small>${e.con_usuario ? 'tiene acceso al panel' : 'sin acceso al panel'}</small>` : ''}</td>
+        <td>${e.email ? esc(e.email) : '—'}${e.email && e.rol === 'encargado' ? `<small>${e.con_usuario ? 'tiene acceso al panel' : 'sin acceso al panel'}</small>` : ''}
+          ${e.email ? `<button class="b b-mini b-pin" type="button" data-clave="${esc(e.id)}">🔒 ${e.con_usuario ? 'Contraseña' : 'Crear acceso'}</button>` : ''}</td>
         <td>${fecha(e.ultima_entrada)}</td>
         <td><button class="b b-mini" type="button" data-eq="${esc(e.id)}">Editar</button></td></tr>`).join('') + '</tbody>'
       : '<tbody><tr><td class="nota">Aún no hay nadie. Pulsa "Importar lista" y pega la lista del equipo.</td></tr></tbody>';
@@ -143,6 +144,45 @@
     } catch (ex) { err(mensajeError(ex)); } finally { $('#pn-guardar').disabled = false; }
   }
 
+
+  /* ── Contraseña (email) de una persona del equipo: crearla o cambiarla en un paso ── */
+  let claveDe = null;
+  function abrirClave(id) {
+    const e = lista.find(x => x.id === id); if (!e || !e.email) return; claveDe = e;
+    $('#cl-titulo').textContent = (e.con_usuario ? 'Contraseña de ' : 'Crear acceso para ') + e.nombre;
+    $('#cl-email').textContent = e.email;
+    $('#cl-nota').textContent = e.con_usuario
+      ? 'Con este email y esta contraseña entra en el TPV, en Comandas' + (e.rol === 'encargado' ? ' y en el Admin' : '') + '. La de antes deja de valer. Si también usa la app interna, allí cambia igual (es la misma cuenta).'
+      : 'Aún no tiene usuario: se crea ahora con este email y esta contraseña. Entra en el TPV, en Comandas' + (e.rol === 'encargado' ? ' y en el Admin' : '') + '.';
+    $('#cl-1').value = $('#cl-2').value = ''; $('#cl-err').hidden = true; $('#dlg-clave').showModal(); $('#cl-1').focus();
+  }
+  async function guardarClave() {
+    const e = claveDe; const err = (t, ok) => { const m = $('#cl-err'); m.textContent = t; m.hidden = false; m.className = ok ? 'aviso-ok' : 'aviso'; };
+    const a = $('#cl-1').value, b = $('#cl-2').value;
+    if (a.length < 8) return err('Mínimo 8 caracteres.');
+    if (a !== b) return err('Las dos contraseñas no coinciden.');
+    const locs = (e.locales || []).length ? e.locales : [];
+    if (!locs.length) return err('Marca primero en qué local trabaja (botón Editar).');
+    const rol = e.rol === 'encargado' ? 'encargado' : 'sala';
+    $('#cl-ok').disabled = true;
+    try {
+      if (!e.con_usuario) {
+        for (const [i, l] of locs.entries()) await api.anadirStaff(l, e.email, rol, i === 0 ? a : '');
+      } else {
+        try { await api.cambiarClaveDe(locs[0], e.email, a); }
+        catch (ex) {
+          if (!/PERMISO|tus locales/i.test(String(ex && ex.message))) throw ex;
+          for (const l of locs) await api.anadirStaff(l, e.email, rol, '');   // no tenía acceso al local: se lo damos y repetimos
+          await api.cambiarClaveDe(locs[0], e.email, a);
+        }
+      }
+      $('#cl-1').value = $('#cl-2').value = '';
+      $('#dlg-clave').close(); await cargar();
+      $('#eq-ok').textContent = `✓ ${e.nombre} ya entra con ${e.email} y la contraseña nueva. Díselo en persona.`; $('#eq-ok').hidden = false;
+      setTimeout(() => { $('#eq-ok').hidden = true; }, 12000);
+    } catch (ex) { err(mensajeError(ex)); } finally { $('#cl-ok').disabled = false; }
+  }
+
   if ($('#eq-lista')) {
     $('#eq-importar').onclick = () => { $('#eq-imp-err').hidden = true; $('#eq-previa').innerHTML = ''; $('#eq-guardar-imp').disabled = true; $('#dlg-eq-imp').showModal(); };
     $('#eq-revisar').onclick = revisar;
@@ -152,9 +192,12 @@
     $('#eq-nuevo').onclick = () => abrir(null);
     $('#eq-lista').addEventListener('click', e => {
       const p = e.target.closest('[data-pin]'); if (p) return abrirPines([p.dataset.pin]);
+      const c = e.target.closest('[data-clave]'); if (c) return abrirClave(c.dataset.clave);
       const b = e.target.closest('[data-eq]'); if (b) abrir(b.dataset.eq); });
     $('#eq-pines').onclick = () => abrirPines(null);
     $('#pn-guardar').onclick = guardarPines;
+    $('#cl-ok').onclick = guardarClave;
+    $('#dlg-clave').addEventListener('close', () => { $('#cl-1').value = $('#cl-2').value = ''; claveDe = null; });
     $('#dlg-pines').addEventListener('close', () => { $('#pn-filas').innerHTML = ''; pinIds = []; });   // que los PIN no se queden en pantalla
     $('#eq-guardar').onclick = guardarUna;
   }

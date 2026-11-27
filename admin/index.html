@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="admin.css?v=202611271446">
+<link rel="stylesheet" href="admin.css?v=202611271452">
 </head>
 <body>
 
@@ -854,6 +854,17 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
     <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b" type="button" id="eq-revisar">Revisar</button><button class="b b-ok" type="button" id="eq-guardar-imp" disabled>Guardar</button></div>
   </form>
 </dialog>
+<dialog class="dlg" id="dlg-clave">
+  <form method="dialog" onsubmit="return false" autocomplete="off">
+    <h2 id="cl-titulo">Contraseña</h2>
+    <p style="margin:-4px 0 6px"><b id="cl-email"></b></p>
+    <p class="nota" id="cl-nota"></p>
+    <label class="campo">Contraseña nueva (mínimo 8)<input id="cl-1" type="password" autocomplete="new-password" minlength="8"></label>
+    <label class="campo">Repítela<input id="cl-2" type="password" autocomplete="new-password" minlength="8"></label>
+    <p class="aviso" id="cl-err" hidden></p>
+    <div class="dlg-pie"><button class="b" value="cancel">Cancelar</button><button class="b b-ok" type="button" id="cl-ok">Guardar contraseña</button></div>
+  </form>
+</dialog>
 <dialog class="dlg dlg-ancho" id="dlg-pines">
   <form method="dialog" onsubmit="return false" autocomplete="off">
     <h2 id="pn-titulo">PIN del equipo</h2>
@@ -879,28 +890,28 @@ lale,Lale,1234,encargado,San Luis,"San Luis|Los Remedios"</pre>
   </form>
 </dialog>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="/pedir/api.js?v=202611271446"></script>
-<script src="/pedir/acceso.js?v=202611271446"></script>
-<script src="/pedir/plano.js?v=202611271446"></script>
+<script src="/pedir/api.js?v=202611271452"></script>
+<script src="/pedir/acceso.js?v=202611271452"></script>
+<script src="/pedir/plano.js?v=202611271452"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="/pedir/ticket.js?v=202611271446"></script>
-<script src="/pedir/factura.js?v=202611271446"></script>
-<script src="sec-plano.js?v=202611271446"></script>
-<script src="sec-resumen.js?v=202611271446"></script>
-<script src="sec-facturas.js?v=202611271446"></script>
-<script src="sec-carta.js?v=202611271446"></script>
-<script src="sec-local.js?v=202611271446"></script>
-<script src="sec-pedidos.js?v=202611271446"></script>
-<script src="sec-reservas.js?v=202611271446"></script>
-<script src="sec-clientes.js?v=202611271446"></script>
-<script src="sec-control.js?v=202611271446"></script>
-<script src="sec-panel.js?v=202611271446"></script>
-<script src="sec-delivery.js?v=202611271446"></script>
-<script src="sec-promos.js?v=202611271446"></script>
-<script src="sec-informes.js?v=202611271446"></script>
-<script src="sec-resenas.js?v=202611271446"></script>
-<script src="sec-equipo.js?v=202611271446"></script>
-<script src="admin.js?v=202611271446"></script>
+<script src="/pedir/ticket.js?v=202611271452"></script>
+<script src="/pedir/factura.js?v=202611271452"></script>
+<script src="sec-plano.js?v=202611271452"></script>
+<script src="sec-resumen.js?v=202611271452"></script>
+<script src="sec-facturas.js?v=202611271452"></script>
+<script src="sec-carta.js?v=202611271452"></script>
+<script src="sec-local.js?v=202611271452"></script>
+<script src="sec-pedidos.js?v=202611271452"></script>
+<script src="sec-reservas.js?v=202611271452"></script>
+<script src="sec-clientes.js?v=202611271452"></script>
+<script src="sec-control.js?v=202611271452"></script>
+<script src="sec-panel.js?v=202611271452"></script>
+<script src="sec-delivery.js?v=202611271452"></script>
+<script src="sec-promos.js?v=202611271452"></script>
+<script src="sec-informes.js?v=202611271452"></script>
+<script src="sec-resenas.js?v=202611271452"></script>
+<script src="sec-equipo.js?v=202611271452"></script>
+<script src="admin.js?v=202611271452"></script>
 </body>
 </html>
 
