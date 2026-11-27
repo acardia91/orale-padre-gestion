@@ -33,6 +33,9 @@
       #ticket .op{padding-left:5mm;font-size:10pt}
       #ticket .nota{padding-left:5mm;font-weight:800}
       #ticket .tot{font-size:14pt;font-weight:800}
+      #ticket .k{font-size:17pt;font-weight:800;line-height:1.25;margin-top:1mm}
+      #ticket .k2{font-size:13pt}
+      #ticket .esp{height:4mm}
       #ticket .peq{font-size:8pt;word-break:break-all}
       #ticket .corte{break-after:page;page-break-after:always;height:0}
       #ticket .puesto{font-size:20pt;font-weight:800;text-align:center;border:2px solid #000;margin:0 0 2mm}
@@ -131,10 +134,11 @@
         ESC(0x1D, 0x28, 0x6B, n & 255, n >> 8, 0x31, 0x50, 0x30, ...d); ESC(0x1D, 0x28, 0x6B, 3, 0, 0x31, 0x51, 0x30); B.push(10);
         continue;
       }
-      const grande = cl.contains('num') ? 0x33 : cl.contains('g') || cl.contains('puesto') ? 0x11 : cl.contains('tot') ? 0x01 : 0;
-      const ancho = cl.contains('num') ? Math.floor(COLS / 4) : cl.contains('g') || cl.contains('puesto') ? COLS / 2 : COLS;
+      if (cl.contains('esp')) { estilo(0, 0, false); B.push(10); continue; }   // línea en blanco
+      const grande = cl.contains('num') ? 0x33 : cl.contains('g') || cl.contains('puesto') || cl.contains('k') ? 0x11 : cl.contains('tot') || cl.contains('k2') ? 0x01 : 0;
+      const ancho = cl.contains('num') ? Math.floor(COLS / 4) : cl.contains('g') || cl.contains('puesto') || cl.contains('k') ? COLS / 2 : COLS;
       if (cl.contains('puesto')) { estilo(1, grande, true); B.push(0x1D, 0x42, 1); linea(' ' + texto(el) + ' '); B.push(0x1D, 0x42, 0); continue; }   // en negativo
-      const negrita = cl.contains('g') || cl.contains('tot') || cl.contains('num') || cl.contains('nota') || !!el.querySelector(':scope > b:only-child');
+      const negrita = cl.contains('g') || cl.contains('k') || cl.contains('tot') || cl.contains('num') || cl.contains('nota') || !!el.querySelector(':scope > b:only-child');
       if (cl.contains('l') && el.children.length >= 2) {   // izquierda ……… derecha
         estilo(0, grande, negrita);
         const izq = texto(el.children[0]), der = texto(el.children[el.children.length - 1]);
@@ -268,6 +272,13 @@
     ${(l.opciones || []).map(o => `<div class="op">+ ${esc(o.nombre)}</div>`).join('')}
     ${l.nota ? `<div class="nota">!! ${esc(l.nota)}</div>` : ''}`).join('');
 
+  // Platos de la comanda: letra doble, opciones y notas a doble alto y un hueco entre platos (más fácil de leer en cocina).
+  const lineasCocina = lineas => lineas.map(l => `
+    <div class="k">${l.cantidad}x ${esc(l.nombre)}</div>
+    ${(l.opciones || []).map(o => `<div class="op k2">+ ${esc(o.nombre)}</div>`).join('')}
+    ${l.nota ? `<div class="nota k2">!! ${esc(l.nota)}</div>` : ''}
+    <div class="esp"></div>`).join('');
+
   /** Comanda para cocina: sin precios, letra grande. */
   function comanda(p, local) {
     return `
@@ -276,8 +287,8 @@
       <div class="c num">#${p.numero}</div>
       ${p.canal !== 'sala' ? `<div class="c"><b>${esc(p.cliente_nombre)}</b> · ${esc(p.cliente_tel || '')}</div>` : ''}
       <div class="c">${p.canal === 'sala' ? 'Marchada' : 'Recogida'}: <b>${fecha(p.canal === 'sala' ? p.creado : p.recogida).slice(-5)}</b></div>
-      <hr>${lineasHTML(p.lineas, false)}
-      ${p.notas ? `<hr><div class="nota">NOTA: ${esc(p.notas)}</div>` : ''}
+      <hr><div class="esp"></div>${lineasCocina(p.lineas)}
+      ${p.notas ? `<hr><div class="nota k2">NOTA: ${esc(p.notas)}</div>` : ''}
       <hr><div class="c peq">Comanda interna · no es factura</div>`;
   }
 
