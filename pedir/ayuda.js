@@ -4,6 +4,7 @@
 (function () {
   'use strict';
   const TPV = {
+    faq: ['❓ Preguntas rápidas', `<details class="ay-faq"><summary>Me he equivocado al añadir algo (aún no enviado)</summary><p>Pulsa <b>−</b> en ese producto o «✂ Quitar». Mientras no lo envíes, cocina no lo ve.</p></details><details class="ay-faq"><summary>Ya lo envié a cocina y hay que quitarlo</summary><p>Toca ese producto en la cuenta → <b>Quitar</b>, elige el motivo y que el encargado ponga su PIN. Avisa también a cocina en persona.</p></details><details class="ay-faq"><summary>Quiero invitar o hacer descuento</summary><p>Toca el producto ya enviado → <b>Descuento / invitar</b>. Necesita PIN de encargado.</p></details><details class="ay-faq"><summary>Pagan por separado</summary><p><b>Cobrar</b> → <b>Dividir por productos</b> (cada uno lo suyo) o <b>Partes iguales</b> (entre X personas). Se cobra una parte y la cuenta sigue abierta con el resto.</p></details><details class="ay-faq"><summary>Me he equivocado de forma de pago</summary><p><b>No vuelvas a cobrar.</b> Avisa al encargado para que lo corrija y lo apunte en el cierre.</p></details><details class="ay-faq"><summary>Piden factura con su NIF</summary><p>El cliente escanea el <b>QR del ticket</b> y la pide él. Si no puede, el encargado la hace en Admin → Ventas y facturas → Nueva factura, con el nº de ticket.</p></details><details class="ay-faq"><summary>Se cambian de mesa</summary><p>En la cuenta: menú <b>⋯</b> → <b>Cambiar de mesa</b>.</p></details><details class="ay-faq"><summary>Juntan mesas o son un grupo en varios taburetes</summary><p>Menú <b>⋯</b> → <b>Unir mesas o taburetes</b>: es una sola cuenta. Si cada mesa ya tenía cuenta: <b>Juntar con otra mesa</b>.</p></details><details class="ay-faq"><summary>Un cliente tiene alergia</summary><p>Ponlo en la <b>nota</b> del producto o en «Nota para cocina» (sale en la comanda con !!) y <b>díselo a cocina en persona</b>.</p></details><details class="ay-faq"><summary>Se ha acabado un producto</summary><p>Botón <b>Agotados</b> arriba y márcalo. Desaparece de la web, del QR y del TPV. Desmárcalo cuando vuelva.</p></details><details class="ay-faq"><summary>No imprime el ticket</summary><p>Mira que la ticketera esté encendida, con papel y la tapa cerrada. Luego <b>Impresora</b> → <b>Imprimir prueba</b>. Si sigue sin imprimir, avisa al encargado.</p></details><details class="ay-faq"><summary>Sale la franja de «sin conexión»</summary><p>Revisa el wifi. Puedes seguir mirando, pero <b>no cobres</b> hasta que vuelva la conexión.</p></details><details class="ay-faq"><summary>He olvidado mi PIN</summary><p>El encargado te pone uno nuevo en Admin → Usuarios → Equipo del TPV → <b>🔑 PIN</b>.</p></details><details class="ay-faq"><summary>Llega un pedido de la web</summary><p>Suena y aparece en <b>Para recoger</b> y en Comandas. Cocina lo acepta; al venir el cliente, se entrega desde ahí.</p></details>`],
     turno: ['Empezar y terminar el turno', `
       <ol>
         <li>Abre la app <b>TPV</b>. Si sale <b>«¿Quién eres?»</b>, teclea <b>tu PIN</b> (4 a 8 números).</li>
@@ -61,6 +62,7 @@
       </ul>`],
   };
   const COM = {
+    faq: ['❓ Preguntas rápidas', `<details class="ay-faq"><summary>No suena cuando llega una comanda</summary><p>Pulsa <b>Activar sonido</b> arriba y sube el volumen de la tablet. Hay que hacerlo cada vez que se abre la app.</p></details><details class="ay-faq"><summary>Acepté o marqué Listo sin querer</summary><p>Pulsa <b>↩</b> en esa comanda para volver al paso anterior.</p></details><details class="ay-faq"><summary>Marqué Servido sin querer</summary><p>Pulsa <b>Deshacer</b> abajo (10 segundos). Si ya pasó, abajo en los hechos pulsa <b>↩ Volver</b>.</p></details><details class="ay-faq"><summary>Hay muchísimo lío</summary><p>Sube la <b>Espera web</b> con + o pulsa <b>Online ON</b> para pausar los pedidos web. Acuérdate de volver a activarlo.</p></details><details class="ay-faq"><summary>Se ha acabado un producto</summary><p>Botón <b>Agotados</b> y márcalo: desaparece de la web y del TPV.</p></details><details class="ay-faq"><summary>Una comanda pone «Esperando a sala»</summary><p>Son segundos en espera. No se empiezan hasta que sala pulse «Marchar».</p></details><details class="ay-faq"><summary>Hay que anular un pedido web</summary><p>Botón <b>Cancelar</b> en la comanda y elige el motivo. Avisa al encargado si estaba pagado.</p></details><details class="ay-faq"><summary>Necesito el papel de la comanda</summary><p>Botón <b>Ticket cocina</b> en la comanda, o marca «Imprimir al aceptar» para que salga siempre.</p></details><details class="ay-faq"><summary>Las notas con !!</summary><p>Son alergias o cambios del cliente. <b>Léelas siempre</b> antes de preparar.</p></details>`],
     pasos: ['Paso a paso', `
       <ol>
         <li>Al empezar: pulsa <b>Activar sonido</b> (si no, no suena cuando llega un pedido).</li>
@@ -121,6 +123,12 @@
     #dlg-ayuda .ay-cuerpo{padding:6px 22px 22px;overflow:auto;max-height:calc(90dvh - 130px);font:16px/1.5 system-ui,sans-serif}
     #dlg-ayuda .ay-cuerpo h3{margin:14px 0 6px;font-size:18px}
     #dlg-ayuda .ay-cuerpo li{margin:0 0 9px}
+    #dlg-ayuda .ay-faq{border:1px solid #eadfd3;border-radius:12px;background:#fff;margin:0 0 8px}
+    #dlg-ayuda .ay-faq summary{padding:13px 14px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px}
+    #dlg-ayuda .ay-faq summary::after{content:'+';color:#7C2430;font-size:20px;line-height:1}
+    #dlg-ayuda .ay-faq[open] summary::after{content:'−'}
+    #dlg-ayuda .ay-faq p{margin:0;padding:0 14px 13px}
+    #dlg-ayuda .ay-paso{display:block;width:100%;margin:12px 0 4px;padding:14px;border:0;border-radius:12px;background:#7C2430;color:#fff;font:800 16px system-ui,sans-serif}
     #dlg-ayuda .ay-nota{background:#fff1d6;border-radius:10px;padding:10px 12px;font-size:14.5px;margin:10px 0 0}`;
   document.head.appendChild(css);
 
@@ -129,13 +137,15 @@
     <nav class="ay-tabs">${Object.entries(GUIA).map(([k, [t]]) => `<button type="button" data-ay="${k}">${t}</button>`).join('')}</nav>
     <div class="ay-cuerpo"></div>`;
   document.body.appendChild(dlg);
+  const conTour = () => !enTPV || ['sala', 'cuenta'].includes(actual());
   const ver = k => {
     dlg.querySelectorAll('[data-ay]').forEach(b => b.classList.toggle('on', b.dataset.ay === k));
-    dlg.querySelector('.ay-cuerpo').innerHTML = `<h3>${GUIA[k][0]}</h3>` + GUIA[k][1]; dlg.querySelector('.ay-cuerpo').scrollTop = 0;
+    dlg.querySelector('.ay-cuerpo').innerHTML = (k === 'faq' && conTour() ? '<button type="button" class="ay-paso">▶ Explícame esta pantalla paso a paso</button>' : '') + `<h3>${GUIA[k][0]}</h3>` + GUIA[k][1]; dlg.querySelector('.ay-cuerpo').scrollTop = 0;
   };
   dlg.addEventListener('click', e => {
     const b = e.target.closest('[data-ay]'); if (b) ver(b.dataset.ay);
     if (e.target.closest('.ay-x') || e.target === dlg) dlg.close();
+    if (e.target.closest('.ay-paso')) { dlg.close(); empiezaTour(enTPV ? actual() : 'comandas'); }
   });
   function abrir() {
     const k = actual();
@@ -249,18 +259,14 @@
     ir(0);
   }
   addEventListener('keydown', e => { if (tour && e.key === 'Escape') cierraTour(); });
-  function guia() {
-    if (!enTPV) return empiezaTour('comandas');
-    const k = actual();
-    if (k === 'sala' || k === 'cuenta') return empiezaTour(k);
-    abrir();
-  }
+  // El gorro abre las preguntas rápidas, con el botón del recorrido paso a paso arriba.
+  function guia() { ver(conTour() ? 'faq' : actual()); if (!dlg.open) dlg.showModal(); }
 
-  // Botón grande burdeos con un sombrero, en la barra de arriba junto a Salir.
-  const SOMBRERO = '<svg viewBox="0 0 24 24" aria-hidden="true" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 14.2C7 8.5 9 5 12 5s5 3.5 4.8 9.2"/><path d="M7.2 14.2c1.4.6 3 .9 4.8.9s3.4-.3 4.8-.9"/><path d="M7.2 12.4c-3.2.5-5.2 1.5-5.2 2.6 0 1.9 4.5 3.5 10 3.5s10-1.6 10-3.5c0-1.1-2-2.1-5.2-2.6"/><path d="M8.7 10.6c2.1.6 4.5.6 6.6 0"/></svg>';
+  // Botón grande burdeos con un gorro de cocina, en la barra de arriba junto a Salir.
+  const SOMBRERO = '<svg viewBox="0 0 24 24" aria-hidden="true" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 14.5V20h10v-5.5"/><path d="M7 17h10"/><path d="M7 14.5A4 4 0 016.4 6.6a4.6 4.6 0 018-2.3 4.3 4.3 0 013.2-.6A4 4 0 0117 14.5"/><path d="M10 14.5v-2.5M14 14.5v-2.5"/></svg>';
   const salir = document.getElementById(enTPV ? 'b-salir' : 'p-salir');
   if (salir) {
-    const b = document.createElement('button'); b.type = 'button'; b.className = 'b b-ico b-ayuda'; b.title = 'Cómo funciona esta pantalla (paso a paso)';
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'b b-ico b-ayuda'; b.title = 'Ayuda: preguntas rápidas y cómo funciona esta pantalla';
     b.innerHTML = SOMBRERO + '<span>Ayuda</span>';
     b.onclick = guia; salir.parentNode.insertBefore(b, salir);
   }
