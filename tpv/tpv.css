@@ -634,3 +634,22 @@ button.t-quien:active{background:#8E63C9;color:#fff;transform:scale(.97)}
 #dlg-destino .ds-opc{grid-template-columns:repeat(3,1fr)}
 #dlg-destino .ds-uber{background:#000;border-color:#000;color:#fff}
 #dlg-destino .ds-glovo{background:#FFC244;border-color:#E0A800;color:#2b2100}
+/* ══ Móvil (camarera): cabecera compacta, avisos pequeños, más sitio para mesas y carta ══ */
+@media (max-width:760px){
+  .barra{padding:6px 10px;gap:6px 8px}
+  .b-local strong{font-size:15px}
+  .b-local .org-ico{width:30px;height:30px;font-size:12px}
+  .barra .demo{font-size:10px;padding:3px 6px}
+  button.t-quien{min-height:34px;padding:4px 9px;font-size:12.5px;max-width:48vw}
+  .b-ctrl{gap:5px}
+  .b-ctrl .b.b-ico{min-width:56px;padding:5px 6px 4px;font-size:10.5px;gap:2px}
+  .b-ctrl .b.b-ico svg{width:20px;height:20px}
+  .t-avisos{gap:5px;margin:0 0 10px;max-height:28vh;overflow-y:auto}
+  .av{gap:6px;padding:6px 6px 6px 10px;font-size:13px;border-radius:10px}
+  .av > span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .av .b{padding:6px 10px;font-size:12.5px;min-height:0}
+  .av-x{width:28px;height:28px;font-size:18px}
+  .sub{margin:16px 0 8px}
+  .mesa strong{font-size:17px}
+  #sub-barra{font-size:14px;padding:9px 12px;border-left-width:6px}
+}
