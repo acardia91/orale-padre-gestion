@@ -230,3 +230,8 @@ button,.b,a,li[data-linea]{touch-action:manipulation}
   .col{padding:6px}
   .col h2{font-size:12.5px;padding:4px 4px 10px}
 }
+
+/* Volver a la pantalla de inicio (TPV / Comandas / Admin) si has entrado sin querer */
+.e-volver{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;margin:-12px 0 -4px -8px;padding:8px 12px;border-radius:10px;font-weight:700;font-size:15px;color:var(--burdeos,#7C2430);text-decoration:none}
+.e-volver:hover,.e-volver:active{background:rgba(124,36,48,.08)}
+.bl-volver{display:block;width:max-content;margin:14px auto 0}
