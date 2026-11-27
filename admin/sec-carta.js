@@ -292,18 +292,21 @@
   window.ADMIN = window.ADMIN || {};
   // Carta digital (QR de mesa): www.oralepadre.com/carta/?local=…
   const urlDigital = () => `https://www.oralepadre.com/carta/?local=${encodeURIComponent(LOCAL)}`;
-  async function qrMesa() {
+  const urlPedir = () => `https://www.oralepadre.com/pedir/?local=${encodeURIComponent(LOCAL)}`;
+  async function qrMesa(url = urlDigital(), titulo = 'LA CARTA', texto = 'Escanea y mira la carta en tu móvil', pie = 'oralepadre.com/carta') {
     if (!window.qrcode) await new Promise((ok, ko) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js'; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
-    const q = window.qrcode(0, 'M'); q.addData(urlDigital()); q.make();
+    const q = window.qrcode(0, 'M'); q.addData(url); q.make();
     const w = window.open('', '_blank'); if (!w) { alert('Permite las ventanas emergentes para imprimir el QR.'); return; }
     const nom = esc(($('#a-locales') && $('#a-locales').selectedOptions[0] ? $('#a-locales').selectedOptions[0].textContent : '').replace(/^Órale Padre\s*/, ''));
     w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>QR carta · ${nom}</title>
       <style>body{font-family:Archivo,Arial,sans-serif;text-align:center;margin:0;padding:36px;color:#241a1c}h1{font-size:46px;margin:0 0 6px;color:#7C2430;letter-spacing:.02em}
       p{font-size:21px;margin:0 0 22px}.qr svg{width:300px;height:300px}small{display:block;margin-top:16px;font-size:15px;color:#6b5b5e}@page{size:A6;margin:8mm}</style></head><body>
-      <h1>LA CARTA</h1><p>Escanea y mira la carta en tu móvil</p><div class="qr">${q.createSvgTag({ cellSize: 8, margin: 0, scalable: true })}</div>
-      <small>oralepadre.com/carta · Órale Padre ${nom}</small><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
+      <h1>${titulo}</h1><p>${texto}</p><div class="qr">${q.createSvgTag({ cellSize: 8, margin: 0, scalable: true })}</div>
+      <small>${pie} · Órale Padre ${nom}</small><script>window.onload=()=>setTimeout(()=>window.print(),300)<\/script></body></html>`);
     w.document.close();
   }
   $('#c-qr').onclick = () => qrMesa().catch(() => alert('No se ha podido crear el QR. Revisa la conexión.'));
+  // QR para PEDIR: lleva a la carta de la web con la que se pide (para recoger), siempre con la carta publicada ahora.
+  $('#c-qr-pedir').onclick = () => qrMesa(urlPedir(), 'PIDE AQUÍ', 'Escanea, elige y pide desde tu móvil', 'oralepadre.com/pedir').catch(() => alert('No se ha podido crear el QR. Revisa la conexión.'));
   window.ADMIN.carta = { async init(local) { LOCAL = local; $('#c-ver-digital').href = urlDigital(); await cargar(); }, sucio };
 })();
