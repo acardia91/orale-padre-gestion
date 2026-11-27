@@ -242,9 +242,10 @@
     const lineas = p.lineas.map((l, i) => ({ ...l, _i: i })).filter(l => !vista || puesto(l) === vista);
     const todoHecho = lineas.length > 0 && lineas.every(l => hechas.has(l._i));
     const marcha = p.marchado && Date.now() - new Date(p.marchado) < 15 * 60000;
-    const llevar = p.canal !== 'sala' || /^llevar\b/i.test(p.mesa || p.cliente_nombre || '');
-    return `<article class="ped ${p.estado} ${t.clase}${p.en_espera ? ' espera' : ''}${llevar ? ' llevar' : ''}" data-id="${p.id}">
-      ${llevar ? `<p class="ped-llevar">🛍 PARA LLEVAR${p.canal === 'sala' ? '' : ' · WEB'}</p>` : ''}
+    const plat = OP.plataformaDe(p.mesa || p.cliente_nombre);
+    const llevar = plat || p.canal !== 'sala' || /^llevar\b/i.test(p.mesa || p.cliente_nombre || '');
+    return `<article class="ped ${p.estado} ${t.clase}${p.en_espera ? ' espera' : ''}${llevar ? ' llevar' : ''}${plat ? ' plat-' + plat : ''}" data-id="${p.id}">
+      ${plat ? `<p class="ped-llevar ped-${plat}">🛵 ${plat === 'uber' ? 'UBER EATS' : 'GLOVO'}</p>` : llevar ? `<p class="ped-llevar">🛍 PARA LLEVAR${p.canal === 'sala' ? '' : ' · WEB'}</p>` : ''}
       ${p.en_espera ? '<p class="ped-espera">⏸ EN ESPERA · no preparar todavía</p>' : marcha ? '<p class="ped-marcha">▶ ¡MARCHA!</p>' : ''}
       <div class="ped-cab">
         <div class="ped-num">${p.numero}</div>

@@ -244,3 +244,7 @@ button,.b,a,li[data-linea]{touch-action:manipulation}
 /* Para llevar: naranja, borde de rayas y franja arriba */
 .ped.llevar{border:3px dashed #E8710A !important}
 .ped-llevar{margin:0;padding:7px 12px;background:#E8710A;color:#fff;font-weight:900;font-size:16px;letter-spacing:.05em;text-align:center}
+.ped.plat-uber{border-color:#000 !important}
+.ped-llevar.ped-uber{background:#000}
+.ped.plat-glovo{border-color:#E0A800 !important}
+.ped-llevar.ped-glovo{background:#FFC244;color:#2b2100}
