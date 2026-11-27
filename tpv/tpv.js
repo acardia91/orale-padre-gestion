@@ -264,6 +264,8 @@
   $('#b-sonido').onclick = () => { silencio = !silencio; ls('op-tpv-silencio', silencio); pintaSonido();
     if (!silencio) timbre(); aviso(silencio ? '🔕 Sonido silenciado en este TPV' : '🔔 Sonido activado'); };
   pintaSonido();
+  // QR para pedir: se imprime en la ticketera (o en la impresora del navegador si esta tablet no tiene térmica).
+  $('#b-qr').onclick = () => { if (confirm('¿Imprimir un QR que lleva a la carta para pedir desde el móvil?\n\nSirve para pegarlo en la barra, la ventana o las mesas. Siempre abre la carta publicada en ese momento.')) OP.imprimirQrPedir(LOCAL); };
   $('#b-impresora').onclick = () => OP.ajustesImpresora({ comandas: true, local: () => LOCAL, alCambiar: () => pintaPorImprimir() });
 
   /* ══ Comandas en papel (una sola tablet, sin pantalla en cocina) ══

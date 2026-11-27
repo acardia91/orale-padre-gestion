@@ -677,3 +677,7 @@ button.t-quien:active{background:#8E63C9;color:#fff;transform:scale(.97)}
   .tq-btns .b{min-height:54px}
   .cuenta .carta{padding-bottom:130px}
 }
+
+/* Botón «QR carta»: negro relleno (como un QR) para que se vea a la primera */
+.b-ctrl .b.b-ico.b-qr{background:#1d1718;border-color:#1d1718;color:#fff}
+.b-ctrl .b.b-ico.b-qr:hover{background:#3a2e31;color:#fff}
