@@ -402,6 +402,10 @@
           notas: `Viene de ${o.nombre} (comanda #${src.numero})` + (src.notas ? ' · ' + src.notas : '') }); });
       guarda(K.pedidos, ps); avisa(); return { unidades: n, importe: imp };
     },
+    async unirMesas(cuenta, ids) { const cs = lee(K.cuentas, []); const c = cs.find(x => x.id === cuenta); if (!c) throw new Error('PERMISO: cuenta no encontrada');
+      const otra = cs.find(x => x.id !== cuenta && x.estado === 'abierta' && ids.some(id => x.mesa_id === id || (x.mesas_extra || []).includes(id)));
+      if (otra) throw new Error('MESA: ' + otra.nombre + ' ya tiene otra cuenta abierta (júntalas primero)');
+      c.mesas_extra = [...new Set(ids.filter(id => id !== c.mesa_id))]; guarda(K.cuentas, cs); avisa(); return c; },
     async juntarCuentas(origen, destino) {
       const items = lee(K.pedidos, []).filter(p => p.cuenta_id === origen && p.estado !== 'cancelado')
         .flatMap(p => p.lineas.map((l, i) => ({ pedido: p.id, indice: i, cantidad: l.cantidad - (l.pagadas || 0) }))).filter(x => x.cantidad > 0);
@@ -752,6 +756,7 @@
     async moverCuenta(cuenta, mesa) { ok(await cliente().rpc('mover_cuenta', { p_cuenta: cuenta, p_mesa_id: mesa })); },
     async pasarLineas(origen, destino, items) { return ok(await cliente().rpc('pasar_lineas', { p_origen: origen, p_destino: destino, p_items: items })); },
     async juntarCuentas(origen, destino) { return ok(await cliente().rpc('juntar_cuentas', { p_origen: origen, p_destino: destino })); },
+    async unirMesas(cuenta, ids) { return ok(await cliente().rpc('unir_mesas', { p_cuenta: cuenta, p_mesas: ids })); },
     async anularCuenta(cuenta, motivo, pin) { ok(await cliente().rpc('anular_cuenta', { p_cuenta: cuenta, p_motivo: motivo, p_pin: pin || null })); },
     // ── Control: productos quitados, clave de encargado, pre-cuentas, cierre de caja ──
     async anularLinea(pedido, indice, cantidad, motivo, pin) {
