@@ -241,3 +241,6 @@ button,.b,a,li[data-linea]{touch-action:manipulation}
 .ped-lineas small.op-extra{display:inline-block;margin:3px 0 0 30px;padding:2px 9px;border-radius:6px;background:#2E7D32;color:#fff;font-weight:800;font-size:14px}
 .ped-lineas small.op-sin + small, .ped-lineas small.op-extra + small{margin-top:3px}
 .ped-lineas .nota{display:inline-block;margin:3px 0 0 30px;padding:2px 9px;border-radius:6px;background:#FFE08A;color:#5a3a00 !important;font-weight:800}
+/* Para llevar: naranja, borde de rayas y franja arriba */
+.ped.llevar{border:3px dashed #E8710A !important}
+.ped-llevar{margin:0;padding:7px 12px;background:#E8710A;color:#fff;font-weight:900;font-size:16px;letter-spacing:.05em;text-align:center}
