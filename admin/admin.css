@@ -505,3 +505,8 @@ textarea{resize:vertical}
 .pin-fila.mal{border-color:#F3B9B3;background:#FDECEA}
 @media (max-width:640px){.pin-fila{grid-template-columns:1fr 1fr}.pin-fila>div:first-child{grid-column:1/-1}}
 .b-pin{white-space:nowrap}
+
+/* Volver a la pantalla de inicio (TPV / Comandas / Admin) si has entrado sin querer */
+.e-volver{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;margin:-12px 0 -4px -8px;padding:8px 12px;border-radius:10px;font-weight:700;font-size:15px;color:var(--burdeos,#7C2430);text-decoration:none}
+.e-volver:hover,.e-volver:active{background:rgba(124,36,48,.08)}
+.bl-volver{display:block;width:max-content;margin:14px auto 0}
