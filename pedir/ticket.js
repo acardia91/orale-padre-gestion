@@ -306,11 +306,14 @@
       .map(([t, ls]) => `<div class="sec">${t.nom}</div>` + ls.map(lineaCocina).join('')).join('');
   }
 
+  // Para llevar: cuenta marcada así en el TPV, pedido de la web, o cuenta llamada "Llevar …".
+  const esLlevarP = p => !!p.llevar || p.canal !== 'sala' || /^llevar\b/i.test(p.mesa || p.cliente_nombre || '');
   /** Comanda para cocina: sin precios, letra grande. */
   function comanda(p, local, carta) {
     return `
       <div class="c"><b>ÓRALE PADRE · ${esc((local || '').replace(/^Órale Padre\s*/, '').toUpperCase())}</b></div>
-      <div class="c g">${p.canal === 'sala' ? esc(p.mesa || 'SALA') : 'PARA RECOGER · WEB'}</div>
+      ${esLlevarP(p) ? '<div class="puesto">PARA LLEVAR</div>' : ''}
+      <div class="c g">${p.canal === 'sala' ? esc(p.mesa || 'SALA') : 'PEDIDO WEB'}</div>
       <div class="c num">#${p.numero}</div>
       ${p.canal !== 'sala' ? `<div class="c"><b>${esc(p.cliente_nombre)}</b> · ${esc(p.cliente_tel || '')}</div>` : ''}
       <div class="c">${p.canal === 'sala' ? 'Marchada' : 'Recogida'}: <b>${fecha(p.canal === 'sala' ? p.creado : p.recogida).slice(-5)}</b></div>
