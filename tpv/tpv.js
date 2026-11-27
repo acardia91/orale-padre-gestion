@@ -772,7 +772,7 @@
     if (tCob) $('#c-info').textContent += ` · cobrado ${euros(tCob)}`;
     if (cuenta.partes_pagadas > 0) $('#c-info').textContent += ` · a partes iguales: ${cuenta.partes_pagadas} de ${cuenta.partes} pagadas`;
     const tPend = pend.reduce((s, l) => s + (idx.prod.has(l.producto) ? precioLinea(idx, l, enSala()) * l.cantidad : 0), 0);
-    $('#c-total').textContent = euros(tEnv + tPend); { const nL = ((pedidosCuenta || []).flatMap(x => (x.lineas || [])).length) + (((pendientes[cuenta && cuenta.id] || [])).length); $('#c-hoja-txt').textContent = `Cuenta · ${nL} ${nL === 1 ? 'línea' : 'líneas'} · ${$('#c-total').textContent}`; }
+    $('#c-total').textContent = euros(tEnv + tPend); { const nL = ((pedidosCuenta || []).flatMap(x => (x.lineas || [])).length) + (((pendientes[cuenta && cuenta.id] || [])).length); $('#c-hoja-txt').textContent = `${cuenta ? cuenta.nombre : 'Cuenta'} · ${nL} ${nL === 1 ? 'línea' : 'líneas'} · ${$('#c-total').textContent}`; }
     if (enviando[cuenta.id]) { $('#c-enviar').textContent = 'Enviando…'; $('#c-enviar').disabled = true; $('#c-espera').disabled = true; }
     else {
       $('#c-enviar').textContent = pend.length ? `Enviar a cocina (${pend.reduce((s, l) => s + l.cantidad, 0)})` : 'Enviar a cocina';

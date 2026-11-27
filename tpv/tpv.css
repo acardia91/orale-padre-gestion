@@ -653,3 +653,27 @@ button.t-quien:active{background:#8E63C9;color:#fff;transform:scale(.97)}
   .mesa strong{font-size:17px}
   #sub-barra{font-size:14px;padding:9px 12px;border-left-width:6px}
 }
+/* ══ Móvil · tomar nota: más productos a la vista y botones grandes ══
+   · Dentro de una cuenta, arriba sólo "‹ Sala" y la persona (los botones de la sala sobran aquí).
+   · Productos sin foto, en dos columnas, letra grande y fáciles de tocar.
+   · El pie de la cuenta, plegado: sólo una fila con En espera · Enviar · Cobrar (el total va en la pestaña). */
+@media (max-width:760px){
+  body:has(#vista-cuenta:not([hidden])) .barra .b-ctrl,
+  body:has(#vista-cuenta:not([hidden])) .barra .demo,
+  body:has(#vista-cuenta:not([hidden])) .barra .b-local{display:none}
+  body:has(#vista-cuenta:not([hidden])) .barra{flex-wrap:nowrap;justify-content:space-between}
+  .cuenta .buscar{margin-bottom:6px}
+  .cuenta .rapidos-tpv{padding-bottom:6px;margin-bottom:2px}
+  .cuenta .cats{margin-bottom:8px}
+  .cuenta .prods{grid-template-columns:1fr 1fr;gap:8px}
+  .cuenta .prod img,.cuenta .prod .ini{display:none}
+  .cuenta .prod{min-height:70px;justify-content:center;border-width:2px}
+  .cuenta .prod b{font-size:15.5px;padding:10px 12px 2px}
+  .cuenta .prod span{margin-top:0;padding:2px 12px 10px;font-size:14px}
+  .cuenta .prod.extras::after{top:6px;right:6px;font-size:9.5px;background:var(--crema-2,#F1E7DA)}
+  .cuenta .prod.extras b{padding-right:58px}
+  .cuenta:not(.hoja-abierta) .tq-total,.cuenta:not(.hoja-abierta) #c-precuenta{display:none}
+  .cuenta:not(.hoja-abierta) .tq-pie{padding:6px 10px 10px}
+  .tq-btns .b{min-height:54px}
+  .cuenta .carta{padding-bottom:130px}
+}
