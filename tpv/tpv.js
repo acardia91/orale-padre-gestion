@@ -264,7 +264,7 @@
   $('#b-sonido').onclick = () => { silencio = !silencio; ls('op-tpv-silencio', silencio); pintaSonido();
     if (!silencio) timbre(); aviso(silencio ? '🔕 Sonido silenciado en este TPV' : '🔔 Sonido activado'); };
   pintaSonido();
-  $('#b-impresora').onclick = () => OP.ajustesImpresora({ comandas: true, alCambiar: () => pintaPorImprimir() });
+  $('#b-impresora').onclick = () => OP.ajustesImpresora({ comandas: true, local: () => LOCAL, alCambiar: () => pintaPorImprimir() });
 
   /* ══ Comandas en papel (una sola tablet, sin pantalla en cocina) ══
      Al enviar desde el TPV se imprimen solas. Los pedidos que llegan solos (web y QR de mesa) esperan en
