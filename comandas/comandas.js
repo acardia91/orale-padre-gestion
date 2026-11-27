@@ -2,6 +2,11 @@
 (function () {
   'use strict';
   const { api, DEMO, hhmm, euros, puestoDe } = window.OP;
+
+  // Al salir: si estaba en modo prueba (?demo), se quita de la dirección; si no, volvería a entrar en la demo.
+  function fueraDeSesion() { if (DEMO) location.replace(location.pathname); else location.reload(); }
+  { const d = document.getElementById('p-demo'); if (d && DEMO) { d.textContent = 'DEMO · salir'; d.title = 'Salir del modo prueba'; d.style.cursor = 'pointer';
+    d.onclick = () => { if (confirm('¿Salir del modo prueba? Después podrás entrar con tu usuario.')) location.replace(location.pathname); }; } }
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   // Repintar sólo si cambia, y nunca mientras se desliza el dedo (en la tablet cortaba el scroll).
@@ -72,7 +77,7 @@
     try { entrar(await api.entrar($('#e-email').value.trim(), $('#e-pass').value)); }
     catch (ex) { $('#e-error').textContent = 'Email o contraseña incorrectos.'; $('#e-error').hidden = false; }
   });
-  $('#p-salir').onclick = async () => { await api.salir(); location.reload(); };
+  $('#p-salir').onclick = async () => { await api.salir(); fueraDeSesion(); };
 
   async function entrar(s) {
     if (!s.locales.length) { $('#e-error').textContent = 'Tu usuario no tiene ningún local asignado.'; $('#e-error').hidden = false; $('#vista-entrar').hidden = false; return; }
