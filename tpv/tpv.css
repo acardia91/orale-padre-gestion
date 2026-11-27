@@ -602,3 +602,10 @@ button,.b,a,.mesa,.prod{touch-action:manipulation}
 .ln small.op-sin{display:inline-block;margin-top:3px;padding:1px 8px;border-radius:6px;background:#C62828;color:#fff;font-weight:800;text-transform:uppercase;font-size:12.5px}
 .ln small.op-extra{display:inline-block;margin-top:3px;padding:1px 8px;border-radius:6px;background:#2E7D32;color:#fff;font-weight:800;font-size:12.5px}
 .ln small.op-sin,.ln small.op-extra{margin-right:4px}
+/* Persona en el TPV: lila y bien visible, se toca para cambiar de persona */
+button.t-quien{background:#EFE7FB;color:#5B2E91;border:2px solid #8E63C9;font-size:14px;font-weight:800;padding:6px 11px;min-height:40px;max-width:190px}
+button.t-quien::before{content:'👤 '}
+button.t-quien::after{content:' ⇄';color:#8E63C9}
+button.t-quien:hover{border-color:#5B2E91}
+button.t-quien:active{background:#8E63C9;color:#fff;transform:scale(.97)}
+@media (max-width:760px){ button.t-quien{font-size:13px;padding:6px 10px;min-height:38px;max-width:46vw} }
