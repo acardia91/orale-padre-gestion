@@ -2,6 +2,11 @@
 (function () {
   'use strict';
   const { api, DEMO } = window.OP;
+
+  // Al salir: si estaba en modo prueba (?demo), se quita de la dirección; si no, volvería a entrar en la demo.
+  function fueraDeSesion() { if (DEMO) location.replace(location.pathname); else location.reload(); }
+  { const d = document.getElementById('a-demo'); if (d && DEMO) { d.textContent = 'DEMO · salir'; d.title = 'Salir del modo prueba'; d.style.cursor = 'pointer';
+    d.onclick = () => { if (confirm('¿Salir del modo prueba? Después podrás entrar con tu usuario.')) location.replace(location.pathname); }; } }
   const $ = s => document.querySelector(s);
   let LOCAL = new URLSearchParams(location.search).get('local') || 'tomares';
   const iniciadas = new Set();
@@ -18,7 +23,7 @@
     try { entrar(await api.entrar($('#e-email').value.trim(), $('#e-pass').value)); }
     catch (ex) { $('#e-error').textContent = 'Email o contraseña incorrectos.'; $('#e-error').hidden = false; }
   });
-  $('#a-salir').onclick = async () => { await api.salir(); location.reload(); };
+  $('#a-salir').onclick = async () => { await api.salir(); fueraDeSesion(); };
 
   let LOCALES = [];
   async function entrar(s) {
